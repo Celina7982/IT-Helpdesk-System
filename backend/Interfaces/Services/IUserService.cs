@@ -1,8 +1,8 @@
 ﻿using IThelpdesk.Models;
 
-namespace IThelpdesk.Interfaces
+namespace IThelpdesk.Interfaces.Services
 {
-    public interface IUserRepository
+    public interface IUserService
     {
         Task<IEnumerable<User>> GetAllUsersAsync();
 
@@ -10,12 +10,10 @@ namespace IThelpdesk.Interfaces
 
         Task<User?> GetUserByEmailAsync(string email);
 
-        Task AddUserAsync(User user);
+        Task CreateUserAsync(User user);
 
         Task UpdateUserAsync(User user);
 
-        Task DeleteUserAsync(User user);
-
-        Task SaveChangesAsync();
+        Task DeleteUserAsync(int id);
     }
 }

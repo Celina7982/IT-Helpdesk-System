@@ -1,2 +1,0 @@
-# IT-Helpdesk-Ticketing-System
-

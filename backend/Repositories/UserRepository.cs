@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using IThelpdesk.Data;
 using IThelpdesk.Interfaces.Repositories;
+using IThelpdesk.Data;
 using IThelpdesk.Models;
 
 namespace IThelpdesk.Repositories

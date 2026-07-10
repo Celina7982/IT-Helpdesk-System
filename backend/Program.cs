@@ -1,9 +1,16 @@
-using IThelpdesk.Data;
-using IThelpdesk.Interfaces.Repositories;
-using IThelpdesk.Repositories;
 using Microsoft.EntityFrameworkCore;
-using IThelpdesk.Interfaces.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using IThelpdesk.Services;
+using IThelpdesk.Repositories;
+using IThelpdesk.Interfaces.Repositories;
+using IThelpdesk.Data;
+using IThelpdesk.Interfaces.Services;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +18,34 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); // Required for Swagger to see Minimal APIs
 builder.Services.AddSwaggerGen();           // Required for Swagger to see Controllers
+
+// Register the User repository and service with the Dependency Injection container.
+// This decouples controllers from concrete implementations and improves testability.  
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+
+//authentication method using JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            
+            ValidateIssuer = true, // did my app issue it,
+            ValidateAudience = true, //was it created for my app
+            ValidateLifetime = true,// is it still valid(not expired)
+            ValidateIssuerSigningKey = true, //verify token isnt tampered with
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+    });
 
 
 // Configure SQL Server
@@ -28,8 +61,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // Serves the Swagger GUI
 }
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
+app.UseHttpsRedirection(); // Redirects HTTP requests to HTTPS
+
+
+
+
+app.UseAuthentication(); // Add this line to enable authentication middleware
+app.UseAuthorization(); // Add this line to enable authorization middleware
 
 // 3. Map Endpoints
 app.MapGet("/weather", () => new[] { "Sunny", "Cloudy", "Rainy" });

@@ -21,12 +21,25 @@ builder.Services.AddSwaggerGen();           // Required for Swagger to see Contr
 
 // Register the User repository and service with the Dependency Injection container.
 // This decouples controllers from concrete implementations and improves testability.  
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+/*
+ When AuthController asks for an IAuthService
 
-//authentication method using JWT
+Dependency Injection container: "Whenever someone requests IAuthService, create an AuthService."
+
+very NB line b/c without it,when you call the login endpoint you'll get a runtime error
+*/
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<ITicketService, TicketService>();
+
+
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+
+
+//authentication method using JWT 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

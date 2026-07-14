@@ -34,6 +34,7 @@
     <Folder Include="Middleware\" />
     <Folder Include="Helpers\" />
     <Folder Include="Logs\" />
+    <Folder Include="Migrations\" />
     <Folder Include="wwwroot\" />
     <Folder Include="Uploads\" />
   </ItemGroup>

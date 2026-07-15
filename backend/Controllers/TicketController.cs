@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 
@@ -6,6 +7,7 @@ namespace IThelpdesk.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TicketController : ControllerBase
     {
         private readonly ITicketService _ticketService;
@@ -16,6 +18,8 @@ namespace IThelpdesk.Controllers
         }
 
         // GET: api/Ticket
+        // Admins and Technicians can view all tickets
+        [Authorize(Roles = "Admin,Technician")]
         [HttpGet]
         public async Task<IActionResult> GetAllTickets()
         {
@@ -24,6 +28,7 @@ namespace IThelpdesk.Controllers
         }
 
         // GET: api/Ticket/5
+        // Any authenticated user can view a ticket by ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTicket(int id)
         {
@@ -36,6 +41,8 @@ namespace IThelpdesk.Controllers
         }
 
         // POST: api/Ticket
+        // Admins and Technicians can create tickets
+        [Authorize(Roles = "Admin,Technician")]
         [HttpPost]
         public async Task<IActionResult> CreateTicket([FromBody] Ticket ticket)
         {
@@ -51,6 +58,8 @@ namespace IThelpdesk.Controllers
         }
 
         // PUT: api/Ticket/5
+        // Admins and Technicians can update tickets
+        [Authorize(Roles = "Admin,Technician")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTicket(int id, [FromBody] Ticket ticket)
         {
@@ -63,6 +72,8 @@ namespace IThelpdesk.Controllers
         }
 
         // DELETE: api/Ticket/5
+        // Admins and Technicians can delete tickets
+        [Authorize(Roles = "Admin,Technician")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTicket(int id)
         {

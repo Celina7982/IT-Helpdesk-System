@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace IThelpdesk.DTOs.Ticket
+namespace IThelpdesk.DTOs.Tickets
 {
     public class UpdateTicketStatusDto
     {

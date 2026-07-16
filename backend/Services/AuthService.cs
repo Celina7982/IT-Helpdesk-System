@@ -56,12 +56,13 @@ namespace IThelpdesk.Services
                 return null;
             }
 
-            // Verify the password using BCrypt
+            // Verify the password using BCrypt.
             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(
                 request.Password,
                 user.PasswordHash
             );
 
+            // Password incorrect.
             if (!isPasswordValid)
             {
                 return null;
@@ -93,12 +94,12 @@ namespace IThelpdesk.Services
 
             // Create the JWT token.
             var token = new JwtSecurityToken(
-     issuer: _configuration["Jwt:Issuer"],
-     audience: _configuration["Jwt:Audience"],
-     claims: claims,
-     expires: DateTime.UtcNow.AddHours(1),
-     signingCredentials: credentials
- );
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: credentials
+            );
 
             // Convert the JWT object into a string.
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);

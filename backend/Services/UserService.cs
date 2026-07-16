@@ -30,10 +30,20 @@ namespace IThelpdesk.Services
 
         public async Task CreateUserAsync(User user)
         {
+            // Check if the email already exists
+            var existingUser = await _userRepository.GetUserByEmailAsync(user.Email);
+
+            if (existingUser != null)
+            {
+                throw new Exception("A user with this email already exists.");
+            }
+
+            // Hash the password before saving it
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+
+            // Save the new user
             await _userRepository.AddUserAsync(user);
             await _userRepository.SaveChangesAsync();
-
-            
         }
 
         public async Task UpdateUserAsync(User user)

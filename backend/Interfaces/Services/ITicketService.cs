@@ -13,5 +13,17 @@ namespace IThelpdesk.Interfaces.Services
         Task UpdateTicketAsync(Ticket ticket);
 
         Task DeleteTicketAsync(int id);
+
+        // Admin assigns an escalated ticket
+        Task AssignTicketAsync(int ticketId, int assignedToUserId);
+
+        // Technician claims an open ticket
+        Task ClaimTicketAsync(int ticketId, int technicianId);
+
+        // Technician escalates a ticket
+        Task EscalateTicketAsync(int ticketId, string escalationReason);
+
+        // Admin or Technician resolves a ticket
+        Task ResolveTicketAsync(int ticketId);
     }
 }

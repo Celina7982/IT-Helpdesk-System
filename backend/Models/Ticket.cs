@@ -17,6 +17,13 @@ namespace IThelpdesk.Models
         public string Description { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(150)]
+        public string CustomerName { get; set; } = string.Empty;
+
+        [StringLength(150)]
+        public string? CompanyName { get; set; }
+
+        [Required]
         [StringLength(50)]
         public string Category { get; set; } = string.Empty;
 
@@ -30,9 +37,20 @@ namespace IThelpdesk.Models
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
+        // User who created the ticket
         public int UserId { get; set; }
+
+        // Technician assigned to the ticket
+        public int? AssignedToUserId { get; set; }
+
+        // Indicates whether the ticket has been escalated
+        public bool IsEscalated { get; set; } = false;
+
+        // Reason for escalation
+        [StringLength(500)]
+        public string? EscalationReason { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
     }
-}
+    }

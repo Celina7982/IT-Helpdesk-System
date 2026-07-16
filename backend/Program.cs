@@ -1,18 +1,149 @@
 using IThelpdesk.Data;
+using IThelpdesk.Interfaces.Repositories;
+using IThelpdesk.Interfaces.Services;
+using IThelpdesk.Models;
+using IThelpdesk.Repositories;
+using IThelpdesk.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+//using Microsoft.OpenApi;
+
+
+using System.Text;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add Services
+// 1. Add Services(register repository and services)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); // Required for Swagger to see Minimal APIs
-builder.Services.AddSwaggerGen();           // Required for Swagger to see Controllers
+
+
+
+builder.Services.AddSwaggerGen();
+//(options =>
+//{
+//    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//    {
+//        Name = "Authorization",
+//        Type = SecuritySchemeType.Http,
+//        Scheme = "bearer",
+//        BearerFormat = "JWT",
+//        In = ParameterLocation.Header,
+//        Description = "Enter your JWT token."
+//    });
+
+//    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+//    {
+//        {
+//            new OpenApiSecurityScheme
+//            {
+//                Reference = new OpenApiReference
+//                {
+//                    Type = ReferenceType.SecurityScheme,
+//                    Id = "Bearer"
+//                }
+//            },
+//            Array.Empty<string>()
+//        }
+//    });
+//});
+
+// Register the User repository and service with the Dependency Injection container.
+// This decouples controllers from concrete implementations and improves testability.  
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+/*
+ When AuthController asks for an IAuthService
+
+
+
+Dependency Injection container: "Whenever someone requests IAuthService, create an AuthService."
+
+very NB line b/c without it,when you call the login endpoint you'll get a runtime error
+*/
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            )
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                Console.WriteLine("AUTH HEADER:");
+                Console.WriteLine(context.Request.Headers.Authorization);
+                return Task.CompletedTask;
+            },
+
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine("AUTH FAILED:");
+                Console.WriteLine(context.Exception);
+                return Task.CompletedTask;
+            },
+
+            OnChallenge = context =>
+            {
+                Console.WriteLine("JWT CHALLENGE");
+                return Task.CompletedTask;
+            }
+        };
+    });
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<ITicketService, TicketService>();
+
+
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+
 
 // Configure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
+
+// Create a test admin user if one doesn't exist
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    context.Database.Migrate();
+
+    if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
+    {
+        context.Users.Add(new User
+        {
+            FirstName = "Admin",
+            LastName = "User",
+            Email = "admin@ithelpdesk.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+            Role = "Admin",
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        });
+
+        context.SaveChanges();
+    }
+}
 
 // 2. Configure HTTP Pipeline
 if (app.Environment.IsDevelopment())
@@ -21,11 +152,18 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // Serves the Swagger GUI
 }
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
+app.UseHttpsRedirection(); // Redirects HTTP requests to HTTPS
+
+
+
+
+app.UseAuthentication(); // Add this line to enable authentication middleware
+app.UseAuthorization(); // Add this line to enable authorization middleware
 
 // 3. Map Endpoints
-app.MapGet("/weather", () => new[] { "Sunny", "Cloudy", "Rainy" });
+
 app.MapControllers();
+
+app.MapGet("/weather", () => new[] { "Sunny", "Cloudy", "Rainy" });
 
 app.Run();

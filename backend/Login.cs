@@ -1,4 +1,4 @@
-﻿namespace IT_helpdesk
+﻿namespace IThelpdesk
 {
     public class Login
     {

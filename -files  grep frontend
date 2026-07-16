@@ -1,0 +1,32 @@
+[33mcommit 12d8a08a92bb2cd1cdfd9d682c9332e2c3d77405[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/clean-architecture[m[33m, [m[1;31morigin/feature/clean-architecture[m[33m)[m
+Author: Celina7982 <164148894+Celina7982@users.noreply.github.com>
+Date:   Mon Jul 13 13:42:21 2026 +0200
+
+    updates
+
+ frontend/.gitignore                        |   24 [32m+[m
+ frontend/.gitkeep                          |    0
+ frontend/README.md                         |   16 [32m+[m
+ frontend/eslint.config.js                  |   21 [32m+[m
+ frontend/index.html                        |   13 [32m+[m
+ frontend/package-lock.json                 | 2853 [32m++++++++++++++++++++++++++++[m
+ frontend/package.json                      |   30 [32m+[m
+ frontend/public/favicon.svg                |    1 [32m+[m
+ frontend/public/icons.svg                  |   24 [32m+[m
+ frontend/src/App.css                       |  184 [32m++[m
+ frontend/src/App.jsx                       |   23 [32m+[m
+ frontend/src/assets/hero.png               |  Bin [31m0[m -> [32m13057[m bytes
+ frontend/src/assets/react.svg              |    1 [32m+[m
+ frontend/src/assets/vite.svg               |    1 [32m+[m
+ frontend/src/components/Navbar.jsx         |   63 [32m+[m
+ frontend/src/components/Sidebar.jsx        |   50 [32m+[m
+ frontend/src/index.css                     |  111 [32m++[m
+ frontend/src/main.jsx                      |   24 [32m+[m
+ frontend/src/pages/ClientDashboard.jsx     |  129 [32m++[m
+ frontend/src/pages/CreateTicket.jsx        |   79 [32m+[m
+ frontend/src/pages/Login.jsx               |   82 [32m+[m
+ frontend/src/pages/MyTickets.jsx           |  104 [32m+[m
+ frontend/src/pages/TechnicianDashboard.jsx |  219 [32m+++[m
+ frontend/src/pages/TicketDetails.jsx       |   80 [32m+[m
+ frontend/vite.config.js                    |    7 [32m+[m
+ 25 files changed, 4139 insertions(+)

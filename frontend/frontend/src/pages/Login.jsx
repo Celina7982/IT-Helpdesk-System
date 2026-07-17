@@ -36,7 +36,7 @@ function Login() {
             if (role === "Admin") {
                 navigate("/admin");
             } else if (role === "Technician") {
-                alert("Technician page not created yet.");
+                navigate("/technician");
             } else {
                 alert("Client page not created yet.");
             }

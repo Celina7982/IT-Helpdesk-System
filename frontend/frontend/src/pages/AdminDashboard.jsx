@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import StatisticCard from "../components/StatisticCard";
-import dashboardService from "../services/dashboardService";
 import RecentTicketsTable from "../components/RecentTicketsTable";
+import dashboardService from "../services/dashboardService";
+import ticketService from "../services/ticketService";
 
 function AdminDashboard() {
 
-    // Dashboard statistics
     const [statistics, setStatistics] = useState({
         totalTickets: 0,
         openTickets: 0,
@@ -13,28 +13,27 @@ function AdminDashboard() {
         resolvedTickets: 0
     });
 
-    // Loading indicator
+    const [escalatedTickets, setEscalatedTickets] = useState([]);
+
     const [loading, setLoading] = useState(true);
 
-    // Error message
     const [error, setError] = useState("");
 
-    /**
-     * Loads dashboard statistics from the API.
-     */
-    const loadStatistics = async () => {
+    const loadDashboard = async () => {
 
         try {
 
-            const data = await dashboardService.getStatistics();
+            const stats = await dashboardService.getStatistics();
+            const escalated = await ticketService.getEscalatedTickets();
 
-            setStatistics(data);
+            setStatistics(stats);
+            setEscalatedTickets(escalated);
 
         }
         catch (err) {
 
             console.error(err);
-            setError("Unable to load dashboard statistics.");
+            setError("Unable to load dashboard.");
 
         }
         finally {
@@ -45,10 +44,9 @@ function AdminDashboard() {
 
     };
 
-    // Load dashboard once when page opens
     useEffect(() => {
 
-        loadStatistics();
+        loadDashboard();
 
     }, []);
 
@@ -86,11 +84,13 @@ function AdminDashboard() {
 
     return (
 
-        <div>
+        <div className="container mt-4">
 
             <h2 className="mb-4">
                 IT Helpdesk Admin Dashboard
             </h2>
+
+            {/* Statistics */}
 
             <div className="row">
 
@@ -120,7 +120,17 @@ function AdminDashboard() {
 
             </div>
 
-            <div className="card body">
+            {/* Recent Tickets */}
+
+            <div className="card shadow mt-4">
+
+                <div className="card-header bg-primary text-white">
+
+                    Recent Tickets
+
+                </div>
+
+                <div className="card-body">
 
                     <RecentTicketsTable />
 
@@ -128,7 +138,97 @@ function AdminDashboard() {
 
             </div>
 
-        
+            {/* Escalated Tickets */}
+
+            <div className="card shadow mt-4">
+
+                <div className="card-header bg-danger text-white">
+
+                    Escalated Tickets
+
+                </div>
+
+                <div className="card-body">
+
+                    {
+
+                        escalatedTickets.length === 0 ?
+
+                            <p className="text-muted">
+
+                                No escalated tickets.
+
+                            </p>
+
+                            :
+
+                            <table className="table table-striped table-hover">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>ID</th>
+                                        <th>Subject</th>
+                                        <th>Priority</th>
+                                        <th>Reason</th>
+                                        <th>Status</th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    {
+
+                                        escalatedTickets.map(ticket => (
+
+                                            <tr key={ticket.ticketId}>
+
+                                                <td>{ticket.ticketId}</td>
+
+                                                <td>{ticket.subject}</td>
+
+                                                <td>
+
+                                                    <span className="badge bg-warning text-dark">
+
+                                                        {ticket.priority}
+
+                                                    </span>
+
+                                                </td>
+
+                                                <td>{ticket.escalationReason}</td>
+
+                                                <td>
+
+                                                    <span className="badge bg-danger">
+
+                                                        {ticket.status}
+
+                                                    </span>
+
+                                                </td>
+
+                                            </tr>
+
+                                        ))
+
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
 
     );
 

@@ -30,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\NewFolder\" />
     <Folder Include="Middleware\" />
     <Folder Include="Helpers\" />
     <Folder Include="Logs\" />

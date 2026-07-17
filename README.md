@@ -1,144 +1,110 @@
-# IT Helpdesk System
+# IT Helpdesk Management System
 
 ## Overview
 
-The IT Helpdesk System is a web-based application developed to help organisations manage IT support requests efficiently.
+The IT Helpdesk Management System is a full-stack web application developed to manage IT support requests, technician workflows, and administrative operations within an organization.
 
-Clients can submit support tickets, while technicians can view, update and resolve assigned tickets through a dedicated dashboard.
-
----
-
-## Features
-
-### Client
-
-- Login
-- Dashboard
-- Create Ticket
-- View My Tickets
-- View Ticket Details
-
-### Technician
-
-- Login
-- Dashboard
-- View Assigned Tickets
-- Update Ticket Status
-
-### Backend
-
-- ASP.NET Core Web API
-- Repository Pattern
-- Service Layer
-- Entity Framework Core
+The system provides a centralized platform where clients can submit support requests, technicians can manage assigned work, and administrators can oversee the complete support lifecycle.
 
 ---
 
-## Technologies
+## Technology Stack
 
 ### Frontend
 
 - React
-- React Router
-- Bootstrap
-- Axios
 - Vite
+- Bootstrap 5
+- Axios
+- React Router
 
 ### Backend
 
-- ASP.NET Core
+- ASP.NET Core Web API
 - Entity Framework Core
-- SQL Server
-- C#
+- JWT Authentication
+- BCrypt Password Hashing
+
+### Database
+
+- Microsoft SQL Server
+- Entity Framework Migrations
+
+---
+
+## Main Features
+
+- User Authentication
+- Role Based Authorization
+- Dashboard
+- Ticket Management
+- Technician Assignment
+- Ticket Escalation
+- Ticket Resolution
+- Client Portal
+- Job Cards (Upcoming)
+- Quotations (Upcoming)
+- Invoices (Upcoming)
+- Reporting (Upcoming)
+
+---
+
+## User Roles
+
+### Administrator
+
+- Full system access
+- Manage users
+- View reports
+- Assign technicians
+- Manage tickets
+
+### Technician
+
+- View assigned tickets
+- Claim tickets
+- Escalate tickets
+- Resolve tickets
+
+### Client
+
+- Submit tickets
+- View ticket progress
+- View ticket history
 
 ---
 
 ## Project Structure
 
 ```
-IT-Helpdesk-System
-│
-├── backend
-│   ├── Controllers
-│   ├── Data
-│   ├── Interfaces
-│   ├── Models
-│   ├── Repositories
-│   ├── Services
-│   └── Program.cs
-│
-└── frontend
-    ├── src
-    │   ├── components
-    │   ├── pages
-    │   └── assets
-    └── public
+backend/
+frontend/
+database/
+documentation/
 ```
 
 ---
 
-## Current Progress
+## Documentation
 
-✅ React frontend completed
-
-✅ Client Dashboard
-
-✅ Technician Dashboard
-
-✅ Ticket pages
-
-✅ Backend Clean Architecture
-
-✅ Repository Pattern
-
-✅ Service Layer
-
-✅ Controllers
-
-⏳ SQL Server database integration in progress
+The complete technical documentation can be found inside the **documentation** folder.
 
 ---
 
-## Running the Project
+## Authors
 
-### Backend
+Development Team
 
-```bash
-cd backend
-dotnet run
+- Backend Developer
+- Frontend Developer
+- Client Portal Developer
+
+---
+
+## Version
+
+Current Version:
+
 ```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
+0.2.0
 ```
-
----
-
-## Team Workflow
-
-- Feature branches are used for development.
-- Changes are submitted through Pull Requests to the `develop` branch.
-- The `main` branch contains stable releases.
-
----
-
-## Contributors
-
-- Celina Chetty
-- Chaterin
-
----
-
-## Future Work
-
-- SQL Server integration
-- Entity Framework migrations
-- JWT Authentication
-- Dashboard statistics
-- Notifications
-- Reporting
-- Deployment

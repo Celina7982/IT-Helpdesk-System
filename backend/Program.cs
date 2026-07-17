@@ -18,6 +18,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add Services(register repository and services)
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddEndpointsApiExplorer(); // Required for Swagger to see Minimal APIs
 
 
@@ -53,8 +64,15 @@ builder.Services.AddSwaggerGen();
 
 // Register the User repository and service with the Dependency Injection container.
 // This decouples controllers from concrete implementations and improves testability.  
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+
 
 /*
  When AuthController asks for an IAuthService
@@ -107,12 +125,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-builder.Services.AddScoped<ITicketService, TicketService>();
 
 
-builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+
+
+
+
+
+
 
 
 // Configure SQL Server
@@ -155,7 +175,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection(); // Redirects HTTP requests to HTTPS
 
 
-
+app.UseCors("AllowReact");
 
 app.UseAuthentication(); // Add this line to enable authentication middleware
 app.UseAuthorization(); // Add this line to enable authorization middleware

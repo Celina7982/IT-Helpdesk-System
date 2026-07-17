@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using IThelpdesk.DTOs.Tickets;
+using IThelpdesk.DTOs.Ticket;
 using System.Security.Claims;
 
 namespace IThelpdesk.Controllers

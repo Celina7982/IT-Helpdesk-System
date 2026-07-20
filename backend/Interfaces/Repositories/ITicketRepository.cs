@@ -8,7 +8,15 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<Ticket?> GetByIdAsync(int id);
 
+        Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+
         Task AddAsync(Ticket ticket);
+
+        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
         Task UpdateAsync(Ticket ticket);
 

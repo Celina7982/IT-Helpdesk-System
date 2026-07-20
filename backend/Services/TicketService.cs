@@ -1,4 +1,5 @@
-﻿using IThelpdesk.Interfaces.Repositories;
+﻿using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 
@@ -13,6 +14,15 @@ namespace IThelpdesk.Services
             _ticketRepository = ticketRepository;
         }
 
+        public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
+        {
+            return await _ticketRepository.GetAvailableTicketsAsync();
+        }
+
+        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
+        {
+            return await _ticketRepository.GetMyTicketsAsync(technicianId);
+        }
         public async Task<IEnumerable<Ticket>> GetAllTicketsAsync()
         {
             return await _ticketRepository.GetAllAsync();
@@ -118,6 +128,11 @@ namespace IThelpdesk.Services
             await _ticketRepository.SaveChangesAsync();
         }
 
+        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
+        {
+            return await _ticketRepository.GetEscalatedTicketsAsync();
+        }
+
         public async Task DeleteTicketAsync(int id)
         {
             var ticket = await _ticketRepository.GetByIdAsync(id);
@@ -129,5 +144,24 @@ namespace IThelpdesk.Services
             }
         }
 
+        private static TicketResponseDto MapToDto(Ticket ticket)
+        {
+            return new TicketResponseDto
+            {
+                TicketId = ticket.TicketId,
+                Subject = ticket.Subject,
+                Status = ticket.Status,
+                Priority = ticket.Priority,
+                CustomerName = ticket.CustomerName,
+                CompanyName = ticket.CompanyName,
+                CreatedDate = ticket.CreatedDate,
+                IsEscalated = ticket.IsEscalated
+            };
+        }
+
+        public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
+        {
+            return await _ticketRepository.GetMyTicketsByUserAsync(userId);
+        }
     }
 }

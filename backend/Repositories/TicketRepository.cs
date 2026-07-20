@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using IThelpdesk.Data;
-using IThelpdesk.Interfaces.Repositories;
+
 using IThelpdesk.Models;
+using IThelpdesk.Interfaces.Repositories;
 
 namespace IThelpdesk.Repositories
 {
@@ -24,6 +25,22 @@ namespace IThelpdesk.Repositories
             return await _context.Tickets.FindAsync(id);
         }
 
+
+        public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
+        {
+            return await _context.Tickets
+                .Where(t => t.AssignedToUserId == null)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
+        {
+            return await _context.Tickets
+                .Where(t => t.AssignedToUserId == technicianId)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
         public async Task AddAsync(Ticket ticket)
         {
             await _context.Tickets.AddAsync(ticket);
@@ -45,5 +62,21 @@ namespace IThelpdesk.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
+        {
+            return await _context.Tickets
+                .Where(t => t.IsEscalated)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
+        {
+            return await _context.Tickets
+                .Where(t => t.UserId == userId)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
     }
 }

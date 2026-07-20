@@ -24,6 +24,17 @@ const ticketService = {
         return response.data;
     },
 
+    getEscalatedTickets: async () => {
+
+        const response = await api.get("/Ticket/escalated", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        return response.data;
+    },
+
     claimTicket: async (ticketId) => {
 
         await api.put(
@@ -65,18 +76,19 @@ const ticketService = {
         );
     },
 
-    getEscalatedTickets: async () => {
+    assignTicket: async (ticketId, assignedToUserId) => {
 
-        const response = await api.get(
-            "/Ticket/escalated",
+        await api.put(
+            `/Ticket/${ticketId}/assign`,
+            {
+                assignedToUserId
+            },
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             }
         );
-
-        return response.data;
     }
 
 };

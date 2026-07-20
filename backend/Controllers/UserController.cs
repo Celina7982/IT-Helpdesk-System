@@ -81,5 +81,14 @@ namespace IThelpdesk.Controllers
 
             return NoContent();
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("technicians")]
+        public async Task<IActionResult> GetTechnicians()
+        {
+            var technicians = await _userService.GetTechniciansAsync();
+
+            return Ok(technicians);
+        }
     }
 }

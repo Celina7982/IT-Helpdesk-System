@@ -51,5 +51,12 @@ namespace IThelpdesk.Repositories
         {
             await _context.SaveChangesAsync();
         }
+        public async Task<IEnumerable<User>> GetTechniciansAsync()
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Technician")
+                .OrderBy(u => u.FirstName)
+                .ToListAsync();
+        }
     }
 }

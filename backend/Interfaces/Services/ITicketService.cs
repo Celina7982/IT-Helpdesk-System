@@ -8,6 +8,10 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<Ticket?> GetTicketByIdAsync(int id);
 
+        Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+
         Task CreateTicketAsync(Ticket ticket);
 
         Task UpdateTicketAsync(Ticket ticket);
@@ -25,5 +29,10 @@ namespace IThelpdesk.Interfaces.Services
 
         // Admin or Technician resolves a ticket
         Task ResolveTicketAsync(int ticketId);
+
+        
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
     }
 }

@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLayout from "./layouts/AdminLayout";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
+import ClientDashboard from "./pages/ClientDashboard";
 
 function App() {
     return (
@@ -28,7 +29,10 @@ function App() {
                 path="/technician"
                 element={<TechnicianDashboard />}
             />
-
+            <Route
+                path="/client"
+                element={<ClientDashboard />}
+            />
         </Routes>
     );
 }

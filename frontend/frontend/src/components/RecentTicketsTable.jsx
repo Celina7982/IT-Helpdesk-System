@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import dashboardService from "../services/dashboardService";
+import ticketService from "../services/ticketService";
 import StatusBadge from "./StatusBadge";
 import PriorityBadge from "./PriorityBadge";
-
+import TicketDetailsModal from "./TicketDetailsModal";
 
 function RecentTicketsTable() {
 
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [showDetails, setShowDetails] = useState(false);
 
-    /**
-     * Load recent tickets from the API.
-     */
-    const loadRecentTickets = async () => {
+    //-------------------------------------------------------
+    // Load Tickets
+    //-------------------------------------------------------
+
+    const loadTickets = async () => {
 
         try {
 
@@ -22,10 +25,11 @@ function RecentTicketsTable() {
             setTickets(data);
 
         }
-        catch (err) {
+        catch (error) {
 
-            console.error(err);
-            setError("Unable to load recent tickets.");
+            console.error(error);
+
+            alert("Unable to load tickets.");
 
         }
         finally {
@@ -38,76 +42,183 @@ function RecentTicketsTable() {
 
     useEffect(() => {
 
-        loadRecentTickets();
+        loadTickets();
 
     }, []);
 
-    if (loading) {
+    //-------------------------------------------------------
+    // Resolve Ticket
+    //-------------------------------------------------------
 
-        return (
+    const resolveTicket = async (ticketId) => {
 
-            <div className="text-center p-4">
+        if (!window.confirm("Resolve this ticket?"))
+            return;
 
-                <div className="spinner-border text-primary"></div>
+        try {
 
-            </div>
+            await ticketService.resolveTicket(ticketId);
 
-        );
+            loadTickets();
 
-    }
+        }
+        catch (error) {
 
-    if (error) {
+            console.error(error);
 
-        return (
+            alert("Unable to resolve ticket.");
 
-            <div className="alert alert-danger">
+        }
 
-                {error}
+    };
 
-            </div>
+    //-------------------------------------------------------
 
-        );
-
-    }
+    if (loading)
+        return <p>Loading...</p>;
 
     return (
 
-        <table className="table table-striped table-hover">
+        <>
 
-            <thead>
+            <table className="table table-hover table-striped">
 
-                <tr>
+                <thead className="table-dark">
 
-                    <th>Ticket #</th>
-                    <th>Subject</th>
-                    <th>Status</th>
-                    <th>Priority</th>
+                    <tr>
 
-                </tr>
+                        <th>Ticket #</th>
 
-            </thead>
+                        <th>Subject</th>
 
-            <tbody>
+                        <th>Customer</th>
 
-                {tickets.map(ticket => (
+                        <th>Assigned Technician</th>
 
-                    <tr key={ticket.ticketId}>
+                        <th>Status</th>
 
-                        <td>{ticket.ticketId}</td>
+                        <th>Priority</th>
 
-                        <td>{ticket.subject}</td>
+                        <th>Created</th>
 
-                        <td><StatusBadge status={ticket.status} /></td>
-
-                        <td><PriorityBadge priority={ticket.priority} /></td>
+                        <th width="250">Actions</th>
 
                     </tr>
 
-                ))}
+                </thead>
 
-            </tbody>
+                <tbody>
 
-        </table>
+                    {
+
+                        tickets.length === 0 ?
+
+                            <tr>
+
+                                <td colSpan="8" className="text-center">
+
+                                    No tickets found.
+
+                                </td>
+
+                            </tr>
+
+                            :
+
+                            tickets.map(ticket => (
+
+                                <tr key={ticket.ticketId}>
+
+                                    <td>{ticket.ticketId}</td>
+
+                                    <td>{ticket.subject}</td>
+
+                                    <td>{ticket.customerName}</td>
+
+                                    <td>{ticket.assignedTechnician}</td>
+
+                                    <td>
+
+                                        <StatusBadge status={ticket.status} />
+
+                                    </td>
+
+                                    <td>
+
+                                        <PriorityBadge priority={ticket.priority} />
+
+                                    </td>
+
+                                    <td>
+
+                                        {new Date(ticket.createdDate).toLocaleDateString()}
+
+                                    </td>
+
+                                    <td>
+
+                                        <button
+                                            className="btn btn-primary btn-sm me-2"
+                                            onClick={() => {
+
+                                                setSelectedTicketId(ticket.ticketId);
+
+                                                setShowDetails(true);
+
+                                            }}
+                                        >
+                                            View
+                                        </button>
+
+                                        <button
+                                            className="btn btn-success btn-sm me-2"
+                                            onClick={() => resolveTicket(ticket.ticketId)}
+                                        >
+                                            Resolve
+                                        </button>
+
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => {
+
+                                                setSelectedTicketId(ticket.ticketId);
+
+                                                setShowJobCard(true);
+
+                                            }}
+                                        >
+                                            Job Card
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                            ))
+
+                    }
+
+                </tbody>
+
+            </table>
+
+            <TicketDetailsModal
+
+                show={showDetails}
+
+                ticketId={selectedTicketId}
+
+                onClose={() => {
+
+                    setShowDetails(false);
+
+                    setSelectedTicketId(null);
+
+                }}
+
+            />
+
+        </>
 
     );
 

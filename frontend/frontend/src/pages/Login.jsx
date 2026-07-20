@@ -38,7 +38,7 @@ function Login() {
             } else if (role === "Technician") {
                 navigate("/technician");
             } else {
-                alert("Client page not created yet.");
+                navigate("/client");
             }
         } catch (err) {
             console.error(err);

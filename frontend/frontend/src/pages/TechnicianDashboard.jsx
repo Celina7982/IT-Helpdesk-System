@@ -1,15 +1,25 @@
 import { useEffect, useState } from "react";
+
 import ticketService from "../services/ticketService";
+
+import TechnicianStats from "../components/TechnicianStats";
+import AvailableTicketsTable from "../components/AvailableTicketsTable";
+import MyTicketsTable from "../components/MyTicketsTable";
+import TicketDetailsModal from "../components/TicketDetailsModal";
 
 function TechnicianDashboard() {
 
     const [availableTickets, setAvailableTickets] = useState([]);
     const [myTickets, setMyTickets] = useState([]);
+
     const [loading, setLoading] = useState(true);
 
-    //-------------------------------------------------------
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+    //--------------------------------------------------------
     // Load Dashboard
-    //-------------------------------------------------------
+    //--------------------------------------------------------
 
     const loadDashboard = async () => {
 
@@ -17,8 +27,11 @@ function TechnicianDashboard() {
 
             setLoading(true);
 
-            const available = await ticketService.getAvailableTickets();
-            const mine = await ticketService.getMyTickets();
+            const available =
+                await ticketService.getAvailableTickets();
+
+            const mine =
+                await ticketService.getMyTickets();
 
             setAvailableTickets(available);
             setMyTickets(mine);
@@ -27,7 +40,8 @@ function TechnicianDashboard() {
         catch (error) {
 
             console.error(error);
-            alert("Unable to load dashboard.");
+
+            alert("Unable to load technician dashboard.");
 
         }
         finally {
@@ -38,9 +52,9 @@ function TechnicianDashboard() {
 
     };
 
-    //-------------------------------------------------------
+    //--------------------------------------------------------
     // Claim Ticket
-    //-------------------------------------------------------
+    //--------------------------------------------------------
 
     const claimTicket = async (ticketId) => {
 
@@ -56,15 +70,16 @@ function TechnicianDashboard() {
         catch (error) {
 
             console.error(error);
+
             alert("Unable to claim ticket.");
 
         }
 
     };
 
-    //-------------------------------------------------------
+    //--------------------------------------------------------
     // Resolve Ticket
-    //-------------------------------------------------------
+    //--------------------------------------------------------
 
     const resolveTicket = async (ticketId) => {
 
@@ -80,19 +95,21 @@ function TechnicianDashboard() {
         catch (error) {
 
             console.error(error);
+
             alert("Unable to resolve ticket.");
 
         }
 
     };
 
-    //-------------------------------------------------------
+    //--------------------------------------------------------
     // Escalate Ticket
-    //-------------------------------------------------------
+    //--------------------------------------------------------
 
     const escalateTicket = async (ticketId) => {
 
-        const reason = prompt("Reason for escalation:");
+        const reason =
+            prompt("Reason for escalation:");
 
         if (!reason)
             return;
@@ -109,13 +126,14 @@ function TechnicianDashboard() {
         catch (error) {
 
             console.error(error);
+
             alert("Unable to escalate ticket.");
 
         }
 
     };
 
-    //-------------------------------------------------------
+    //--------------------------------------------------------
 
     useEffect(() => {
 
@@ -128,213 +146,51 @@ function TechnicianDashboard() {
         <div className="container mt-4">
 
             <h2 className="mb-4">
+
                 Technician Dashboard
+
             </h2>
 
-            <div className="row">
-
-                <div className="col-md-4">
-
-                    <div className="card shadow text-center">
-
-                        <div className="card-body">
-
-                            <h5>Available Tickets</h5>
-
-                            <h2>{availableTickets.length}</h2>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div className="col-md-4">
-
-                    <div className="card shadow text-center">
-
-                        <div className="card-body">
-
-                            <h5>My Tickets</h5>
-
-                            <h2>{myTickets.length}</h2>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div className="col-md-4">
-
-                    <div className="card shadow text-center">
-
-                        <div className="card-body">
-
-                            <h5>Resolved Today</h5>
-
-                            <h2>0</h2>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            {/* Available Tickets */}
-
-            <div className="card shadow mt-4">
-
-                <div className="card-header bg-primary text-white">
-
-                    Available Tickets
-
-                </div>
-
-                <div className="card-body">
-
-                    {loading ? (
-
-                        <p>Loading...</p>
-
-                    ) : (
-
-                        <table className="table table-striped table-hover">
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>ID</th>
-                                    <th>Subject</th>
-                                    <th>Customer</th>
-                                    <th>Priority</th>
-                                    <th></th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                {availableTickets.map(ticket => (
-
-                                    <tr key={ticket.ticketId}>
-
-                                        <td>{ticket.ticketId}</td>
-
-                                        <td>{ticket.subject}</td>
-
-                                        <td>{ticket.customerName}</td>
-
-                                        <td>{ticket.priority}</td>
-
-                                        <td>
-
-                                            <button
-                                                className="btn btn-success btn-sm"
-                                                onClick={() => claimTicket(ticket.ticketId)}
-                                            >
-                                                Claim
-                                            </button>
-
-                                        </td>
-
-                                    </tr>
-
-                                ))}
-
-                            </tbody>
-
-                        </table>
-
-                    )}
-
-                </div>
-
-            </div>
-
-            {/* My Tickets */}
-
-            <div className="card shadow mt-4">
-
-                <div className="card-header bg-success text-white">
-
-                    My Tickets
-
-                </div>
-
-                <div className="card-body">
-
-                    {loading ? (
-
-                        <p>Loading...</p>
-
-                    ) : (
-
-                        <table className="table table-striped table-hover">
-
-                            <thead>
-
-                                <tr>
-
-                                    <th>ID</th>
-                                    <th>Subject</th>
-                                    <th>Status</th>
-                                    <th>Priority</th>
-                                    <th></th>
-
-                                </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                                {myTickets.map(ticket => (
-
-                                    <tr key={ticket.ticketId}>
-
-                                        <td>{ticket.ticketId}</td>
-
-                                        <td>{ticket.subject}</td>
-
-                                        <td>{ticket.status}</td>
-
-                                        <td>{ticket.priority}</td>
-
-                                        <td>
-
-                                            <button
-                                                className="btn btn-primary btn-sm me-2"
-                                                onClick={() => resolveTicket(ticket.ticketId)}
-                                            >
-                                                Resolve
-                                            </button>
-
-                                            <button
-                                                className="btn btn-warning btn-sm"
-                                                onClick={() => escalateTicket(ticket.ticketId)}
-                                            >
-                                                Escalate
-                                            </button>
-
-                                        </td>
-
-                                    </tr>
-
-                                ))}
-
-                            </tbody>
-
-                        </table>
-
-                    )}
-
-                </div>
-
-            </div>
+            <TechnicianStats
+                availableTickets={availableTickets}
+                myTickets={myTickets}
+            />
+
+            <AvailableTicketsTable
+                loading={loading}
+                tickets={availableTickets}
+                onView={(ticketId) => {
+
+                    setSelectedTicketId(ticketId);
+                    setShowDetailsModal(true);
+
+                }}
+                onClaim={claimTicket}
+            />
+
+            <MyTicketsTable
+                loading={loading}
+                tickets={myTickets}
+                onView={(ticketId) => {
+
+                    setSelectedTicketId(ticketId);
+                    setShowDetailsModal(true);
+
+                }}
+                onResolve={resolveTicket}
+                onEscalate={escalateTicket}
+            />
+
+            <TicketDetailsModal
+                show={showDetailsModal}
+                ticketId={selectedTicketId}
+                onClose={() => {
+
+                    setShowDetailsModal(false);
+                    setSelectedTicketId(null);
+
+                }}
+            />
 
         </div>
 

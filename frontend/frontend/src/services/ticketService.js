@@ -2,6 +2,26 @@ import api from "./api";
 
 const ticketService = {
 
+    //-------------------------------------------------------
+    // Get All Tickets (Admin)
+    //-------------------------------------------------------
+
+    getAllTickets: async () => {
+
+        const response = await api.get("/Ticket", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        return response.data;
+
+    },
+
+    //-------------------------------------------------------
+    // Available Tickets
+    //-------------------------------------------------------
+
     getAvailableTickets: async () => {
 
         const response = await api.get("/Ticket/available", {
@@ -11,7 +31,12 @@ const ticketService = {
         });
 
         return response.data;
+
     },
+
+    //-------------------------------------------------------
+    // My Tickets
+    //-------------------------------------------------------
 
     getMyTickets: async () => {
 
@@ -22,7 +47,47 @@ const ticketService = {
         });
 
         return response.data;
+
     },
+
+    //-------------------------------------------------------
+    // Escalated Tickets
+    //-------------------------------------------------------
+
+    getEscalatedTickets: async () => {
+
+        const response = await api.get("/Ticket/escalated", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        return response.data;
+
+    },
+
+    //-------------------------------------------------------
+    // Ticket Details
+    //-------------------------------------------------------
+
+    getTicketDetails: async (ticketId) => {
+
+        const response = await api.get(
+            `/Ticket/${ticketId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+
+        return response.data;
+
+    },
+
+    //-------------------------------------------------------
+    // Claim Ticket
+    //-------------------------------------------------------
 
     claimTicket: async (ticketId) => {
 
@@ -35,7 +100,12 @@ const ticketService = {
                 }
             }
         );
+
     },
+
+    //-------------------------------------------------------
+    // Resolve Ticket
+    //-------------------------------------------------------
 
     resolveTicket: async (ticketId) => {
 
@@ -48,7 +118,12 @@ const ticketService = {
                 }
             }
         );
+
     },
+
+    //-------------------------------------------------------
+    // Escalate Ticket
+    //-------------------------------------------------------
 
     escalateTicket: async (ticketId, escalationReason) => {
 
@@ -63,12 +138,20 @@ const ticketService = {
                 }
             }
         );
+
     },
 
-    getEscalatedTickets: async () => {
+    //-------------------------------------------------------
+    // Assign Ticket
+    //-------------------------------------------------------
 
-        const response = await api.get(
-            "/Ticket/escalated",
+    assignTicket: async (ticketId, assignedToUserId) => {
+
+        await api.put(
+            `/Ticket/${ticketId}/assign`,
+            {
+                assignedToUserId
+            },
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -76,7 +159,23 @@ const ticketService = {
             }
         );
 
-        return response.data;
+    },
+
+    //-------------------------------------------------------
+    // Delete Ticket
+    //-------------------------------------------------------
+
+    deleteTicket: async (ticketId) => {
+
+        await api.delete(
+            `/Ticket/${ticketId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+
     }
 
 };

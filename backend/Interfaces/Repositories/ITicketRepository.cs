@@ -1,12 +1,35 @@
 ﻿using IThelpdesk.Models;
+using IThelpdesk.DTOs.Ticket;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
     public interface ITicketRepository
     {
-        Task<IEnumerable<Ticket>> GetAllAsync();
+        //-------------------------------------------------------
+        // Ticket Lists
+        //-------------------------------------------------------
+
+        Task<IEnumerable<TicketResponseDto>> GetAllAsync();
+
+        Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
+
+        //-------------------------------------------------------
+        // Single Ticket
+        //-------------------------------------------------------
 
         Task<Ticket?> GetByIdAsync(int id);
+
+        Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
+
+        //-------------------------------------------------------
+        // CRUD
+        //-------------------------------------------------------
 
         Task AddAsync(Ticket ticket);
 

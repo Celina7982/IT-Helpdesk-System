@@ -8,10 +8,12 @@ namespace IThelpdesk.Services
     public class TicketService : ITicketService
     {
         private readonly ITicketRepository _ticketRepository;
+        private readonly IEmailService _emailService;
 
-        public TicketService(ITicketRepository ticketRepository)
+        public TicketService(ITicketRepository ticketRepository, IEmailService emailService)
         {
             _ticketRepository = ticketRepository;
+            _emailService = emailService;
         }
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
@@ -37,6 +39,24 @@ namespace IThelpdesk.Services
         {
             await _ticketRepository.AddAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
+            await _emailService.SendEmailAsync(
+       "support@yourcompany.com",
+       $"New Ticket Created: #{ticket.TicketId}",
+       $@"
+            <h2>New Support Ticket</h2>
+
+            <p>A new support ticket has been created.</p>
+
+            <p><strong>Ticket ID:</strong> {ticket.TicketId}</p>
+            <p><strong>Subject:</strong> {ticket.Subject}</p>
+            <p><strong>Customer:</strong> {ticket.CustomerName}</p>
+            <p><strong>Priority:</strong> {ticket.Priority}</p>
+            <p><strong>Category:</strong> {ticket.Category}</p>
+
+            <p>
+                Please log into the IT Helpdesk System to view the ticket.
+            </p>
+        ");
         }
 
         public async Task UpdateTicketAsync(Ticket ticket)
@@ -157,7 +177,10 @@ namespace IThelpdesk.Services
                 CreatedDate = ticket.CreatedDate,
                 IsEscalated = ticket.IsEscalated
             };
+
         }
+
+
 
         public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
         {

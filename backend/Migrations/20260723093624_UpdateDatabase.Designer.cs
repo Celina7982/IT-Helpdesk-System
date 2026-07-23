@@ -4,6 +4,7 @@ using IThelpdesk.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260723093624_UpdateDatabase")]
+    partial class UpdateDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -102,10 +105,10 @@ namespace IThelpdesk.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("TicketId")
+                    b.Property<int>("TicketId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TicketNum")
+                    b.Property<int?>("TicketId1")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -115,7 +118,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TicketId");
 
-                    b.HasIndex("TicketNum");
+                    b.HasIndex("TicketId1");
 
                     b.HasIndex("UserId");
 
@@ -181,15 +184,15 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
                 {
-                    b.HasOne("IThelpdesk.Models.Ticket", null)
-                        .WithMany("Comments")
-                        .HasForeignKey("TicketId");
-
                     b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
                         .WithMany()
-                        .HasForeignKey("TicketNum")
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.Ticket", null)
+                        .WithMany("Comments")
+                        .HasForeignKey("TicketId1");
 
                     b.HasOne("IThelpdesk.Models.User", "User")
                         .WithMany()

@@ -15,7 +15,7 @@ public class CommentService : ICommentService
     {
         var ticketComment = new TicketComment
         {
-            TicketId = ticketId,
+            TicketNum = ticketId,
             UserId = userId,
             Comment = comment
         };

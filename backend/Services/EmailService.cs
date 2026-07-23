@@ -21,42 +21,37 @@ namespace IThelpdesk.Services
         {
             var message = new MimeMessage();
 
-            message.From.Add(
-                new MailboxAddress(
-                    _configuration["Smtp:SenderName"],
-                    _configuration["Smtp:SenderEmail"]
-                )
-            );
+            // Sender configuration
+            string senderName = _configuration["Smtp:SenderName"] ?? "LBC IT Helpdesk";
+            string senderEmail = _configuration["Smtp:SenderEmail"] ?? "Unreleasedmusic090@gmail.com";
 
-            message.To.Add(
-                MailboxAddress.Parse(recipientEmail)
-            );
-
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(MailboxAddress.Parse(recipientEmail));
             message.Subject = subject;
 
             var bodyBuilder = new BodyBuilder
             {
                 HtmlBody = htmlBody,
-                TextBody = "This email was sent by the IT Helpdesk System."
+                TextBody = "Notification from IT Helpdesk System."
             };
 
             message.Body = bodyBuilder.ToMessageBody();
 
             using (var client = new SmtpClient())
             {
-                await client.ConnectAsync(
-                    _configuration["Smtp:Host"],
-                    int.Parse(_configuration["Smtp:Port"]!),
-                    SecureSocketOptions.StartTls
-                );
+                // Connect to Gmail SMTP
+                string host = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+                int port = int.Parse(_configuration["Smtp:Port"] ?? "587");
 
-                await client.AuthenticateAsync(
-                    _configuration["Smtp:Username"],
-                    _configuration["Smtp:Password"]
-                );
+                await client.ConnectAsync(host, port, SecureSocketOptions.StartTls);
+
+                // Authenticate with App Password
+                string username = _configuration["Smtp:Username"] ?? "Unreleasedmusic090@gmail.com";
+                string password = _configuration["Smtp:Password"]?? "kgqm pqfq rejk tfzf"; // Gmail App Password
+
+                await client.AuthenticateAsync(username, password);
 
                 await client.SendAsync(message);
-
                 await client.DisconnectAsync(true);
             }
         }

@@ -9,7 +9,7 @@ namespace IThelpdesk.Models
         public int CommentId { get; set; }
 
         [Required]
-        public int TicketId { get; set; }
+        public int TicketNum { get; set; }
 
         [Required]
         public int UserId { get; set; }
@@ -20,7 +20,7 @@ namespace IThelpdesk.Models
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey(nameof(TicketId))]
+        [ForeignKey(nameof(TicketNum))]
         public Ticket? Ticket { get; set; }
 
         [ForeignKey(nameof(UserId))]

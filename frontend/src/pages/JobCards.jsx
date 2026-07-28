@@ -66,14 +66,36 @@ function JobCards() {
     // Complete list returned by the API.
     const [jobCards, setJobCards] = useState([]);
 
+    const [pageNumber, setPageNumber] = useState(1);
+
+    const [pageSize, setPageSize] = useState(10);
+
+    const [totalCount, setTotalCount] = useState(0);
+
     // Shows loading spinner while data loads.
     const [loading, setLoading] = useState(true);
 
     // Search textbox.
     const [searchTerm, setSearchTerm] = useState("");
 
+//--------------------------------------------------
+// Debounced Search
+//--------------------------------------------------
+
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
     // Current selected status.
     const [statusFilter, setStatusFilter] = useState("All");
+
+   const [mineOnly, setMineOnly] = useState(false);
+
+   //--------------------------------------------------
+// Sorting
+//--------------------------------------------------
+
+const [sortBy, setSortBy] = useState("dateCreated");
+
+const [sortDirection, setSortDirection] = useState("desc");
 
     // Selected dashboard card.
     // Used for highlighting the active card.
@@ -87,7 +109,42 @@ function JobCards() {
 const [showCompleteModal, setShowCompleteModal] = useState(false);
 
 const [selectedJobCardId, setSelectedJobCardId] = useState(null);
-    //--------------------------------------------------
+    
+
+
+
+//--------------------------------------------------
+// Debounce Search
+//--------------------------------------------------
+
+useEffect(() => {
+
+    const timer = setTimeout(() => {
+
+        setDebouncedSearch(searchTerm);
+
+    }, 500);
+
+    return () => clearTimeout(timer);
+
+}, [searchTerm]);
+
+
+
+useEffect(() => {
+
+    setPageNumber(1);
+
+}, [
+
+    debouncedSearch,
+    statusFilter,
+    sortBy,
+    sortDirection,
+    mineOnly
+
+]);
+//--------------------------------------------------
     // Load Job Cards
     //--------------------------------------------------
     //
@@ -95,11 +152,21 @@ const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     //
     //--------------------------------------------------
 
-    useEffect(() => {
+ useEffect(() => {
 
-        loadJobCards();
+    loadJobCards();
 
-    }, []);
+}, [
+
+    mineOnly,
+    statusFilter,
+    debouncedSearch,
+    sortBy,
+    sortDirection,
+    pageNumber,
+    pageSize
+
+]);
 
     //--------------------------------------------------
     // Retrieve Job Cards
@@ -110,29 +177,51 @@ const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     //
     //--------------------------------------------------
 
-    const loadJobCards = async () => {
+ const loadJobCards = async () => {
 
-        try {
+    setLoading(true);
 
-            const data = await jobCardService.getAll();
+    try {
 
-            setJobCards(data);
+        const data = await jobCardService.getAll({
 
-        }
-        catch (error) {
+    mine: mineOnly,
 
-            console.error(error);
+    status: statusFilter === "All"
+        ? ""
+        : statusFilter,
 
-            alert("Unable to load Job Cards.");
+    assignedTo: "",
 
-        }
-        finally {
+    search: debouncedSearch,
 
-            setLoading(false);
+    sortBy,
 
-        }
+    sortDirection,
 
-    };
+    pageNumber,
+
+    pageSize
+
+});
+
+setJobCards(data.items);
+
+setTotalCount(data.totalCount);
+
+    }
+    catch (error) {
+
+        console.error(error);
+        alert("Unable to load Job Cards.");
+
+    }
+    finally {
+
+        setLoading(false);
+
+    }
+};
 
     //--------------------------------------------------
     // Status Badge Colours
@@ -174,8 +263,7 @@ const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     //
     //--------------------------------------------------
 
-    const totalJobs =
-        jobCards.length;
+    const totalJobs = totalCount;
 
     const openJobs =
         jobCards.filter(job => job.status === "Open").length;
@@ -189,6 +277,10 @@ const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     const cancelledJobs =
         jobCards.filter(job => job.status === "Cancelled").length;
 
+   
+
+
+
     //--------------------------------------------------
     // Search + Filter
     //--------------------------------------------------
@@ -200,59 +292,8 @@ const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     //
     //--------------------------------------------------
 
-    const filteredJobCards = jobCards.filter(job => {
-
-        //--------------------------------------------------
-        // Search
-        //--------------------------------------------------
-
-       //--------------------------------------------------
-// Safe Search
-//
-// Some Job Cards may have null values.
-// Convert null values into empty strings before
-// searching.
-//--------------------------------------------------
-const search = searchTerm.trim().toLowerCase();
-
-const jobNumber =
-    (job.jobNumber ?? "").toLowerCase();
-
-const customer =
-    (job.customerName ?? "").toLowerCase();
-
-const company =
-    (job.companyName ?? "").toLowerCase();
-
-const subject =
-    (job.subject ?? "").toLowerCase();
-
-const matchesSearch =
-
-    jobNumber.includes(search) ||
-
-    customer.includes(search) ||
-
-    company.includes(search) ||
-
-    subject.includes(search);
-        //--------------------------------------------------
-        // Status
-        //--------------------------------------------------
-
-        const matchesStatus =
-
-            statusFilter === "All" ||
-
-            job.status === statusFilter;
-
-        //--------------------------------------------------
-        // Display rows that satisfy BOTH filters.
-        //--------------------------------------------------
-
-        return matchesSearch && matchesStatus;
-
-    });
+   const filteredJobCards = jobCards;
+        
 
     //--------------------------------------------------
     // Dashboard Card Click
@@ -278,11 +319,8 @@ const matchesSearch =
 //--------------------------------------------------
 // Current User Role
 //--------------------------------------------------
-
 const role = (() => {
-
     try {
-
         const token = localStorage.getItem("token");
 
         if (!token)
@@ -296,13 +334,9 @@ const role = (() => {
             ""
         );
 
-    }
-    catch {
-
+    } catch {
         return "";
-
     }
-
 })();
 
 //--------------------------------------------------
@@ -401,11 +435,33 @@ const confirmCompleteJobCard = async () => {
 // Print Job Card
 //--------------------------------------------------
 
-const printJobCard = (jobCardId) => {
+const printJobCard = async (jobCardId) => {
+    try {
+        const pdf = await jobCardService.downloadPdf(jobCardId);
 
-    alert("Print functionality coming soon.");
+        const url = window.URL.createObjectURL(
+            new Blob([pdf], { type: "application/pdf" })
+        );
 
-};;
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = `JobCard-${jobCardId}.pdf`;
+
+        document.body.appendChild(link);
+
+        link.click();
+
+        link.remove();
+
+        window.URL.revokeObjectURL(url);
+    }
+    catch (error) {
+        console.error(error);
+        alert("Unable to download Job Card PDF.");
+    }
+};
+
     //--------------------------------------------------
     // Return JSX
     //--------------------------------------------------
@@ -423,7 +479,7 @@ const printJobCard = (jobCardId) => {
                 </h2>
 
                 <p className="text-muted">
-                    View and manage all Job Cards assigned to you.
+                    View and manage Job Cards.
                 </p>
 
             </div>
@@ -601,69 +657,130 @@ const printJobCard = (jobCardId) => {
                 Search + Filter
             ==================================================*/}
 
-            <div className="row mb-4">
+         <div className="row mb-4">
 
-                <div className="col-md-8 mb-2">
+    {/* Search */}
 
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search Job Number, Customer, Company or Subject..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+    <div className="col-lg-3 col-md-6 mb-2">
 
-                </div>
+        <input
+            type="text"
+            className="form-control"
+            placeholder="Search Job Number, Customer, Company or Subject..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
-                <div className="col-md-4">
+    </div>
 
-                    <select
-                        className="form-select"
-                        value={statusFilter}
-                        onChange={(e) => {
+    {/* Status */}
 
-                            setStatusFilter(e.target.value);
+    <div className="col-lg-2 col-md-6 mb-2">
 
-                            setSelectedCard(e.target.value);
+        <select
+            className="form-select"
+            value={statusFilter}
+            onChange={(e) => {
 
-                        }}
-                    >
+                setStatusFilter(e.target.value);
 
-                        <option value="All">
+                setSelectedCard(e.target.value);
 
-                            All Statuses
+            }}
+        >
 
-                        </option>
+            <option value="All">All Statuses</option>
 
-                        <option value="Open">
+            <option value="Open">Open</option>
 
-                            Open
+            <option value="In Progress">In Progress</option>
 
-                        </option>
+            <option value="Completed">Completed</option>
 
-                        <option value="In Progress">
+            <option value="Cancelled">Cancelled</option>
 
-                            In Progress
+        </select>
 
-                        </option>
+    </div>
 
-                        <option value="Completed">
+    {/* Sort By */}
 
-                            Completed
+    <div className="col-lg-2 col-md-6 mb-2">
 
-                        </option>
+        <select
+            className="form-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+        >
 
-                        <option value="Cancelled">
+            <option value="dateCreated">Date Created</option>
 
-                            Cancelled
+            <option value="jobNumber">Job Number</option>
 
-                        </option>
+            <option value="customer">Customer</option>
 
-                    </select>
+            <option value="company">Company</option>
 
-                </div>
+            <option value="technician">Technician</option>
+
+            <option value="status">Status</option>
+
+        </select>
+
+    </div>
+
+    {/* Sort Direction */}
+
+    <div className="col-lg-2 col-md-6 mb-2">
+
+        <select
+            className="form-select"
+            value={sortDirection}
+            onChange={(e) => setSortDirection(e.target.value)}
+        >
+
+            <option value="desc">
+                Descending
+            </option>
+
+            <option value="asc">
+                Ascending
+            </option>
+
+        </select>
+
+    </div>
+
+    {/* Mine Only */}
+
+    {role === "Admin" && (
+
+        <div className="col-lg-3 d-flex align-items-center">
+
+            <div className="form-check">
+
+                <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="mineOnly"
+                    checked={mineOnly}
+                    onChange={(e) => setMineOnly(e.target.checked)}
+                />
+
+                <label
+                    className="form-check-label"
+                    htmlFor="mineOnly"
+                >
+                    Mine Only
+                </label>
 
             </div>
+
+        </div>
+
+    )}
+
+</div>
 
             {/*==================================================
                 Loading Spinner
@@ -835,6 +952,57 @@ const printJobCard = (jobCardId) => {
                             </table>
 
                         </div>
+<div className="d-flex justify-content-between align-items-center p-3">
+
+    <div className="d-flex align-items-center">
+
+        Showing page {pageNumber} of {Math.max(1, Math.ceil(totalCount / pageSize))}
+
+    </div>
+
+    <div>
+
+        <button
+            className="btn btn-outline-secondary me-2"
+            disabled={pageNumber === 1}
+            onClick={() => setPageNumber(pageNumber - 1)}
+        >
+            Previous
+        </button>
+
+        <button
+            className="btn btn-outline-primary"
+            disabled={pageNumber * pageSize >= totalCount}
+            onClick={() => setPageNumber(pageNumber + 1)}
+        >
+            Next
+        </button>
+
+        <select
+    className="form-select ms-2"
+    style={{ width: "120px" }}
+    value={pageSize}
+    onChange={(e) => {
+
+        setPageSize(Number(e.target.value));
+        setPageNumber(1);
+
+    }}
+>
+
+    <option value={10}>10</option>
+
+    <option value={20}>20</option>
+
+    <option value={50}>50</option>
+
+    <option value={100}>100</option>
+
+</select>
+
+    </div>
+
+</div>
 
                     </div>
 

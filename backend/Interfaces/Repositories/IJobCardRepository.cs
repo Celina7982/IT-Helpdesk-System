@@ -1,5 +1,6 @@
 ﻿using IThelpdesk.DTOs.JobCard;
 using IThelpdesk.Models;
+using IThelpdesk.DTOs.Common;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
@@ -9,14 +10,49 @@ namespace IThelpdesk.Interfaces.Repositories
         // Job Cards
         //--------------------------------------------------
 
+        /// <summary>
+        /// Returns all Job Cards.
+        /// </summary>
         Task<IEnumerable<JobCard>> GetAllAsync();
 
-        // Returns lightweight data for the Job Card List page.
-        Task<IEnumerable<JobCardListDto>> GetJobCardListAsync();
+        /// <summary>
+        /// Returns Job Cards for the Job Card List page.
+        /// Supports filtering, searching and sorting.
+        /// </summary>
+        Task<PagedResultDto<JobCardListDto>> GetJobCardListAsync(
+            int? technicianId,
+            string? status,
+            int? assignedTo,
+            string? search,
+            string? sortBy,
+            string? sortDirection,
+            int pageNumber,
+            int pageSize);
 
+        /// <summary>
+        /// Returns a Job Card by Id.
+        /// </summary>
         Task<JobCard?> GetByIdAsync(int id);
 
+        /// <summary>
+        /// Returns the Job Card linked to a Ticket.
+        /// </summary>
+        Task<JobCard?> GetByTicketIdAsync(int ticketId);
+
+        /// <summary>
+        /// Returns the latest Job Card.
+        /// Used for Job Number generation.
+        /// </summary>
+        Task<JobCard?> GetLatestJobCardAsync();
+
+        /// <summary>
+        /// Returns complete Job Card details.
+        /// </summary>
         Task<JobCardDetailsDto?> GetDetailsAsync(int id);
+
+        //--------------------------------------------------
+        // CRUD
+        //--------------------------------------------------
 
         Task AddAsync(JobCard jobCard);
 
@@ -27,14 +63,10 @@ namespace IThelpdesk.Interfaces.Repositories
         Task SaveChangesAsync();
 
         //--------------------------------------------------
-        // Helpers
+        // Validation
         //--------------------------------------------------
 
         Task<bool> JobNumberExistsAsync(string jobNumber);
-
-        Task<JobCard?> GetByTicketIdAsync(int ticketId);
-
-        Task<JobCard?> GetLatestJobCardAsync();
 
         //--------------------------------------------------
         // Labour
@@ -43,14 +75,5 @@ namespace IThelpdesk.Interfaces.Repositories
         Task AddLabourEntryAsync(JobCardLabour labour);
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId);
-
-
-
-        //=============================
-        //Job card list
-        //=============================
-
-        // Returns all Job Cards assigned to a technician.
-        Task<IEnumerable<JobCardListDto>> GetJobCardListByTechnicianAsync(int technicianId);
     }
 }

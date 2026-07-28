@@ -13,11 +13,14 @@ namespace IThelpdesk.Controllers
     {
         private readonly IJobCardService _jobCardService;
 
-        public JobCardController(IJobCardService jobCardService)
+        private readonly IJobCardPdfService _jobCardPdfService;
+        public JobCardController(
+         IJobCardService jobCardService,
+         IJobCardPdfService jobCardPdfService)
         {
             _jobCardService = jobCardService;
+            _jobCardPdfService = jobCardPdfService;
         }
-
 
         //---------------------------------------------------------
         // GET JOB CARD LIST
@@ -25,28 +28,42 @@ namespace IThelpdesk.Controllers
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+        [FromQuery] bool mine = false,
+        [FromQuery] string? status = null,
+        [FromQuery] int? assignedTo = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = "desc",
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
         {
             //---------------------------------------------------------
-            // Retrieve the logged-in user's ID and Role from the JWT.
+            // Logged in User
             //---------------------------------------------------------
 
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(role))
+            if (string.IsNullOrEmpty(userIdClaim) ||
+                string.IsNullOrEmpty(role))
             {
                 return Unauthorized();
             }
 
             int userId = int.Parse(userIdClaim);
 
-            //---------------------------------------------------------
-            // Administrators receive all Job Cards.
-            // Technicians receive only their assigned Job Cards.
-            //---------------------------------------------------------
-
-            var jobCards = await _jobCardService.GetJobCardListAsync(userId, role);
+            var jobCards = await _jobCardService.GetJobCardListAsync(
+            userId,
+            role,
+            mine,
+            status,
+            assignedTo,
+            search,
+            sortBy,
+            sortDirection,
+            pageNumber,
+            pageSize);
 
             return Ok(jobCards);
         }
@@ -68,7 +85,23 @@ namespace IThelpdesk.Controllers
         }
 
         //---------------------------------------------------------
-        // CREATE JOB CARD FROM TICKET
+        // EXPORT JOB CARD PDF
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpGet("{id}/pdf")]
+        public async Task<IActionResult> ExportPdf(int id)
+        {
+            var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
+
+            return File(
+                pdf,
+                "application/pdf",
+                $"JobCard-{id}.pdf");
+        }
+
+        //---------------------------------------------------------
+        // CREATE JOB CARD
         //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
@@ -82,19 +115,20 @@ namespace IThelpdesk.Controllers
         }
 
         //---------------------------------------------------------
-        // ADD LABOUR ENTRY
+        // ADD LABOUR
         //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("{id}/labour")]
         public async Task<IActionResult> AddLabourEntry(
-    int id,
-    AddLabourEntryDto dto)
+            int id,
+            AddLabourEntryDto dto)
         {
             await _jobCardService.AddLabourEntryAsync(id, dto);
 
             return Ok();
         }
+
         //---------------------------------------------------------
         // UPDATE JOB CARD
         //---------------------------------------------------------
@@ -113,39 +147,21 @@ namespace IThelpdesk.Controllers
         //---------------------------------------------------------
         // COMPLETE JOB CARD
         //---------------------------------------------------------
-        //
-        // Marks the specified Job Card as completed.
-        //
-        // This endpoint is called when the technician clicks the
-        // "Complete" button in the React application.
-        //
-        //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPut("{id}/complete")]
         public async Task<IActionResult> Complete(int id)
         {
-            //---------------------------------------------------------
-            // Call the Service Layer
-            //---------------------------------------------------------
-
             await _jobCardService.CompleteJobCardAsync(id);
-
-            //---------------------------------------------------------
-            // Return HTTP 204 (No Content)
-            //---------------------------------------------------------
 
             return NoContent();
         }
-
-
-        
 
         //---------------------------------------------------------
         // DELETE JOB CARD
         //---------------------------------------------------------
 
-        [Authorize(Roles = "Admin,Technician")]
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

@@ -4,9 +4,13 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using IThelpdesk.Repositories;
 using IThelpdesk.Services;
+using IThelpdesk.Services.Pdf;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
+using QuestPDF.Infrastructure;
+
 //using Microsoft.OpenApi;
 
 
@@ -76,6 +80,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
 
+builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
+
 /*
  When AuthController asks for an IAuthService
 
@@ -140,6 +146,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Configure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

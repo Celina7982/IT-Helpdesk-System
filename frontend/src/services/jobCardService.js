@@ -4,35 +4,70 @@
 
 import api from "./api";
 
+
+
 //----------------------------------------------------
-// Get All Job Cards
+// Get Job Cards
 //----------------------------------------------------
 //
-// Retrieves the Job Cards that the logged-in user
-// is allowed to view.
+// Optional filters:
 //
-// Administrators:
-//     Receive all Job Cards.
-//
-// Technicians:
-//     Receive only their assigned Job Cards.
+// mine=true
+// status=Open
+// assignedTo=5
+// search=laptop
 //
 //----------------------------------------------------
 
-const getAll = async () => {
 
-    const response = await api.get("/JobCard");
+
+//----------------------------------------------------
+// Get Job Cards
+//----------------------------------------------------
+
+const getAll = async (filters = {}) => {
+
+    const params = {};
+
+    if (filters.mine !== undefined)
+        params.mine = filters.mine;
+
+    if (filters.status)
+        params.status = filters.status;
+
+    if (filters.assignedTo)
+        params.assignedTo = filters.assignedTo;
+
+    if (filters.search)
+        params.search = filters.search;
+
+    //----------------------------------------
+    // Sorting
+    //----------------------------------------
+
+    if (filters.sortBy)
+        params.sortBy = filters.sortBy;
+
+    if (filters.sortDirection)
+        params.sortDirection = filters.sortDirection;
+
+    //----------------------------------------
+    // Pagination
+    //----------------------------------------
+
+    params.pageNumber = filters.pageNumber ?? 1;
+    params.pageSize = filters.pageSize ?? 10;
+
+    const response = await api.get("/JobCard", {
+        params
+    });
 
     return response.data;
-
 };
+
 
 //----------------------------------------------------
 // Get Job Card Details
-//----------------------------------------------------
-//
-// Retrieves the full details of a single Job Card.
-//
 //----------------------------------------------------
 
 const getDetails = async (id) => {
@@ -44,11 +79,7 @@ const getDetails = async (id) => {
 };
 
 //----------------------------------------------------
-// Create Job Card From Ticket
-//----------------------------------------------------
-//
-// Creates a new Job Card using an existing Ticket.
-//
+// Create Job Card
 //----------------------------------------------------
 
 const createFromTicket = async (ticketId) => {
@@ -67,10 +98,6 @@ const createFromTicket = async (ticketId) => {
 //----------------------------------------------------
 // Update Job Card
 //----------------------------------------------------
-//
-// Updates an existing Job Card.
-//
-//----------------------------------------------------
 
 const update = async (id, jobCard) => {
 
@@ -80,13 +107,6 @@ const update = async (id, jobCard) => {
 
 //----------------------------------------------------
 // Complete Job Card
-//----------------------------------------------------
-//
-// Marks a Job Card as completed.
-//
-// API Endpoint:
-// PUT /api/JobCard/{id}/complete
-//
 //----------------------------------------------------
 
 const completeJobCard = async (jobCardId) => {
@@ -98,10 +118,6 @@ const completeJobCard = async (jobCardId) => {
 //----------------------------------------------------
 // Add Labour Entry
 //----------------------------------------------------
-//
-// Adds a Labour Entry to the specified Job Card.
-//
-//----------------------------------------------------
 
 const addLabourEntry = async (jobCardId, labourEntry) => {
 
@@ -111,6 +127,24 @@ const addLabourEntry = async (jobCardId, labourEntry) => {
     );
 
 };
+
+
+//----------------------------------------------------
+// print Job Card
+//----------------------------------------------------
+
+const downloadPdf = async (jobCardId) => {
+    const response = await api.get(
+        `/JobCard/${jobCardId}/pdf`,
+        {
+            responseType: "blob"
+        }
+    );
+
+    return response.data;
+};
+
+
 
 //----------------------------------------------------
 // Export Service
@@ -128,8 +162,12 @@ const jobCardService = {
 
     completeJobCard,
 
-    addLabourEntry
+    addLabourEntry,
+
+    downloadPdf 
 
 };
+
+
 
 export default jobCardService;

@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using IThelpdesk.Data;
+﻿using IThelpdesk.Data;
+using IThelpdesk.DTOs.Common;
 using IThelpdesk.DTOs.JobCard;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace IThelpdesk.Repositories
 {
@@ -26,17 +27,134 @@ namespace IThelpdesk.Repositories
                 .ToListAsync();
         }
 
-
         //--------------------------------------------------
-        // Get Job Card List
+        // Job Card List
         //--------------------------------------------------
 
-        public async Task<IEnumerable<JobCardListDto>> GetJobCardListAsync()
+        public async Task<PagedResultDto<JobCardListDto>> GetJobCardListAsync(
+           int? technicianId,
+            string? status,
+            int? assignedTo,
+            string? search,
+            string? sortBy,
+            string? sortDirection,
+            int pageNumber,
+            int pageSize)
         {
-            return await _context.JobCards
+            var query = _context.JobCards
+                .Include(j => j.Ticket)
+                .Include(j => j.AssignedTechnician)
+                .AsQueryable();
 
-                .OrderByDescending(j => j.DateCreated)
+            //--------------------------------------------------
+            // Technician Filter
+            //--------------------------------------------------
 
+            if (technicianId.HasValue)
+            {
+                query = query.Where(j =>
+                    j.AssignedTechnicianId == technicianId.Value);
+            }
+
+            //--------------------------------------------------
+            // Assigned Technician Filter
+            //--------------------------------------------------
+
+            if (assignedTo.HasValue)
+            {
+                query = query.Where(j =>
+                    j.AssignedTechnicianId == assignedTo.Value);
+            }
+
+            //--------------------------------------------------
+            // Status Filter
+            //--------------------------------------------------
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(j => j.Status == status);
+            }
+
+            //--------------------------------------------------
+            // Search
+            //--------------------------------------------------
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(j =>
+
+                    j.JobNumber.Contains(search)
+
+                    ||
+
+                    (j.Ticket != null &&
+
+                    (
+                        j.Ticket.CustomerName.Contains(search)
+
+                        ||
+
+                        j.Ticket.CompanyName.Contains(search)
+
+                        ||
+
+                        j.Ticket.Subject.Contains(search)
+                    )));
+            }
+
+            //--------------------------------------------------
+            // Sorting
+            //--------------------------------------------------
+
+            query = (sortBy?.ToLower(), sortDirection?.ToLower()) switch
+            {
+                ("jobnumber", "asc") =>
+                    query.OrderBy(j => j.JobNumber),
+
+                ("jobnumber", "desc") =>
+                    query.OrderByDescending(j => j.JobNumber),
+
+                ("customer", "asc") =>
+                    query.OrderBy(j => j.Ticket!.CustomerName),
+
+                ("customer", "desc") =>
+                    query.OrderByDescending(j => j.Ticket!.CustomerName),
+
+                ("company", "asc") =>
+                    query.OrderBy(j => j.Ticket!.CompanyName),
+
+                ("company", "desc") =>
+                    query.OrderByDescending(j => j.Ticket!.CompanyName),
+
+                ("status", "asc") =>
+                    query.OrderBy(j => j.Status),
+
+                ("status", "desc") =>
+                    query.OrderByDescending(j => j.Status),
+
+                ("technician", "asc") =>
+                    query.OrderBy(j => j.AssignedTechnician!.FirstName),
+
+                ("technician", "desc") =>
+                    query.OrderByDescending(j => j.AssignedTechnician!.FirstName),
+
+                ("datecreated", "asc") =>
+                    query.OrderBy(j => j.DateCreated),
+
+                _ =>
+                    query.OrderByDescending(j => j.DateCreated)
+            };
+
+            //--------------------------------------------------
+            // Return DTO List
+            //--------------------------------------------------
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(j => new JobCardListDto
                 {
                     JobCardId = j.JobCardId,
@@ -45,23 +163,27 @@ namespace IThelpdesk.Repositories
 
                     TicketId = j.TicketId,
 
-                    CustomerName = j.Ticket != null
-                        ? j.Ticket.CustomerName
-                        : string.Empty,
+                    CustomerName =
+                        j.Ticket != null
+                            ? j.Ticket.CustomerName
+                            : "",
 
-                    CompanyName = j.Ticket != null
-                        ? j.Ticket.CompanyName
-                        : string.Empty,
+                    CompanyName =
+                        j.Ticket != null
+                            ? j.Ticket.CompanyName
+                            : "",
 
-                    Subject = j.Ticket != null
-                        ? j.Ticket.Subject
-                        : string.Empty,
+                    Subject =
+                        j.Ticket != null
+                            ? j.Ticket.Subject
+                            : "",
 
                     AssignedTechnicianId = j.AssignedTechnicianId,
 
                     AssignedTechnicianName =
                         j.AssignedTechnician != null
-                            ? $"{j.AssignedTechnician.FirstName} {j.AssignedTechnician.LastName}"
+                            ? j.AssignedTechnician.FirstName + " " +
+                              j.AssignedTechnician.LastName
                             : "Not Assigned",
 
                     Status = j.Status,
@@ -70,60 +192,17 @@ namespace IThelpdesk.Repositories
 
                     DateCompleted = j.DateCompleted
                 })
-
                 .ToListAsync();
+
+            return new PagedResultDto<JobCardListDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
-
-        //--------------------------------------------------
-        // Get Job Card List By Technician
-        //--------------------------------------------------
-
-        public async Task<IEnumerable<JobCardListDto>> GetJobCardListByTechnicianAsync(
-            int technicianId)
-        {
-            return await _context.JobCards
-
-                .Where(j => j.AssignedTechnicianId == technicianId)
-
-                .OrderByDescending(j => j.DateCreated)
-
-                .Select(j => new JobCardListDto
-                {
-                    JobCardId = j.JobCardId,
-
-                    JobNumber = j.JobNumber,
-
-                    TicketId = j.TicketId,
-
-                    CustomerName = j.Ticket != null
-                        ? j.Ticket.CustomerName
-                        : string.Empty,
-
-                    CompanyName = j.Ticket != null
-                        ? j.Ticket.CompanyName
-                        : string.Empty,
-
-                    Subject = j.Ticket != null
-                        ? j.Ticket.Subject
-                        : string.Empty,
-
-                    AssignedTechnicianId = j.AssignedTechnicianId,
-
-                    AssignedTechnicianName =
-                        j.AssignedTechnician != null
-                            ? $"{j.AssignedTechnician.FirstName} {j.AssignedTechnician.LastName}"
-                            : "Not Assigned",
-
-                    Status = j.Status,
-
-                    DateCreated = j.DateCreated,
-
-                    DateCompleted = j.DateCompleted
-                })
-
-                .ToListAsync();
-        }
 
         //--------------------------------------------------
         // Get By Id
@@ -134,6 +213,10 @@ namespace IThelpdesk.Repositories
             return await _context.JobCards
                 .FirstOrDefaultAsync(j => j.JobCardId == id);
         }
+
+        //--------------------------------------------------
+        // Get By Ticket
+        //--------------------------------------------------
 
         public async Task<JobCard?> GetByTicketIdAsync(int ticketId)
         {
@@ -185,7 +268,8 @@ namespace IThelpdesk.Repositories
 
                     AssignedTechnician =
                         j.AssignedTechnician != null
-                            ? j.AssignedTechnician.FirstName + " " + j.AssignedTechnician.LastName
+                            ? j.AssignedTechnician.FirstName + " " +
+                              j.AssignedTechnician.LastName
                             : "Not Assigned"
                 })
 
@@ -208,7 +292,6 @@ namespace IThelpdesk.Repositories
         public async Task UpdateAsync(JobCard jobCard)
         {
             _context.JobCards.Update(jobCard);
-
             await Task.CompletedTask;
         }
 
@@ -219,27 +302,41 @@ namespace IThelpdesk.Repositories
         public async Task DeleteAsync(JobCard jobCard)
         {
             _context.JobCards.Remove(jobCard);
-
             await Task.CompletedTask;
         }
 
-        //======================================
-        //  job card number sequencing
-        //====================================
+        //--------------------------------------------------
+        // Save
+        //--------------------------------------------------
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        //--------------------------------------------------
+        // Latest Job Card
+        //--------------------------------------------------
 
         public async Task<JobCard?> GetLatestJobCardAsync()
         {
             return await _context.JobCards
-
                 .OrderByDescending(j => j.JobCardId)
-
                 .FirstOrDefaultAsync();
         }
 
+        //--------------------------------------------------
+        // Job Number Exists
+        //--------------------------------------------------
 
+        public async Task<bool> JobNumberExistsAsync(string jobNumber)
+        {
+            return await _context.JobCards
+                .AnyAsync(j => j.JobNumber == jobNumber);
+        }
 
         //--------------------------------------------------
-        // Add Labour Entry
+        // Labour
         //--------------------------------------------------
 
         public async Task AddLabourEntryAsync(JobCardLabour labour)
@@ -247,55 +344,13 @@ namespace IThelpdesk.Repositories
             await _context.JobCardLabours.AddAsync(labour);
         }
 
-        //--------------------------------------------------
-        // Get Labour Entries
-        //--------------------------------------------------
-
         public async Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId)
         {
             return await _context.JobCardLabours
-
                 .Include(l => l.Technician)
-
                 .Where(l => l.JobCardId == jobCardId)
-
                 .OrderBy(l => l.DateWorked)
-
                 .ToListAsync();
-        }
-
-
-        //--------------------------------------------------
-        // Save
-        //--------------------------------------------------
-
-        //public async Task SaveChangesAsync()
-        //{
-        //    await _context.SaveChangesAsync();
-        //}
-
-
-        public async Task SaveChangesAsync()
-        {
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-
-                throw;
-            }
-        }
-        //--------------------------------------------------
-        // Check Job Number
-        //--------------------------------------------------
-
-        public async Task<bool> JobNumberExistsAsync(string jobNumber)
-        {
-            return await _context.JobCards
-                .AnyAsync(j => j.JobNumber == jobNumber);
         }
     }
 }

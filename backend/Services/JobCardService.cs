@@ -1,4 +1,5 @@
-﻿using IThelpdesk.DTOs.JobCard;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.DTOs.JobCard;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
@@ -19,7 +20,7 @@ namespace IThelpdesk.Services
         }
 
         //---------------------------------------------------
-        // Get All
+        // Get All Job Cards
         //---------------------------------------------------
 
         public async Task<IEnumerable<JobCard>> GetAllAsync()
@@ -31,24 +32,51 @@ namespace IThelpdesk.Services
         // Get Job Card List
         //---------------------------------------------------
 
-        public async Task<IEnumerable<JobCardListDto>> GetJobCardListAsync(
-            int userId,
-            string role)
+        public async Task<PagedResultDto<JobCardListDto>> GetJobCardListAsync(
+      int userId,
+      string role,
+      bool mine,
+      string? status,
+      int? assignedTo,
+      string? search,
+      string? sortBy,
+      string? sortDirection,
+      int pageNumber,
+      int pageSize)
         {
+            int? technicianId = null;
+
             //---------------------------------------------------
-            // Administrator
+            // Administrators
             //---------------------------------------------------
 
             if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
             {
-                return await _jobCardRepository.GetJobCardListAsync();
+                if (mine)
+                {
+                    technicianId = userId;
+                }
             }
 
             //---------------------------------------------------
-            // Technician
+            // Technicians
             //---------------------------------------------------
 
-            return await _jobCardRepository.GetJobCardListByTechnicianAsync(userId);
+            else
+            {
+                technicianId = userId;
+            }
+
+            return await _jobCardRepository.GetJobCardListAsync(
+            technicianId,
+            status,
+            assignedTo,
+            search,
+            sortBy,
+            sortDirection,
+            pageNumber,
+            pageSize);
+
         }
 
         //---------------------------------------------------
@@ -80,10 +108,7 @@ namespace IThelpdesk.Services
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
-            if (!string.Equals(
-                    ticket.Status,
-                    "Resolved",
-                    StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception("A Job Card can only be created after the ticket has been resolved.");
             }
@@ -91,19 +116,21 @@ namespace IThelpdesk.Services
             var existing = await _jobCardRepository.GetByTicketIdAsync(ticketId);
 
             if (existing != null)
+            {
                 throw new Exception($"This ticket already has Job Card {existing.JobNumber}");
+            }
 
             //---------------------------------------------------
-            // Generate Next Job Number
+            // Generate Job Number
             //---------------------------------------------------
 
-            var latestJobCard = await _jobCardRepository.GetLatestJobCardAsync();
+            var latest = await _jobCardRepository.GetLatestJobCardAsync();
 
             int nextNumber = 1;
 
-            if (latestJobCard != null)
+            if (latest != null)
             {
-                string[] parts = latestJobCard.JobNumber.Split('-');
+                var parts = latest.JobNumber.Split('-');
 
                 if (parts.Length == 3 &&
                     int.TryParse(parts[2], out int lastNumber))
@@ -135,58 +162,18 @@ namespace IThelpdesk.Services
             };
 
             await _jobCardRepository.AddAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
 
             return jobCard;
         }
 
         //---------------------------------------------------
-        // Add Labour Entry
-        //---------------------------------------------------
-
-        public async Task AddLabourEntryAsync(
-            int jobCardId,
-            AddLabourEntryDto dto)
-        {
-            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
-
-            if (jobCard == null)
-                throw new Exception("Job Card not found.");
-
-            if (jobCard.AssignedTechnicianId == null)
-            {
-                throw new Exception("No technician has been assigned to this Job Card.");
-            }
-
-            var labour = new JobCardLabour
-            {
-                JobCardId = jobCardId,
-                TechnicianId = jobCard.AssignedTechnicianId.Value,
-                HoursWorked = dto.HoursWorked,
-                WorkPerformed = dto.WorkPerformed,
-                DateWorked = DateTime.UtcNow
-            };
-
-            await _jobCardRepository.AddLabourEntryAsync(labour);
-
-            await _jobCardRepository.SaveChangesAsync();
-        }
-
-        //---------------------------------------------------
-        // Get Labour Entries
-        //---------------------------------------------------
-
-        public async Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId)
-        {
-            return await _jobCardRepository.GetLabourEntriesAsync(jobCardId);
-        }
-
-        //---------------------------------------------------
         // Update Job Card
         //---------------------------------------------------
 
-        public async Task UpdateJobCardAsync(int id, UpdateJobCardDto dto)
+        public async Task UpdateJobCardAsync(
+            int id,
+            UpdateJobCardDto dto)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
@@ -199,63 +186,28 @@ namespace IThelpdesk.Services
             jobCard.CompletionNotes = dto.CompletionNotes;
             jobCard.CustomerSignature = dto.CustomerSignature;
 
-            if (string.Equals(dto.Status, "Completed", StringComparison.OrdinalIgnoreCase))
-            {
-                jobCard.DateCompleted = DateTime.UtcNow;
-            }
-            else
-            {
-                jobCard.DateCompleted = null;
-            }
+            jobCard.DateCompleted =
+                dto.Status == "Completed"
+                ? DateTime.UtcNow
+                : null;
 
             await _jobCardRepository.UpdateAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
         }
 
         //---------------------------------------------------
         // Complete Job Card
         //---------------------------------------------------
-        //
-        // Marks a Job Card as completed.
-        //
-        //---------------------------------------------------
 
         public async Task CompleteJobCardAsync(int id)
         {
-            //---------------------------------------------------
-            // Retrieve Job Card
-            //---------------------------------------------------
-
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
-            {
                 throw new Exception("Job Card not found.");
-            }
-
-            //---------------------------------------------------
-            // Prevent duplicate completion
-            //---------------------------------------------------
-
-            if (string.Equals(
-                    jobCard.Status,
-                    "Completed",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                throw new Exception("This Job Card has already been completed.");
-            }
-
-            //---------------------------------------------------
-            // Mark as completed
-            //---------------------------------------------------
 
             jobCard.Status = "Completed";
             jobCard.DateCompleted = DateTime.UtcNow;
-
-            //---------------------------------------------------
-            // Save
-            //---------------------------------------------------
 
             await _jobCardRepository.UpdateAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
@@ -268,7 +220,6 @@ namespace IThelpdesk.Services
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
         }
 
@@ -284,8 +235,45 @@ namespace IThelpdesk.Services
                 return;
 
             await _jobCardRepository.DeleteAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
+        }
+
+        //---------------------------------------------------
+        // Add Labour
+        //---------------------------------------------------
+
+        public async Task AddLabourEntryAsync(
+            int jobCardId,
+            AddLabourEntryDto dto)
+        {
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
+
+            if (jobCard == null)
+                throw new Exception("Job Card not found.");
+
+            if (jobCard.AssignedTechnicianId == null)
+                throw new Exception("No technician assigned.");
+
+            var labour = new JobCardLabour
+            {
+                JobCardId = jobCardId,
+                TechnicianId = jobCard.AssignedTechnicianId.Value,
+                HoursWorked = dto.HoursWorked,
+                WorkPerformed = dto.WorkPerformed,
+                DateWorked = DateTime.UtcNow
+            };
+
+            await _jobCardRepository.AddLabourEntryAsync(labour);
+            await _jobCardRepository.SaveChangesAsync();
+        }
+
+        //---------------------------------------------------
+        // Get Labour
+        //---------------------------------------------------
+
+        public async Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId)
+        {
+            return await _jobCardRepository.GetLabourEntriesAsync(jobCardId);
         }
     }
 }

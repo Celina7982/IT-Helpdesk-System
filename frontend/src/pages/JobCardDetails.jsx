@@ -46,9 +46,7 @@ catch {
     // Load Job Card
     //--------------------------------------------------
 
-    useEffect(() => {
-        loadJobCard();
-    }, []);
+   
 
     const loadJobCard = async () => {
 
@@ -74,6 +72,12 @@ catch {
 
     };
 
+    useEffect(() => {
+
+    loadJobCard();
+
+}, [id]);
+
     //--------------------------------------------------
     // Save Changes
     //--------------------------------------------------
@@ -82,14 +86,14 @@ catch {
 
         try {
 
-            await jobCardService.update(
-                jobCard.jobCardId,
-                jobCard
-            );
+           await jobCardService.update(
+            jobCard.jobCardId,
+            jobCard
+        );
+
+            await loadJobCard();
 
             alert("Job Card Updated Successfully.");
-
-            loadJobCard();
 
         }
         catch (error) {
@@ -150,14 +154,12 @@ const completeJobCard = async () => {
     try {
 
         await jobCardService.completeJobCard(
+    jobCard.jobCardId
+);
 
-            jobCard.jobCardId
+    await loadJobCard();
 
-        );
-
-        alert("Job Card completed.");
-
-        loadJobCard();
+    window.alert("Job Card completed.");
 
     }
     catch (error) {

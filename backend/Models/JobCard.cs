@@ -82,5 +82,12 @@ namespace IThelpdesk.Models
 
         public ICollection<JobCardPart> PartsUsed { get; set; }
             = new List<JobCardPart>();
+
+        //--------------------------------------------------
+        // Navigation Properties
+        //--------------------------------------------------
+
+        public ICollection<JobCardAudit> AuditHistory { get; set; }
+            = new List<JobCardAudit>();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using IThelpdesk.DTOs.JobCard;
+using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using QuestPDF.Fluent;
@@ -10,9 +11,13 @@ namespace IThelpdesk.Services.Pdf
     {
         private readonly IJobCardRepository _jobCardRepository;
 
-        public JobCardPdfService(IJobCardRepository jobCardRepository)
+        private readonly IJobCardAuditService _auditService;
+        public JobCardPdfService(
+         IJobCardRepository jobCardRepository,
+         IJobCardAuditService auditService)
         {
             _jobCardRepository = jobCardRepository;
+            _auditService = auditService;
         }
 
         public async Task<byte[]> GenerateJobCardPdfAsync(int jobCardId)
@@ -21,6 +26,12 @@ namespace IThelpdesk.Services.Pdf
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
+
+            await _auditService.LogAsync(
+            jobCard.JobCardId,
+            jobCard.AssignedTechnicianId ?? 0,
+            JobCardAuditAction.PdfGenerated,
+            $"PDF generated for Job Card {jobCard.JobNumber}");
 
             return Document.Create(container =>
             {

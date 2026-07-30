@@ -14,6 +14,8 @@
 
         public DateTime? DateCompleted { get; set; }
 
+
+        public int? AssignedTechnicianId { get; set; }
         // Technician assigned to this Job Card
         public string AssignedTechnician { get; set; } = "Not Assigned";
 

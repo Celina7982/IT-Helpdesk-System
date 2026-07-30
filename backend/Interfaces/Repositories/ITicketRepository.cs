@@ -27,12 +27,14 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
 
+        Task<User?> GetUserByIdAsync(int id);
+
         //-------------------------------------------------------
         // CRUD
         //-------------------------------------------------------
 
         Task AddAsync(Ticket ticket);
-
+        
         Task UpdateAsync(Ticket ticket);
 
         Task DeleteAsync(Ticket ticket);

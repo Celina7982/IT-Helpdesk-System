@@ -78,5 +78,31 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(
             int jobCardId);
+
+        //--------------------------------------------------
+        // Parts
+        //--------------------------------------------------
+
+        /// <summary>
+        /// Adds a Part to a Job Card.
+        /// </summary>
+        Task AddPartAsync(
+            int jobCardId,
+            AddPartDto dto);
+
+        /// <summary>
+        /// Returns all Parts used on a Job Card.
+        /// </summary>
+        Task<List<JobCardPartDto>> GetPartsAsync(
+            int jobCardId);
+
+        /// <summary>
+        /// Deletes a Part from a Job Card.
+        /// </summary>
+        Task DeletePartAsync(
+            int partId);
+
     }
+
+
 }

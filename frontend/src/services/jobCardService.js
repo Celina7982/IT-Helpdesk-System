@@ -129,6 +129,19 @@ const addLabourEntry = async (jobCardId, labourEntry) => {
 };
 
 
+
+//----------------------------------------------------
+// Get Audit History
+//----------------------------------------------------
+
+const getAuditHistory = async (jobCardId) => {
+
+    const response = await api.get(`/JobCard/${jobCardId}/audit`);
+
+    return response.data;
+
+};
+
 //----------------------------------------------------
 // print Job Card
 //----------------------------------------------------
@@ -163,6 +176,8 @@ const jobCardService = {
     completeJobCard,
 
     addLabourEntry,
+
+    getAuditHistory,
 
     downloadPdf 
 

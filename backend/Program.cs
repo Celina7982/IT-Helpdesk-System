@@ -79,7 +79,8 @@ builder.Services.AddScoped<IJobCardService, JobCardService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
-
+builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
+builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
 builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
 
 /*

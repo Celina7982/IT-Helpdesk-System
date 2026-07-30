@@ -32,5 +32,12 @@ namespace IThelpdesk.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? LastLoginDate { get; set; }
+
+        //--------------------------------------------------
+        // Job Card Audits
+        //--------------------------------------------------
+
+        public ICollection<JobCardAudit> JobCardAudits { get; set; }
+            = new List<JobCardAudit>();
     }
 }

@@ -4,6 +4,7 @@ using IThelpdesk.DTOs.JobCard;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace IThelpdesk.Repositories
 {
@@ -42,9 +43,10 @@ namespace IThelpdesk.Repositories
             int pageSize)
         {
             var query = _context.JobCards
-                .Include(j => j.Ticket)
-                .Include(j => j.AssignedTechnician)
-                .AsQueryable();
+           .Include(j => j.Ticket)
+           .Include(j => j.AssignedTechnician)
+           .Include(j => j.AuditHistory)
+           .AsQueryable();
 
             //--------------------------------------------------
             // Technician Filter
@@ -252,6 +254,7 @@ namespace IThelpdesk.Repositories
 
                     DateCompleted = j.DateCompleted,
 
+
                     FaultReported = j.FaultReported,
 
                     FaultFound = j.FaultFound,
@@ -265,6 +268,8 @@ namespace IThelpdesk.Repositories
                     CustomerSignature = j.CustomerSignature,
 
                     SignedDate = j.SignedDate,
+
+                    AssignedTechnicianId = j.AssignedTechnicianId,
 
                     AssignedTechnician =
                         j.AssignedTechnician != null
@@ -351,6 +356,43 @@ namespace IThelpdesk.Repositories
                 .Where(l => l.JobCardId == jobCardId)
                 .OrderBy(l => l.DateWorked)
                 .ToListAsync();
+        }
+
+
+        //--------------------------------------------------
+        // Parts
+        //--------------------------------------------------
+
+        public async Task AddPartAsync(JobCardPart part)
+        {
+            await _context.JobCardParts.AddAsync(part);
+        }
+
+        //--------------------------------------------------
+
+        public async Task<List<JobCardPart>> GetPartsAsync(int jobCardId)
+        {
+            return await _context.JobCardParts
+                .Where(p => p.JobCardId == jobCardId)
+                .OrderBy(p => p.PartName)
+                .ToListAsync();
+        }
+
+        //--------------------------------------------------
+
+        public async Task<JobCardPart?> GetPartByIdAsync(int partId)
+        {
+            return await _context.JobCardParts
+                .FirstOrDefaultAsync(p => p.PartId == partId);
+        }
+
+        //--------------------------------------------------
+
+        public async Task DeletePartAsync(JobCardPart part)
+        {
+            _context.JobCardParts.Remove(part);
+
+            await Task.CompletedTask;
         }
     }
 }

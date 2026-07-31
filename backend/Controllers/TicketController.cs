@@ -80,11 +80,10 @@ namespace IThelpdesk.Controllers
         // GET TICKET BY ID
         // ======================================================
 
-        // GET: api/Ticket/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTicket(int id)
         {
-            var ticket = await _ticketService.GetTicketByIdAsync(id);
+            var ticket = await _ticketService.GetTicketDetailsAsync(id);
 
             if (ticket == null)
                 return NotFound();

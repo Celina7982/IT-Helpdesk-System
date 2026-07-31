@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260723093624_UpdateDatabase")]
-    partial class UpdateDatabase
+    [Migration("20260720080716_AddAssignedTechnicianNavigation")]
+    partial class AddAssignedTechnicianNavigation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -84,45 +84,11 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("TicketId");
 
+                    b.HasIndex("AssignedToUserId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
-                });
-
-            modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
-                {
-                    b.Property<int>("CommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentId"));
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TicketId1")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CommentId");
-
-                    b.HasIndex("TicketId");
-
-                    b.HasIndex("TicketId1");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("TicketComments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -173,41 +139,19 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
                 {
+                    b.HasOne("IThelpdesk.Models.User", "AssignedToUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId");
+
                     b.HasOne("IThelpdesk.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
-                {
-                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("IThelpdesk.Models.Ticket", null)
-                        .WithMany("Comments")
-                        .HasForeignKey("TicketId1");
-
-                    b.HasOne("IThelpdesk.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("Ticket");
+                    b.Navigation("AssignedToUser");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
-                {
-                    b.Navigation("Comments");
                 });
 #pragma warning restore 612, 618
         }

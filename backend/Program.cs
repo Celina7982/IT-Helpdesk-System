@@ -4,13 +4,13 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using IThelpdesk.Repositories;
 using IThelpdesk.Services;
+using IThelpdesk.Services.Pdf;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-//Email stuff 
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+
+using QuestPDF.Infrastructure;
+
 //using Microsoft.OpenApi;
 
 
@@ -34,8 +34,6 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer(); // Required for Swagger to see Minimal APIs
-builder.Services.AddScoped<ICommentRepository, CommentRepository>();
-builder.Services.AddScoped<ICommentService, CommentService>();
 
 
 
@@ -75,11 +73,15 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IJobCardService, JobCardService>();
+
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
-
+builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
+builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
+builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
+builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
 
 /*
  When AuthController asks for an IAuthService
@@ -145,6 +147,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Configure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 

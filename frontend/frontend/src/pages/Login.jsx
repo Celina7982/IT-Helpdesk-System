@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import api from "../services/api";
 
@@ -75,11 +75,19 @@ function Login() {
                             </div>
 
                             <div className="mb-3">
-                                <label className="form-label">Password</label>
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <label className="form-label mb-0">Password</label>
+                                    <Link 
+                                        to="/forgot-password" 
+                                        className="text-decoration-none small text-primary"
+                                    >
+                                        Forgot Password?
+                                    </Link>
+                                </div>
 
                                 <input
                                     type="password"
-                                    className="form-control"
+                                    className="form-control mt-1"
                                     placeholder="Enter your password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -87,7 +95,7 @@ function Login() {
                             </div>
 
                             <button
-                                className="btn btn-primary w-100"
+                                className="btn btn-primary w-100 mt-2"
                                 onClick={handleLogin}
                             >
                                 Login

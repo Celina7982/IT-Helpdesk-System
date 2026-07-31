@@ -1,16 +1,35 @@
-﻿using IThelpdesk.Models;
+﻿using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Services
 {
     public interface ITicketService
     {
-        Task<IEnumerable<Ticket>> GetAllTicketsAsync();
+        //-------------------------------------------------------
+        // Ticket Lists
+        //-------------------------------------------------------
 
-        Task<Ticket?> GetTicketByIdAsync(int id);
+        Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync();
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
         Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+
+        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
+
+        //-------------------------------------------------------
+        // Single Ticket
+        //-------------------------------------------------------
+
+        Task<Ticket?> GetTicketByIdAsync(int id);
+
+        Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
+
+        //-------------------------------------------------------
+        // CRUD
+        //-------------------------------------------------------
 
         Task CreateTicketAsync(Ticket ticket);
 
@@ -18,21 +37,16 @@ namespace IThelpdesk.Interfaces.Services
 
         Task DeleteTicketAsync(int id);
 
-        // Admin assigns an escalated ticket
+        //-------------------------------------------------------
+        // Ticket Actions
+        //-------------------------------------------------------
+
         Task AssignTicketAsync(int ticketId, int assignedToUserId);
 
-        // Technician claims an open ticket
         Task ClaimTicketAsync(int ticketId, int technicianId);
 
-        // Technician escalates a ticket
         Task EscalateTicketAsync(int ticketId, string escalationReason);
 
-        // Admin or Technician resolves a ticket
         Task ResolveTicketAsync(int ticketId);
-
-        
-        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
-
-        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
     }
 }

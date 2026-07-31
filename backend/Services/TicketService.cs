@@ -1,19 +1,36 @@
 ﻿using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
+using IThelpdesk.Repositories;
+
 
 namespace IThelpdesk.Services
 {
     public class TicketService : ITicketService
     {
         private readonly ITicketRepository _ticketRepository;
-        private readonly IEmailService _emailService;
+        private readonly IJobCardRepository _jobCardRepository;
+        private readonly IJobCardAuditService _auditService;
 
-        public TicketService(ITicketRepository ticketRepository, IEmailService emailService)
+        public TicketService(
+        ITicketRepository ticketRepository,
+        IJobCardRepository jobCardRepository,
+        IJobCardAuditService auditService)
         {
             _ticketRepository = ticketRepository;
-            _emailService = emailService;
+            _jobCardRepository = jobCardRepository;
+            _auditService = auditService;
+        }
+
+        //-------------------------------------------------------
+        // Ticket Lists
+        //-------------------------------------------------------
+
+        public async Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync()
+        {
+            return await _ticketRepository.GetAllAsync();
         }
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
@@ -25,38 +42,39 @@ namespace IThelpdesk.Services
         {
             return await _ticketRepository.GetMyTicketsAsync(technicianId);
         }
-        public async Task<IEnumerable<Ticket>> GetAllTicketsAsync()
+
+        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
         {
-            return await _ticketRepository.GetAllAsync();
+            return await _ticketRepository.GetEscalatedTicketsAsync();
         }
+
+        public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
+        {
+            return await _ticketRepository.GetMyTicketsByUserAsync(userId);
+        }
+
+        //-------------------------------------------------------
+        // Single Ticket
+        //-------------------------------------------------------
 
         public async Task<Ticket?> GetTicketByIdAsync(int id)
         {
             return await _ticketRepository.GetByIdAsync(id);
         }
 
+        public async Task<TicketDetailsDto?> GetTicketDetailsAsync(int id)
+        {
+            return await _ticketRepository.GetTicketDetailsAsync(id);
+        }
+
+        //-------------------------------------------------------
+        // CRUD
+        //-------------------------------------------------------
+
         public async Task CreateTicketAsync(Ticket ticket)
         {
             await _ticketRepository.AddAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
-            await _emailService.SendEmailAsync(
-       "support@yourcompany.com",
-       $"New Ticket Created: #{ticket.TicketId}",
-       $@"
-            <h2>New Support Ticket</h2>
-
-            <p>A new support ticket has been created.</p>
-
-            <p><strong>Ticket ID:</strong> {ticket.TicketId}</p>
-            <p><strong>Subject:</strong> {ticket.Subject}</p>
-            <p><strong>Customer:</strong> {ticket.CustomerName}</p>
-            <p><strong>Priority:</strong> {ticket.Priority}</p>
-            <p><strong>Category:</strong> {ticket.Category}</p>
-
-            <p>
-                Please log into the IT Helpdesk System to view the ticket.
-            </p>
-        ");
         }
 
         public async Task UpdateTicketAsync(Ticket ticket)
@@ -65,46 +83,103 @@ namespace IThelpdesk.Services
             await _ticketRepository.SaveChangesAsync();
         }
 
+        public async Task DeleteTicketAsync(int id)
+        {
+            var ticket = await _ticketRepository.GetByIdAsync(id);
+
+            if (ticket == null)
+                return;
+
+            await _ticketRepository.DeleteAsync(ticket);
+            await _ticketRepository.SaveChangesAsync();
+        }
+
+        //-------------------------------------------------------
+        // Assign Ticket
+        //-------------------------------------------------------
+
         public async Task AssignTicketAsync(int ticketId, int assignedToUserId)
         {
-            // Get the ticket from the database
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
-            
-            //check ticket exists
+
             if (ticket == null)
-            {
                 throw new Exception("Ticket not found.");
-            }
 
-            // Assign the senior technician
+            //-------------------------------------------------------
+            // Store previous technician
+            //-------------------------------------------------------
+
+            var oldTechnicianId = ticket.AssignedToUserId;
+
+            //-------------------------------------------------------
+            // Update ticket
+            //-------------------------------------------------------
+
             ticket.AssignedToUserId = assignedToUserId;
-
-            // Since this is only used for escalated tickets = admin only assigns esculated tickets
-            // assigning it means work starts immediately.
             ticket.Status = "In Progress";
-
-            // Ticket is no longer awaiting admin attention =  Ticket has now been accepted back into the workflow.
             ticket.IsEscalated = false;
             ticket.EscalationReason = null;
 
-            // Save the changes in DB
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
+
+            //-------------------------------------------------------
+            // Update Job Card technician if one exists
+            //-------------------------------------------------------
+
+            var jobCard = await _jobCardRepository.GetByTicketIdAsync(ticketId);
+
+            if (jobCard != null)
+            {
+                jobCard.AssignedTechnicianId = assignedToUserId;
+
+                await _jobCardRepository.UpdateAsync(jobCard);
+                await _jobCardRepository.SaveChangesAsync();
+
+                //-------------------------------------------------------
+                // Audit technician reassignment (use user names)
+                //-------------------------------------------------------
+
+                if (oldTechnicianId.HasValue && oldTechnicianId.Value != assignedToUserId)
+                {
+                    var oldTech = oldTechnicianId.HasValue
+                        ? await _ticketRepository.GetUserByIdAsync(oldTechnicianId.Value)
+                        : null;
+
+                    var newTech = await _ticketRepository.GetUserByIdAsync(assignedToUserId);
+
+                    string oldName = oldTech != null
+                        ? $"{oldTech.FirstName} {oldTech.LastName}"
+                        : "Unassigned";
+
+                    string newName = newTech != null
+                        ? $"{newTech.FirstName} {newTech.LastName}"
+                        : "Unknown";
+
+                    await _auditService.LogAsync(
+                        jobCard.JobCardId,
+                        assignedToUserId,
+                        JobCardAuditAction.TechnicianReassigned,
+                        $"Technician reassigned from '{oldName}' to '{newName}'",
+                        oldName,
+                        newName);
+                }
+            }
         }
+
+        //-------------------------------------------------------
+        // Claim Ticket
+        //-------------------------------------------------------
 
         public async Task ClaimTicketAsync(int ticketId, int technicianId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
-            {
                 throw new Exception("Ticket not found.");
-            }
 
             if (ticket.AssignedToUserId != null)
-            {
-                throw new Exception("Ticket has already been assigned.");
-            }
+                throw new Exception("Ticket already assigned.");
 
             ticket.AssignedToUserId = technicianId;
             ticket.Status = "In Progress";
@@ -113,78 +188,41 @@ namespace IThelpdesk.Services
             await _ticketRepository.SaveChangesAsync();
         }
 
+        //-------------------------------------------------------
+        // Escalate Ticket
+        //-------------------------------------------------------
+
         public async Task EscalateTicketAsync(int ticketId, string escalationReason)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
-            {
                 throw new Exception("Ticket not found.");
-            }
 
             ticket.Status = "Escalated";
             ticket.IsEscalated = true;
             ticket.EscalationReason = escalationReason;
-
-            // Remove the technician assignment.
             ticket.AssignedToUserId = null;
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
         }
 
+        //-------------------------------------------------------
+        // Resolve Ticket
+        //-------------------------------------------------------
+
         public async Task ResolveTicketAsync(int ticketId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
-            {
                 throw new Exception("Ticket not found.");
-            }
 
             ticket.Status = "Resolved";
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
-        }
-
-        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
-        {
-            return await _ticketRepository.GetEscalatedTicketsAsync();
-        }
-
-        public async Task DeleteTicketAsync(int id)
-        {
-            var ticket = await _ticketRepository.GetByIdAsync(id);
-
-            if (ticket != null)
-            {
-                await _ticketRepository.DeleteAsync(ticket);
-                await _ticketRepository.SaveChangesAsync();
-            }
-        }
-
-        private static TicketResponseDto MapToDto(Ticket ticket)
-        {
-            return new TicketResponseDto
-            {
-                TicketId = ticket.TicketId,
-                Subject = ticket.Subject,
-                Status = ticket.Status,
-                Priority = ticket.Priority,
-                CustomerName = ticket.CustomerName,
-                CompanyName = ticket.CompanyName,
-                CreatedDate = ticket.CreatedDate,
-                IsEscalated = ticket.IsEscalated
-            };
-
-        }
-
-
-
-        public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
-        {
-            return await _ticketRepository.GetMyTicketsByUserAsync(userId);
         }
     }
 }

@@ -1,12 +1,15 @@
 ﻿using IThelpdesk.Models;
+using IThelpdesk.DTOs.Ticket;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
     public interface ITicketRepository
     {
-        Task<IEnumerable<Ticket>> GetAllAsync();
+        //-------------------------------------------------------
+        // Ticket Lists
+        //-------------------------------------------------------
 
-        Task<Ticket?> GetByIdAsync(int id);
+        Task<IEnumerable<TicketResponseDto>> GetAllAsync();
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
@@ -14,10 +17,24 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
-        Task AddAsync(Ticket ticket);
-
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
+        //-------------------------------------------------------
+        // Single Ticket
+        //-------------------------------------------------------
+
+        Task<Ticket?> GetByIdAsync(int id);
+
+        Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
+
+        Task<User?> GetUserByIdAsync(int id);
+
+        //-------------------------------------------------------
+        // CRUD
+        //-------------------------------------------------------
+
+        Task AddAsync(Ticket ticket);
+        
         Task UpdateAsync(Ticket ticket);
 
         Task DeleteAsync(Ticket ticket);

@@ -53,7 +53,9 @@ namespace IThelpdesk.Models
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
 
-        public ICollection<TicketComment> Comments { get; set; }
-    = new List<TicketComment>();
+        [ForeignKey(nameof(AssignedToUserId))]
+        public User? AssignedToUser { get; set; }
+
+        
     }
-}
+    }

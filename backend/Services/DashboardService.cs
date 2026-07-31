@@ -50,6 +50,10 @@ namespace IThelpdesk.Services
         {
             return await _context.Tickets
 
+                .Include(t => t.User)
+
+                .Include(t => t.AssignedToUser)
+
                 .OrderByDescending(t => t.CreatedDate)
 
                 .Take(count)
@@ -57,10 +61,25 @@ namespace IThelpdesk.Services
                 .Select(t => new RecentTicketDto
                 {
                     TicketId = t.TicketId,
+
                     Subject = t.Subject,
+
+                    CustomerName = t.CustomerName,
+
+                    AssignedTechnicianName =
+                        t.AssignedToUser == null
+                            ? "Unassigned"
+                            : t.AssignedToUser.FirstName + " " + t.AssignedToUser.LastName,
+
                     Status = t.Status,
+
                     Priority = t.Priority,
-                    CreatedDate = t.CreatedDate
+
+                    CreatedDate = t.CreatedDate,
+
+                    IsClaimed = t.AssignedToUser != null,
+
+                    HasJobCard = false
                 })
 
                 .ToListAsync();

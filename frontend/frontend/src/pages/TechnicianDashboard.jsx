@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import ticketService from "../services/ticketService";
+import TicketCommentModal from "../components/TicketCommentModal";
 
 function TechnicianDashboard() {
 
     const [availableTickets, setAvailableTickets] = useState([]);
     const [myTickets, setMyTickets] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedTicket, setSelectedTicket] = useState(null);
 
     //-------------------------------------------------------
     // Load Dashboard
@@ -274,7 +276,7 @@ function TechnicianDashboard() {
 
                     ) : (
 
-                        <table className="table table-striped table-hover">
+                        <table className="table table-striped table-hover align-middle">
 
                             <thead>
 
@@ -284,7 +286,7 @@ function TechnicianDashboard() {
                                     <th>Subject</th>
                                     <th>Status</th>
                                     <th>Priority</th>
-                                    <th></th>
+                                    <th>Actions</th>
 
                                 </tr>
 
@@ -305,6 +307,13 @@ function TechnicianDashboard() {
                                         <td>{ticket.priority}</td>
 
                                         <td>
+
+                                            <button
+                                                className="btn btn-info btn-sm me-2 text-white"
+                                                onClick={() => setSelectedTicket(ticket)}
+                                            >
+                                                Comments
+                                            </button>
 
                                             <button
                                                 className="btn btn-primary btn-sm me-2"
@@ -335,6 +344,15 @@ function TechnicianDashboard() {
                 </div>
 
             </div>
+
+            {/* Ticket Comment Modal */}
+
+            {selectedTicket && (
+                <TicketCommentModal
+                    ticket={selectedTicket}
+                    onClose={() => setSelectedTicket(null)}
+                />
+            )}
 
         </div>
 

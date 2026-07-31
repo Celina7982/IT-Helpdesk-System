@@ -17,5 +17,11 @@
         public DateTime CreatedDate { get; set; }
 
         public bool IsEscalated { get; set; }
+
+        // NEW
+        public string? AssignedTechnician { get; set; }
+
+        // NEW
+        public string Category { get; set; } = string.Empty;
     }
 }

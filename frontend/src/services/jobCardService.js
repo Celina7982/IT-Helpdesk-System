@@ -129,6 +129,38 @@ const addLabourEntry = async (jobCardId, labourEntry) => {
 };
 
 
+//----------------------------------------------------
+// Get Parts
+//----------------------------------------------------
+
+const getParts = async (jobCardId) => {
+
+    const response = await api.get(`/JobCard/${jobCardId}/parts`);
+
+    return response.data;
+};
+
+//----------------------------------------------------
+// Add Part
+//----------------------------------------------------
+
+const addPart = async (jobCardId, part) => {
+
+    await api.post(
+        `/JobCard/${jobCardId}/parts`,
+        part
+    );
+};
+
+//----------------------------------------------------
+// Delete Part
+//----------------------------------------------------
+
+const deletePart = async (partId) => {
+
+    await api.delete(`/JobCard/parts/${partId}`);
+};
+
 
 //----------------------------------------------------
 // Get Audit History
@@ -166,20 +198,19 @@ const downloadPdf = async (jobCardId) => {
 const jobCardService = {
 
     getAll,
-
     getDetails,
-
     createFromTicket,
-
     update,
-
     completeJobCard,
 
     addLabourEntry,
 
-    getAuditHistory,
+    getParts,
+    addPart,
+    deletePart,
 
-    downloadPdf 
+    getAuditHistory,
+    downloadPdf
 
 };
 

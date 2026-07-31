@@ -98,26 +98,29 @@ namespace IThelpdesk.Controllers
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
-
             var jobCard = await _jobCardService.GetByIdAsync(id);
 
-            if (jobCard != null)
+            if (jobCard == null)
             {
-                int userId = jobCard.AssignedTechnicianId ?? 0;
-
-                await _auditService.LogAsync(
-                    jobCard.JobCardId,
-                    userId,
-                    JobCardAuditAction.PdfGenerated,
-                    $"PDF generated for Job Card {jobCard.JobNumber}");
+                return NotFound();
             }
+
+            var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
+
+            int userId = jobCard.AssignedTechnicianId ?? 0;
+
+            await _auditService.LogAsync(
+                jobCard.JobCardId,
+                userId,
+                JobCardAuditAction.PdfGenerated,
+                $"PDF generated for Job Card {jobCard.JobNumber}");
 
             return File(
                 pdf,
                 "application/pdf",
                 $"JobCard-{id}.pdf");
         }
+
 
         //---------------------------------------------------------
         // CREATE JOB CARD
@@ -130,8 +133,11 @@ namespace IThelpdesk.Controllers
             var jobCard =
                 await _jobCardService.CreateFromTicketAsync(request.TicketId);
 
-            return Ok(jobCard);
-        }
+            return CreatedAtAction(
+            nameof(GetDetails),
+            new { id = jobCard.JobCardId },
+            jobCard);
+                }
 
         //---------------------------------------------------------
         // ADD LABOUR
@@ -146,6 +152,19 @@ namespace IThelpdesk.Controllers
             await _jobCardService.AddLabourEntryAsync(id, dto);
 
             return Ok();
+        }
+
+        //---------------------------------------------------------
+        // GET LABOUR
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpGet("{id}/labour")]
+        public async Task<IActionResult> GetLabour(int id)
+        {
+            var labour = await _jobCardService.GetLabourEntriesAsync(id);
+
+            return Ok(labour);
         }
 
         //---------------------------------------------------------

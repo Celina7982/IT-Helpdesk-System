@@ -7,7 +7,7 @@ import JobCardHeader from "../components/jobcards/JobCardHeader";
 import JobCardInformation from "../components/jobcards/JobCardInformation";
 import JobCardWorkDetails from "../components/jobcards/JobCardWorkDetails";
 import LabourEntries from "../components/jobcards/LabourEntries";
-
+import JobCardParts from "../components/jobcards/JobCardParts";
 import { jwtDecode } from "jwt-decode";
 import JobCardHistory from "../components/jobcards/JobCardHistory";
 
@@ -88,6 +88,49 @@ function JobCardDetails() {
         }
     };
 
+//--------------------------------------------------
+// Add Part
+//--------------------------------------------------
+
+const addPart = async (part) => {
+
+    try {
+
+        await jobCardService.addPart(jobCard.jobCardId, part);
+
+        await loadJobCard();
+
+        alert("Part added successfully.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Unable to add part.");
+    }
+};
+
+//--------------------------------------------------
+// Delete Part
+//--------------------------------------------------
+
+const deletePart = async (partId) => {
+
+    try {
+
+        await jobCardService.deletePart(partId);
+
+        await loadJobCard();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Unable to delete part.");
+    }
+};
+
+
     const completeJobCard = async () => {
         const confirmed = window.confirm(
             "Complete this Job Card?\n\nThis action cannot be undone."
@@ -154,6 +197,14 @@ function JobCardDetails() {
                     </button>
                 </li>
 
+                    <li className="nav-item">
+                        <button
+                            className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
+                            onClick={() => setActiveTab("parts")}
+                        >
+                            Parts
+                        </button>
+                    </li>
                 <li className="nav-item">
                     <button
                         className={`nav-link ${activeTab === "history" ? "active" : ""}`}
@@ -187,6 +238,15 @@ function JobCardDetails() {
                         status={jobCard.status}
                     />
                 )}
+
+                            <li className="nav-item">
+                <button
+                    className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
+                    onClick={() => setActiveTab("parts")}
+                >
+                    Parts
+                </button>
+            </li>
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

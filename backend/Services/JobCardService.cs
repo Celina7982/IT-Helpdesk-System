@@ -341,11 +341,9 @@ namespace IThelpdesk.Services
             await _jobCardRepository.DeleteAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
         }
-
         //---------------------------------------------------
         // Add Labour
         //---------------------------------------------------
-
         public async Task AddLabourEntryAsync(
             int jobCardId,
             AddLabourEntryDto dto)
@@ -355,8 +353,14 @@ namespace IThelpdesk.Services
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
 
+            if (jobCard.Status == "Completed")
+                throw new Exception("Completed Job Cards cannot be modified.");
+
             if (jobCard.AssignedTechnicianId == null)
                 throw new Exception("No technician assigned.");
+
+            if (dto.HoursWorked <= 0)
+                throw new Exception("Hours worked must be greater than zero.");
 
             var labour = new JobCardLabour
             {
@@ -377,19 +381,19 @@ namespace IThelpdesk.Services
                 $"Added {dto.HoursWorked} hours of labour.");
         }
 
+
         //---------------------------------------------------
         // Get Labour
         //---------------------------------------------------
-
         public async Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId)
         {
             return await _jobCardRepository.GetLabourEntriesAsync(jobCardId);
         }
 
+
         //---------------------------------------------------
         // Add Part
         //---------------------------------------------------
-
         public async Task AddPartAsync(
             int jobCardId,
             AddPartDto dto)
@@ -399,34 +403,33 @@ namespace IThelpdesk.Services
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
 
-            //part quantity must be greater than 0 (validation)
+            if (jobCard.Status == "Completed")
+                throw new Exception("Completed Job Cards cannot be modified.");
+
             if (dto.Quantity <= 0)
-            {
                 throw new Exception("Quantity must be greater than zero.");
-            }
 
             if (string.IsNullOrWhiteSpace(dto.PartName))
-            {
                 throw new Exception("Part name is required.");
-            }
 
             var part = new JobCardPart
             {
                 JobCardId = jobCardId,
-                PartName = dto.PartName,
+                PartName = dto.PartName.Trim(),
                 Quantity = dto.Quantity
             };
 
             await _jobCardRepository.AddPartAsync(part);
             await _jobCardRepository.SaveChangesAsync();
 
-            // Part Added Audit (per requested format)
             await _auditService.LogAsync(
                 jobCard.JobCardId,
                 jobCard.AssignedTechnicianId ?? 0,
                 JobCardAuditAction.PartAdded,
-                $"Added part '{dto.PartName}' x{dto.Quantity}");
+                $"Added part '{dto.PartName.Trim()}' x{dto.Quantity}");
         }
+
+
 
         //---------------------------------------------------
         // Get Parts
@@ -447,7 +450,6 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         // Delete Part
         //---------------------------------------------------
-
         public async Task DeletePartAsync(int partId)
         {
             var part = await _jobCardRepository.GetPartByIdAsync(partId);
@@ -457,7 +459,9 @@ namespace IThelpdesk.Services
 
             var jobCard = await _jobCardRepository.GetByIdAsync(part.JobCardId);
 
-            // Part Deleted Audit - log before deleting the record so values remain available
+            if (jobCard != null && jobCard.Status == "Completed")
+                throw new Exception("Completed Job Cards cannot be modified.");
+
             await _auditService.LogAsync(
                 part.JobCardId,
                 jobCard?.AssignedTechnicianId ?? 0,
@@ -467,5 +471,6 @@ namespace IThelpdesk.Services
             await _jobCardRepository.DeletePartAsync(part);
             await _jobCardRepository.SaveChangesAsync();
         }
+
     }
 }

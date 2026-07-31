@@ -1,4 +1,6 @@
-﻿namespace IThelpdesk.DTOs.JobCard
+﻿using IThelpdesk.Models;
+
+namespace IThelpdesk.DTOs.JobCard
 {
     public class JobCardDetailsDto
     {
@@ -34,5 +36,19 @@
         public string CustomerSignature { get; set; } = string.Empty;
 
         public DateTime? SignedDate { get; set; }
+
+        //--------------------------------------------------
+        // Labour
+        //--------------------------------------------------
+
+        public List<JobCardLabourDto> LabourEntries { get; set; } = new();
+
+
+        //--------------------------------------------------
+        // Parts Used
+        //--------------------------------------------------
+
+        public List<JobCardPartDto> PartsUsed { get; set; }
+            = new();
     }
 }

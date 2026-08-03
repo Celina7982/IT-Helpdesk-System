@@ -52,5 +52,10 @@ namespace IThelpdesk.Models
 
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
+
+        [ForeignKey(nameof(AssignedToUserId))]
+        public User? AssignedToUser { get; set; }
+
+        
     }
     }

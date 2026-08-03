@@ -4,9 +4,13 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using IThelpdesk.Repositories;
 using IThelpdesk.Services;
+using IThelpdesk.Services.Pdf;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+
+using QuestPDF.Infrastructure;
+
 //using Microsoft.OpenApi;
 
 
@@ -18,6 +22,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Add Services(register repository and services)
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddEndpointsApiExplorer(); // Required for Swagger to see Minimal APIs
 
 
@@ -53,8 +68,20 @@ builder.Services.AddSwaggerGen();
 
 // Register the User repository and service with the Dependency Injection container.
 // This decouples controllers from concrete implementations and improves testability.  
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IJobCardService, JobCardService>();
+
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
+builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
+builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
+builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
 
 /*
  When AuthController asks for an IAuthService
@@ -107,17 +134,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-builder.Services.AddScoped<ITicketService, TicketService>();
 
 
-builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+
+
+
+
+
+
 
 
 // Configure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
@@ -155,7 +186,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection(); // Redirects HTTP requests to HTTPS
 
 
-
+app.UseCors("AllowReact");
 
 app.UseAuthentication(); // Add this line to enable authentication middleware
 app.UseAuthorization(); // Add this line to enable authorization middleware

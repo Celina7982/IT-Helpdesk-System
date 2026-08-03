@@ -64,5 +64,10 @@ namespace IThelpdesk.Services
             await _userRepository.DeleteUserAsync(user);
             await _userRepository.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<User>> GetTechniciansAsync()
+        {
+            return await _userRepository.GetTechniciansAsync();
+        }
     }
 }

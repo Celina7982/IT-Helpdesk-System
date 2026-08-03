@@ -1,4 +1,4 @@
-﻿namespace IThelpdesk.DTOs.Tickets
+﻿namespace IThelpdesk.DTOs.Ticket
 {
     public class EscalateTicketRequest
     {

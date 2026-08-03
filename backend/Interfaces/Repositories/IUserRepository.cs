@@ -10,6 +10,8 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<User?> GetUserByEmailAsync(string email);
 
+        Task<IEnumerable<User>> GetTechniciansAsync();
+
         Task AddUserAsync(User user);
 
         Task UpdateUserAsync(User user);

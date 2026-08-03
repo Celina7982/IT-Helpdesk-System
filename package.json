@@ -1,0 +1,29 @@
+{
+  "name": "deep",
+  "version": "1.0.0",
+  "description": "The IT Helpdesk Management System is a full-stack web application developed to manage IT support requests, technician workflows, and administrative operations within an organization.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Celina7982/IT-Helpdesk-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Celina7982/IT-Helpdesk-System/issues"
+  },
+  "homepage": "https://github.com/Celina7982/IT-Helpdesk-System#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {}
+}

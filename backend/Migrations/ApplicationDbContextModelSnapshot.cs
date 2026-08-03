@@ -22,6 +22,184 @@ namespace IThelpdesk.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
+                {
+                    b.Property<int>("JobCardId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JobCardId"));
+
+                    b.Property<int?>("AssignedTechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CompletionNotes")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CustomerSignature")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("DateCompleted")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FaultFound")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("FaultReported")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("JobNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("SignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkPerformed")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("JobCardId");
+
+                    b.HasIndex("AssignedTechnicianId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("JobCards");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
+                {
+                    b.Property<int>("AuditId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AuditId"));
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("JobCardId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AuditId");
+
+                    b.HasIndex("DateCreated");
+
+                    b.HasIndex("JobCardId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("JobCardId", "DateCreated");
+
+                    b.ToTable("JobCardAudits");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
+                {
+                    b.Property<int>("LabourId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LabourId"));
+
+                    b.Property<DateTime>("DateWorked")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("HoursWorked")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("JobCardId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkPerformed")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("LabourId");
+
+                    b.HasIndex("JobCardId");
+
+                    b.HasIndex("TechnicianId");
+
+                    b.ToTable("JobCardLabours");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
+                {
+                    b.Property<int>("PartId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PartId"));
+
+                    b.Property<int>("JobCardId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PartName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("PartId");
+
+                    b.HasIndex("JobCardId");
+
+                    b.ToTable("JobCardParts");
+                });
+
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
                 {
                     b.Property<int>("TicketId")
@@ -81,9 +259,38 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("TicketId");
 
+                    b.HasIndex("AssignedToUserId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
+                {
+                    b.Property<int>("CommentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentId"));
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CommentId");
+
+                    b.ToTable("TicketComments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -132,15 +339,102 @@ namespace IThelpdesk.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.User", "AssignedTechnician")
+                        .WithMany()
+                        .HasForeignKey("AssignedTechnicianId");
+
+                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedTechnician");
+
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
+                        .WithMany("AuditHistory")
+                        .HasForeignKey("JobCardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.User", "User")
+                        .WithMany("JobCardAudits")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("JobCard");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
+                        .WithMany("LabourEntries")
+                        .HasForeignKey("JobCardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.User", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("JobCard");
+
+                    b.Navigation("Technician");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
+                        .WithMany("PartsUsed")
+                        .HasForeignKey("JobCardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobCard");
+                });
+
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
                 {
+                    b.HasOne("IThelpdesk.Models.User", "AssignedToUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IThelpdesk.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AssignedToUser");
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
+                {
+                    b.Navigation("AuditHistory");
+
+                    b.Navigation("LabourEntries");
+
+                    b.Navigation("PartsUsed");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.User", b =>
+                {
+                    b.Navigation("JobCardAudits");
                 });
 #pragma warning restore 612, 618
         }

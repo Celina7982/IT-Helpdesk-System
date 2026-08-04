@@ -76,11 +76,7 @@ function JobCardDetails() {
     const addLabourEntry = async (entry) => {
         try {
             await jobCardService.addLabourEntry(jobCard.jobCardId, entry);
-
-            // Reload the Job Card so the new labour
-            // entry is displayed immediately.
             await loadJobCard();
-
             alert("Labour entry added successfully.");
         } catch (error) {
             console.error(error);
@@ -92,23 +88,19 @@ function JobCardDetails() {
 // Add Part
 //--------------------------------------------------
 
-const addPart = async (part) => {
-
-    try {
-
-        await jobCardService.addPart(jobCard.jobCardId, part);
-
-        await loadJobCard();
-
-        alert("Part added successfully.");
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Unable to add part.");
-    }
-};
+   //--------------------------------------------------
+    // Add Part
+    //--------------------------------------------------
+    const addPart = async (part) => {
+        try {
+            await jobCardService.addPart(jobCard.jobCardId, part);
+            await loadJobCard();
+            alert("Part added successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Unable to add part.");
+        }
+    };;
 
 //--------------------------------------------------
 // Delete Part
@@ -239,14 +231,16 @@ const deletePart = async (partId) => {
                     />
                 )}
 
-                            <li className="nav-item">
-                <button
-                    className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
-                    onClick={() => setActiveTab("parts")}
-                >
-                    Parts
-                </button>
-            </li>
+                  {/* ✅ FIXED: Removed duplicate <li> and now render JobCardParts component */}
+                {activeTab === "parts" && (
+                    <JobCardParts
+                        parts={jobCard.partsUsed || []}
+                        onAdd={addPart}
+                        onDelete={deletePart}
+                        role={role}
+                        status={jobCard.status}
+                    />
+                )}     
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

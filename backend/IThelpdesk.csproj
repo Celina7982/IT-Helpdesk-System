@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\images\Lbc-Logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
@@ -34,8 +38,11 @@
     <Folder Include="Middleware\" />
     <Folder Include="Helpers\" />
     <Folder Include="Logs\" />
-    <Folder Include="wwwroot\" />
     <Folder Include="Uploads\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\images\Lbc-Logo.png" />
   </ItemGroup>
 
 </Project>

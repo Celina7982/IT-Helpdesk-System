@@ -38,11 +38,10 @@ namespace IThelpdesk.Services
             return await _ticketRepository.GetAvailableTicketsAsync();
         }
 
-        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
+        public async Task<IEnumerable<TechnicianTicketDto>> GetMyTicketsAsync(int technicianId)
         {
             return await _ticketRepository.GetMyTicketsAsync(technicianId);
         }
-
         public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
         {
             return await _ticketRepository.GetEscalatedTicketsAsync();

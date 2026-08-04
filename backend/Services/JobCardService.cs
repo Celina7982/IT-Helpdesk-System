@@ -106,7 +106,9 @@ namespace IThelpdesk.Services
         // Create From Ticket
         //---------------------------------------------------
 
-        public async Task<JobCard> CreateFromTicketAsync(int ticketId)
+        public async Task<JobCard> CreateFromTicketAsync(
+         int ticketId,
+         int currentUserId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
@@ -122,7 +124,7 @@ namespace IThelpdesk.Services
 
             if (existing != null)
             {
-                throw new Exception($"This ticket already has Job Card {existing.JobNumber}");
+                return existing;
             }
 
             //---------------------------------------------------
@@ -171,11 +173,11 @@ namespace IThelpdesk.Services
             await _jobCardRepository.SaveChangesAsync();
 
             await _auditService.LogAsync(
-                jobCard.JobCardId,
-                jobCard.AssignedTechnicianId ?? 0,
-                JobCardAuditAction.JobCardCreated,
-                $"Job Card {jobCard.JobNumber} created from Ticket #{ticket.TicketId}"
-            );
+             jobCard.JobCardId,
+             currentUserId,
+             JobCardAuditAction.JobCardCreated,
+             $"Job Card {jobCard.JobNumber} created from Ticket #{ticket.TicketId}"
+         );
 
             return jobCard;
         }
@@ -186,7 +188,8 @@ namespace IThelpdesk.Services
 
         public async Task UpdateJobCardAsync(
             int id,
-            UpdateJobCardDto dto)
+            UpdateJobCardDto dto,
+            int currentUserId) // ✅ method signature already updated
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
@@ -221,7 +224,7 @@ namespace IThelpdesk.Services
             // Audit Changes
             //---------------------------------------------------
 
-            int userId = jobCard.AssignedTechnicianId ?? 0;
+            // ❌ Removed: int userId = jobCard.AssignedTechnicianId ?? 0;
 
             // Status Changed (treat Completed as JobCardCompleted)
             if (oldStatus != dto.Status)
@@ -232,7 +235,7 @@ namespace IThelpdesk.Services
 
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    userId,
+                    currentUserId, // ✅ replaced userId
                     action,
                     $"Status changed from '{oldStatus}' to '{dto.Status}'",
                     oldStatus,
@@ -244,7 +247,7 @@ namespace IThelpdesk.Services
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    userId,
+                    currentUserId, // ✅ replaced userId
                     JobCardAuditAction.FaultFoundUpdated,
                     "Fault Found updated",
                     oldFaultFound,
@@ -256,7 +259,7 @@ namespace IThelpdesk.Services
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    userId,
+                    currentUserId, // ✅ replaced userId
                     JobCardAuditAction.WorkPerformedUpdated,
                     "Work Performed updated",
                     oldWorkPerformed,
@@ -268,7 +271,7 @@ namespace IThelpdesk.Services
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    userId,
+                    currentUserId, // ✅ replaced userId
                     JobCardAuditAction.CompletionNotesUpdated,
                     "Completion Notes updated",
                     oldCompletionNotes,
@@ -281,11 +284,12 @@ namespace IThelpdesk.Services
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    userId,
+                    currentUserId, // ✅ replaced userId
                     JobCardAuditAction.CustomerSignatureAdded,
                     "Customer signature captured");
             }
         }
+
 
         //---------------------------------------------------
         // Complete Job Card
@@ -324,19 +328,20 @@ namespace IThelpdesk.Services
         // Delete
         //---------------------------------------------------
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(
+        int id,
+        int currentUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 return;
 
-            // Audit deletion before removing the record so the audit can reference the job card id/number.
             await _auditService.LogAsync(
-                jobCard.JobCardId,
-                jobCard.AssignedTechnicianId ?? 0,
-                JobCardAuditAction.JobCardDeleted,
-                $"Job Card {jobCard.JobNumber} deleted");
+            jobCard.JobCardId,
+            currentUserId,
+            JobCardAuditAction.JobCardDeleted,
+            $"Job Card {jobCard.JobNumber} deleted");
 
             await _jobCardRepository.DeleteAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
@@ -346,7 +351,8 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         public async Task AddLabourEntryAsync(
             int jobCardId,
-            AddLabourEntryDto dto)
+            AddLabourEntryDto dto,
+            int currentUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
 
@@ -374,11 +380,11 @@ namespace IThelpdesk.Services
             await _jobCardRepository.AddLabourEntryAsync(labour);
             await _jobCardRepository.SaveChangesAsync();
 
-            await _auditService.LogAsync(
-                jobCard.JobCardId,
-                jobCard.AssignedTechnicianId.Value,
-                JobCardAuditAction.LabourAdded,
-                $"Added {dto.HoursWorked} hours of labour.");
+                    await _auditService.LogAsync(
+            jobCard.JobCardId,
+            currentUserId,
+            JobCardAuditAction.LabourAdded,
+            $"Added {dto.HoursWorked} hours of labour.");
         }
 
 
@@ -396,7 +402,8 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         public async Task AddPartAsync(
             int jobCardId,
-            AddPartDto dto)
+            AddPartDto dto,
+            int currentUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
 
@@ -423,10 +430,10 @@ namespace IThelpdesk.Services
             await _jobCardRepository.SaveChangesAsync();
 
             await _auditService.LogAsync(
-                jobCard.JobCardId,
-                jobCard.AssignedTechnicianId ?? 0,
-                JobCardAuditAction.PartAdded,
-                $"Added part '{dto.PartName.Trim()}' x{dto.Quantity}");
+              jobCard.JobCardId,
+              currentUserId,
+              JobCardAuditAction.PartAdded,
+              $"Added part '{dto.PartName.Trim()}' x{dto.Quantity}");
         }
 
 
@@ -450,7 +457,9 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         // Delete Part
         //---------------------------------------------------
-        public async Task DeletePartAsync(int partId)
+        public async Task DeletePartAsync(
+        int partId,
+        int currentUserId)
         {
             var part = await _jobCardRepository.GetPartByIdAsync(partId);
 
@@ -458,15 +467,15 @@ namespace IThelpdesk.Services
                 throw new Exception("Part not found.");
 
             var jobCard = await _jobCardRepository.GetByIdAsync(part.JobCardId);
-
+            
             if (jobCard != null && jobCard.Status == "Completed")
                 throw new Exception("Completed Job Cards cannot be modified.");
 
             await _auditService.LogAsync(
-                part.JobCardId,
-                jobCard?.AssignedTechnicianId ?? 0,
-                JobCardAuditAction.PartDeleted,
-                $"Deleted part '{part.PartName}' x{part.Quantity}");
+            part.JobCardId,
+            currentUserId,
+            JobCardAuditAction.PartDeleted,
+            $"Deleted part '{part.PartName}' x{part.Quantity}");
 
             await _jobCardRepository.DeletePartAsync(part);
             await _jobCardRepository.SaveChangesAsync();

@@ -98,34 +98,26 @@ namespace IThelpdesk.Controllers
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var jobCard = await _jobCardService.GetByIdAsync(id);
-
-            if (jobCard == null)
-            {
-                return NotFound();
-            }
-
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
             var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
 
-            await _auditService.LogAsync(
-                jobCard.JobCardId,
-                currentUserId,
-                JobCardAuditAction.PdfGenerated,
-                $"PDF generated for Job Card {jobCard.JobNumber}");
+            var jobCard = await _jobCardService.GetByIdAsync(id);
+
+            if (jobCard != null)
+            {
+                int userId = jobCard.AssignedTechnicianId ?? 0;
+
+                await _auditService.LogAsync(
+                    jobCard.JobCardId,
+                    userId,
+                    JobCardAuditAction.PdfGenerated,
+                    $"PDF generated for Job Card {jobCard.JobNumber}");
+            }
 
             return File(
                 pdf,
                 "application/pdf",
                 $"JobCard-{id}.pdf");
         }
-
 
         //---------------------------------------------------------
         // CREATE JOB CARD
@@ -135,55 +127,23 @@ namespace IThelpdesk.Controllers
         [HttpPost("create-from-ticket")]
         public async Task<IActionResult> CreateFromTicket([FromBody] CreateJobCardDto request)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var jobCard =
+                await _jobCardService.CreateFromTicketAsync(request.TicketId);
 
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            var jobCard = await _jobCardService.CreateFromTicketAsync(
-                request.TicketId,
-                currentUserId);
-
-            //return CreatedAtAction(
-            //    nameof(GetDetails),
-            //    new { id = jobCard.JobCardId },
-            //    jobCard);
-
-            return Ok(new
-            {
-                jobCard.JobCardId,
-                jobCard.JobNumber,
-                jobCard.Status,
-                jobCard.TicketId,
-                jobCard.DateCreated
-            });
+            return Ok(jobCard);
         }
 
-
-
         //---------------------------------------------------------
-        // GET LABOUR
+        // ADD LABOUR
         //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("{id}/labour")]
         public async Task<IActionResult> AddLabourEntry(
-    int id,
-    [FromBody] AddLabourEntryDto dto)
+            int id,
+            [FromBody] AddLabourEntryDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            await _jobCardService.AddLabourEntryAsync(
-                id,
-                dto,
-                currentUserId);
+            await _jobCardService.AddLabourEntryAsync(id, dto);
 
             return Ok();
         }
@@ -198,20 +158,11 @@ namespace IThelpdesk.Controllers
             int id,
             [FromBody] AddPartDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            await _jobCardService.AddPartAsync(
-                id,
-                dto,
-                currentUserId);
+            await _jobCardService.AddPartAsync(id, dto);
 
             return Ok();
         }
+
 
         //---------------------------------------------------------
         // DELETE PART
@@ -221,16 +172,7 @@ namespace IThelpdesk.Controllers
         [HttpDelete("parts/{partId}")]
         public async Task<IActionResult> DeletePart(int partId)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            await _jobCardService.DeletePartAsync(
-                partId,
-                currentUserId);
+            await _jobCardService.DeletePartAsync(partId);
 
             return NoContent();
         }
@@ -254,20 +196,10 @@ namespace IThelpdesk.Controllers
         [Authorize(Roles = "Admin,Technician")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(
-     int id,
-     [FromBody] UpdateJobCardDto dto)
+            int id,
+            [FromBody] UpdateJobCardDto dto)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            await _jobCardService.UpdateJobCardAsync(
-                id,
-                dto,
-                currentUserId);
+            await _jobCardService.UpdateJobCardAsync(id, dto);
 
             return NoContent();
         }
@@ -288,20 +220,12 @@ namespace IThelpdesk.Controllers
         //---------------------------------------------------------
         // DELETE JOB CARD
         //---------------------------------------------------------
+
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(userIdClaim, out int currentUserId))
-            {
-                return Unauthorized();
-            }
-
-            await _jobCardService.DeleteAsync(
-                id,
-                currentUserId);
+            await _jobCardService.DeleteAsync(id);
 
             return NoContent();
         }

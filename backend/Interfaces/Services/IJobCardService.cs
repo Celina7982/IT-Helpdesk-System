@@ -44,9 +44,7 @@ namespace IThelpdesk.Interfaces.Services
         /// <summary>
         /// Creates a Job Card from a Ticket.
         /// </summary>
-        Task<JobCard> CreateFromTicketAsync(
-         int ticketId,
-         int currentUserId);
+        Task<JobCard> CreateFromTicketAsync(int ticketId);
 
         /// <summary>
         /// Updates a Job Card.
@@ -57,9 +55,8 @@ namespace IThelpdesk.Interfaces.Services
         /// Updates editable Job Card fields.
         /// </summary>
         Task UpdateJobCardAsync(
-    int id,
-    UpdateJobCardDto dto,
-    int currentUserId);
+            int id,
+            UpdateJobCardDto dto);
 
         /// <summary>
         /// Completes a Job Card.
@@ -69,9 +66,7 @@ namespace IThelpdesk.Interfaces.Services
         /// <summary>
         /// Deletes a Job Card.
         /// </summary>
-        Task DeleteAsync(
-        int id,
-        int currentUserId);
+        Task DeleteAsync(int id);
 
         //--------------------------------------------------
         // Labour
@@ -79,8 +74,7 @@ namespace IThelpdesk.Interfaces.Services
 
         Task AddLabourEntryAsync(
             int jobCardId,
-            AddLabourEntryDto dto,
-            int currentUserId);
+            AddLabourEntryDto dto);
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(
             int jobCardId);
@@ -94,8 +88,7 @@ namespace IThelpdesk.Interfaces.Services
         /// </summary>
         Task AddPartAsync(
             int jobCardId,
-            AddPartDto dto,
-            int currentUserId);
+            AddPartDto dto);
 
         /// <summary>
         /// Returns all Parts used on a Job Card.
@@ -107,8 +100,7 @@ namespace IThelpdesk.Interfaces.Services
         /// Deletes a Part from a Job Card.
         /// </summary>
         Task DeletePartAsync(
-        int partId,
-        int currentUserId);
+            int partId);
 
     }
 

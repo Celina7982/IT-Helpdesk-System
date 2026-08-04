@@ -13,7 +13,7 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<TechnicianTicketDto>> GetMyTicketsAsync(int technicianId);
+        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 

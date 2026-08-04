@@ -15,11 +15,5 @@
         public string Category { get; set; } = string.Empty;
 
         public DateTime CreatedDate { get; set; }
-
-        // NEW
-        public bool HasJobCard { get; set; }
-
-        // NEW
-        public int? JobCardId { get; set; }
     }
 }

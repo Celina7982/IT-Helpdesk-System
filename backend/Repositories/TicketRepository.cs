@@ -81,27 +81,14 @@ namespace IThelpdesk.Repositories
         // Technician Tickets
         //-------------------------------------------------------
 
-        public async Task<IEnumerable<TechnicianTicketDto>> GetMyTicketsAsync(int technicianId)
+        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
         {
             return await _context.Tickets
+
                 .Where(t => t.AssignedToUserId == technicianId)
+
                 .OrderByDescending(t => t.CreatedDate)
-                .Select(t => new TechnicianTicketDto
-                {
-                    TicketId = t.TicketId,
-                    Subject = t.Subject,
-                    Status = t.Status,
-                    Priority = t.Priority,
-                    CreatedDate = t.CreatedDate,
-                    IsEscalated = t.IsEscalated,
 
-                    HasJobCard = _context.JobCards.Any(j => j.TicketId == t.TicketId),
-
-                    JobCardId = _context.JobCards
-                        .Where(j => j.TicketId == t.TicketId)
-                        .Select(j => (int?)j.JobCardId)
-                        .FirstOrDefault()
-                })
                 .ToListAsync();
         }
 

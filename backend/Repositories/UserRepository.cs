@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using IThelpdesk.Data;
+using IThelpdesk.DTOs.User;
 using IThelpdesk.Interfaces.Repositories;
-using IThelpdesk.Data;
 using IThelpdesk.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace IThelpdesk.Repositories
 {
@@ -14,12 +15,48 @@ namespace IThelpdesk.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<IEnumerable<UserListDto>> GetAllUsersAsync()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users
+
+                .OrderBy(u => u.FirstName)
+
+                .Select(u => new UserListDto
+                {
+                    UserId = u.UserId,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email,
+                    Role = u.Role,
+                    IsActive = u.IsActive,
+                    CreatedDate = u.CreatedDate
+                })
+
+                .ToListAsync();
         }
 
-        public async Task<User?> GetUserByIdAsync(int id)
+        public async Task<UserDetailsDto?> GetUserByIdAsync(int id)
+        {
+            return await _context.Users
+
+                .Where(u => u.UserId == id)
+
+                .Select(u => new UserDetailsDto
+                {
+                    UserId = u.UserId,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email,
+                    Role = u.Role,
+                    IsActive = u.IsActive,
+                    CreatedDate = u.CreatedDate,
+                    LastLoginDate = u.LastLoginDate
+                })
+
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<User?> GetUserEntityByIdAsync(int id)
         {
             return await _context.Users.FindAsync(id);
         }

@@ -48,18 +48,18 @@ const userService = {
     },
 
     //----------------------------------------------------
-    // Update User
-    //----------------------------------------------------
+// Update User
+//----------------------------------------------------
 
-    updateUser: async (user) => {
+updateUser: async (id, user) => {
 
-        await api.put(`/User/${user.userId}`, user, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-        });
+    await api.put(`/User/${id}`, user, {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+    });
 
-    },
+},
 
     //----------------------------------------------------
     // Delete User

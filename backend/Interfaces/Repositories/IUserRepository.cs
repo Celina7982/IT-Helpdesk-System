@@ -1,16 +1,26 @@
-﻿using IThelpdesk.Models;
+﻿using IThelpdesk.DTOs.User;
+using IThelpdesk.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
     public interface IUserRepository
     {
-        Task<IEnumerable<User>> GetAllUsersAsync();
+        //--------------------------------------------------
+        // User Lists
+        //--------------------------------------------------
 
-        Task<User?> GetUserByIdAsync(int id);
+        Task<IEnumerable<UserListDto>> GetAllUsersAsync();
+        Task<UserDetailsDto?> GetUserByIdAsync(int id);
 
+        Task<User?> GetUserEntityByIdAsync(int id);
         Task<User?> GetUserByEmailAsync(string email);
 
         Task<IEnumerable<User>> GetTechniciansAsync();
+
+        //--------------------------------------------------
+        // CRUD
+        //--------------------------------------------------
 
         Task AddUserAsync(User user);
 

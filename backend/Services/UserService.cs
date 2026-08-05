@@ -1,6 +1,7 @@
 ﻿using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
+using IThelpdesk.DTOs.User;
 
 namespace IThelpdesk.Services
 {
@@ -13,14 +14,19 @@ namespace IThelpdesk.Services
             _userRepository = userRepository;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<IEnumerable<UserListDto>> GetAllUsersAsync()
         {
             return await _userRepository.GetAllUsersAsync();
         }
 
-        public async Task<User?> GetUserByIdAsync(int id)
+        public async Task<UserDetailsDto?> GetUserByIdAsync(int id)
         {
             return await _userRepository.GetUserByIdAsync(id);
+        }
+
+        public async Task<User?> GetUserEntityByIdAsync(int id)
+        {
+            return await _userRepository.GetUserEntityByIdAsync(id);
         }
 
         public async Task<User?> GetUserByEmailAsync(string email)
@@ -54,7 +60,7 @@ namespace IThelpdesk.Services
 
         public async Task DeleteUserAsync(int id)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var user = await _userRepository.GetUserEntityByIdAsync(id);
 
             if (user == null)
             {

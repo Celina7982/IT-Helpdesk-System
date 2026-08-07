@@ -12,7 +12,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import JobCards from "./pages/JobCards";
 import JobCardDetails from "./pages/JobCardDetails";
 import Users from "./pages/Users";
-
+import Tickets from "./pages/Tickets";
 function App() {
     return (
         <Routes>
@@ -41,11 +41,16 @@ function App() {
                     path="jobcards"
                     element={<JobCards />}
                 />
-
+                
+                
                 <Route
                     path="jobcards/:id"
                     element={<JobCardDetails />}
                 />
+                  <Route
+                         path="tickets"
+                        element={<Tickets />}
+                    />
                     <Route
                         path="users"
                         element={<Users />}

@@ -1,6 +1,4 @@
-﻿
-
-    using IThelpdesk.Data;
+﻿    using IThelpdesk.Data;
     using IThelpdesk.DTOs;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;

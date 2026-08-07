@@ -37,7 +37,7 @@ function AdminLayout() {
 
                         <li className="nav-item mb-2">
                             <Link
-                                to="/tickets"
+                                to="/admin/tickets"
                                 className="nav-link text-white"
                             >
                                 🎫 Tickets
@@ -53,23 +53,7 @@ function AdminLayout() {
                             </Link>
                         </li>
 
-                        <li className="nav-item mb-2">
-                            <Link
-                                to="/reports"
-                                className="nav-link text-white"
-                            >
-                                📊 Reports
-                            </Link>
-                        </li>
-
-                        <li className="nav-item mb-2">
-                            <Link
-                                to="/settings"
-                                className="nav-link text-white"
-                            >
-                                ⚙ Settings
-                            </Link>
-                        </li>
+                       
 
                     </ul>
 

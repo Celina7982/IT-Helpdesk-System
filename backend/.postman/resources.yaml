@@ -1,7 +1,0 @@
-# Use this workspace to collaborate
-workspace:
-  id: 704cca36-750a-4107-8f76-f2bc83199928
-
-localResources:
-  specs:
-    - ../obj/Debug/net10.0/EndpointInfo/IThelpdesk.json

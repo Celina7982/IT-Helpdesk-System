@@ -172,11 +172,7 @@ namespace IThelpdesk.Repositories
             await Task.CompletedTask;
         }
 
-        public async Task AddAuditHistoryAsync(TicketAuditHistory auditHistory)
-        {
-            await _context.TicketAuditHistory.AddAsync(auditHistory);
-            await _context.SaveChangesAsync();
-        }
+      
 
         public async Task DeleteAsync(Ticket ticket)
         {
@@ -189,12 +185,7 @@ namespace IThelpdesk.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<TicketAuditHistory>> GetAuditHistoryAsync()
-        {
-            return await _context.TicketAuditHistory
-                .OrderByDescending(x => x.ResolvedDate)
-                .ToListAsync();
-        }
+       
 
     }
 }

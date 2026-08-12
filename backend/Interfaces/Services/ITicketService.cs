@@ -17,9 +17,6 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
-        Task<List<TicketAuditHistory>> GetAuditHistoryAsync();
-
-
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
         //-------------------------------------------------------

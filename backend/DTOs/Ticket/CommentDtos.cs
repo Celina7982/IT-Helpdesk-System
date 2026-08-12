@@ -13,4 +13,9 @@
         public string Message { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
     }
+
+    public class UpdateCommentDto
+    {
+        public string Message { get; set; } = string.Empty;
+    }
 }

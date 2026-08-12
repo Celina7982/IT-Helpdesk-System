@@ -71,6 +71,22 @@ namespace IThelpdesk.Services
             await _userRepository.SaveChangesAsync();
         }
 
+
+        public async Task ResetPasswordAsync(int id, string newPassword)
+        {
+            var user = await _userRepository.GetUserEntityByIdAsync(id);
+
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            // Hash the new password
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            await _userRepository.UpdateUserAsync(user);
+            await _userRepository.SaveChangesAsync();
+        }
         public async Task<IEnumerable<User>> GetTechniciansAsync()
         {
             return await _userRepository.GetTechniciansAsync();

@@ -3,6 +3,7 @@ using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
+using System.Security.Claims;
 using IThelpdesk.Repositories;
 
 
@@ -31,6 +32,11 @@ namespace IThelpdesk.Services
         public async Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync()
         {
             return await _ticketRepository.GetAllAsync();
+        }
+
+        public async Task<List<TicketAuditHistory>> GetAuditHistoryAsync()
+        {
+            return await _ticketRepository.GetAuditHistoryAsync();
         }
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
@@ -212,17 +218,43 @@ namespace IThelpdesk.Services
         // Resolve Ticket
         //-------------------------------------------------------
 
-        public async Task ResolveTicketAsync(int ticketId)
+        //-------------------------------------------------------
+        // Resolve Ticket
+        //-------------------------------------------------------
+
+        public async Task ResolveTicketAsync(int ticketId, int resolvedByUserId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
-
             if (ticket == null)
+            {
                 throw new Exception("Ticket not found.");
-
+            }
+            // Create audit history record
+            var auditHistory = new TicketAuditHistory
+            {
+                TicketId = ticket.TicketId,
+                Subject = ticket.Subject,
+                Description = ticket.Description,
+                CustomerName = ticket.CustomerName,
+                CompanyName = ticket.CompanyName,
+                Category = ticket.Category,
+                Priority = ticket.Priority,
+                AssignedToUserId = ticket.AssignedToUserId,
+                CreatedDate = ticket.CreatedDate,
+                ResolvedDate = DateTime.UtcNow,
+                ResolvedByUserId = resolvedByUserId,
+                WasEscalated = ticket.IsEscalated,
+                EscalationReason = ticket.EscalationReason,
+                ResolutionNotes = null,
+                FinalStatus = "Resolved"
+            };
+            // Save audit history
+            await _ticketRepository.AddAuditHistoryAsync(auditHistory);
+            // Mark original ticket as resolved
             ticket.Status = "Resolved";
-
+            ticket.IsEscalated = false;
             await _ticketRepository.UpdateAsync(ticket);
-            await _ticketRepository.SaveChangesAsync();
+
         }
     }
 }

@@ -120,17 +120,42 @@ namespace IThelpdesk.Controllers
         }
 
         //---------------------------------------------------------
-        // CREATE JOB CARD
+        // CREATE JOB CARD FROM TICKET
         //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("create-from-ticket")]
-        public async Task<IActionResult> CreateFromTicket([FromBody] CreateJobCardDto request)
+        public async Task<IActionResult> CreateFromTicket(
+            [FromBody] CreateJobCardDto request)
         {
-            var jobCard =
-                await _jobCardService.CreateFromTicketAsync(request.TicketId);
+            if (request == null)
+                return BadRequest(new { message = "Request is required." });
 
-            return Ok(jobCard);
+            try
+            {
+                var jobCard =
+                    await _jobCardService.CreateFromTicketAsync(request.TicketId);
+
+                // Return ONLY the values the frontend needs.
+                // Do NOT return the complete JobCard entity because
+                // JobCard -> Ticket -> JobCards creates a JSON cycle.
+
+                return Ok(new
+                {
+                    jobCardId = jobCard.JobCardId,
+                    jobNumber = jobCard.JobNumber,
+                    ticketId = jobCard.TicketId,
+                    assignedTechnicianId = jobCard.AssignedTechnicianId,
+                    status = jobCard.Status
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
         //---------------------------------------------------------

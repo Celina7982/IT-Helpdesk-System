@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import userService from "../services/userService";
 import UserFormModal from "../components/users/UserFormModal"; 
+import ResetPasswordModal from "../components/Users/ResetPasswordModal";
 
 function Users() {
 
@@ -12,6 +13,10 @@ function Users() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [showResetModal, setShowResetModal] = useState(false);
+
+    const [selectedUser, setSelectedUser] = useState(null);
 
 //--------------------------------------------------
 // Pagination
@@ -207,6 +212,39 @@ const handleToggleStatus = async (user) => {
 
 };
 
+//--------------------------------------------------
+// Reset Password
+//--------------------------------------------------
+
+const handleResetPassword = async (newPassword) => {
+
+    try {
+
+        await userService.resetPassword(
+            selectedUser.userId,
+            newPassword
+        );
+
+        alert("Password reset successfully.");
+
+        setShowResetModal(false);
+
+        setSelectedUser(null);
+
+    }
+    catch (err) {
+
+        console.error(err);
+
+        alert(
+            err.response?.data?.message ||
+            "Unable to reset password."
+        );
+
+    }
+
+};
+
     //--------------------------------------------------
     // Load on Page Open
     //--------------------------------------------------
@@ -353,6 +391,19 @@ const handleToggleStatus = async (user) => {
         {user.isActive ? "Deactivate" : "Activate"}
     </button>
 
+<button
+    className="btn btn-info btn-sm me-2"
+    onClick={() => {
+
+        setSelectedUser(user);
+
+        setShowResetModal(true);
+
+    }}
+>
+    Reset Password
+</button>
+
     <button
         className="btn btn-danger btn-sm"
         onClick={() => handleDeleteUser(user.userId)}
@@ -403,8 +454,18 @@ const handleToggleStatus = async (user) => {
                 }}
                 onSave={handleSaveUser}
             />
+
+                <ResetPasswordModal
+                show={showResetModal}
+                onClose={() => {
+                    setShowResetModal(false);
+                    setSelectedUser(null);
+                }}
+                onSave={handleResetPassword}
+            />
         </div>
     );
 }
+
 
 export default Users;

@@ -113,6 +113,35 @@ namespace IThelpdesk.Controllers
             }
         }
 
+        //--------------------------------------------------
+        // Reset Password
+        //--------------------------------------------------
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("reset-password/{id}")]
+        public async Task<IActionResult> ResetPassword(
+            int id,
+            [FromBody] ResetPasswordDto dto)  
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                await _userService.ResetPasswordAsync(id, dto.NewPassword);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
         // DELETE: api/User/{id}
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]

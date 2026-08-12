@@ -28,5 +28,7 @@ namespace IThelpdesk.Interfaces.Services
         Task UpdateUserAsync(User user);
 
         Task DeleteUserAsync(int id);
+
+        Task ResetPasswordAsync(int id, string newPassword);
     }
 }

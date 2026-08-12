@@ -163,10 +163,11 @@ function TicketDetailsModal({ show, onClose, ticketId }) {
                                             <div key={item.commentId || item.id || idx} className="card mb-2 shadow-sm">
                                                 <div className="card-body p-2">
                                                     <div className="d-flex justify-content-between">
+                                                       
                                                         <strong className="small">
-                                                          {/* Always displays "Client" */}
-                                                                   Technician
-                                                                  </strong>
+                                                            {item.authorName}
+                                                        </strong>
+
                                                         <small className="text-muted">
                                                             {/* Matched to backend C# CreatedDate */}
                                                             {item.createdDate || item.createdAt ? new Date(item.createdDate || item.createdAt).toLocaleString() : ""}

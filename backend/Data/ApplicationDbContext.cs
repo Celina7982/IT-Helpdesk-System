@@ -16,7 +16,6 @@ namespace IThelpdesk.Data
         //--------------------------------------------------
 
         public DbSet<User> Users { get; set; }
-
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
         //--------------------------------------------------
@@ -24,9 +23,8 @@ namespace IThelpdesk.Data
         //--------------------------------------------------
 
         public DbSet<JobCard> JobCards { get; set; }
-
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
-
+        public DbSet<TicketAuditHistory> TicketAuditHistory { get; set; }
         public DbSet<JobCardPart> JobCardParts { get; set; }
 
         //--------------------------------------------------

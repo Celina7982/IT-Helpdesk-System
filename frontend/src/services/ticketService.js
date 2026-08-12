@@ -14,7 +14,29 @@ const ticketService = {
         });
         return response.data;
     },
+    //-------------------------------------------------------
+// Create Ticket
+//-------------------------------------------------------
 
+createTicket: async (ticketData) => {
+
+    const response = await api.post(
+
+        "/Ticket",
+
+        ticketData,
+
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+
+    );
+
+    return response.data;
+
+},
     //-------------------------------------------------------
     // Available Tickets
     //-------------------------------------------------------

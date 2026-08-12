@@ -99,11 +99,10 @@ namespace IThelpdesk.Repositories
         public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
         {
             return await _context.Tickets
-
-                .Where(t => t.IsEscalated)
-
+                .Where(t =>
+                    t.IsEscalated &&
+                    t.Status == "Escalated")
                 .OrderByDescending(t => t.CreatedDate)
-
                 .ToListAsync();
         }
 
@@ -173,6 +172,12 @@ namespace IThelpdesk.Repositories
             await Task.CompletedTask;
         }
 
+        public async Task AddAuditHistoryAsync(TicketAuditHistory auditHistory)
+        {
+            await _context.TicketAuditHistory.AddAsync(auditHistory);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(Ticket ticket)
         {
             _context.Tickets.Remove(ticket);
@@ -183,5 +188,13 @@ namespace IThelpdesk.Repositories
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<TicketAuditHistory>> GetAuditHistoryAsync()
+        {
+            return await _context.TicketAuditHistory
+                .OrderByDescending(x => x.ResolvedDate)
+                .ToListAsync();
+        }
+
     }
 }

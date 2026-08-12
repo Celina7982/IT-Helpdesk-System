@@ -7,31 +7,47 @@ const ticketService = {
     //-------------------------------------------------------
 
     getAllTickets: async () => {
-
         const response = await api.get("/Ticket", {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
-
         return response.data;
-
     },
+    //-------------------------------------------------------
+// Create Ticket
+//-------------------------------------------------------
 
+createTicket: async (ticketData) => {
+
+    const response = await api.post(
+
+        "/Ticket",
+
+        ticketData,
+
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+
+    );
+
+    return response.data;
+
+},
     //-------------------------------------------------------
     // Available Tickets
     //-------------------------------------------------------
 
     getAvailableTickets: async () => {
-
         const response = await api.get("/Ticket/available", {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
-
         return response.data;
-
     },
 
     //-------------------------------------------------------
@@ -39,15 +55,12 @@ const ticketService = {
     //-------------------------------------------------------
 
     getMyTickets: async () => {
-
         const response = await api.get("/Ticket/my", {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
-
         return response.data;
-
     },
 
     //-------------------------------------------------------
@@ -55,15 +68,12 @@ const ticketService = {
     //-------------------------------------------------------
 
     getEscalatedTickets: async () => {
-
         const response = await api.get("/Ticket/escalated", {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
-
         return response.data;
-
     },
 
     //-------------------------------------------------------
@@ -71,7 +81,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     getTicketDetails: async (ticketId) => {
-
         const response = await api.get(
             `/Ticket/${ticketId}`,
             {
@@ -80,9 +89,7 @@ const ticketService = {
                 }
             }
         );
-
         return response.data;
-
     },
 
     //-------------------------------------------------------
@@ -90,7 +97,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     claimTicket: async (ticketId) => {
-
         await api.put(
             `/Ticket/${ticketId}/claim`,
             {},
@@ -100,7 +106,6 @@ const ticketService = {
                 }
             }
         );
-
     },
 
     //-------------------------------------------------------
@@ -108,7 +113,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     resolveTicket: async (ticketId) => {
-
         await api.put(
             `/Ticket/${ticketId}/resolve`,
             {},
@@ -118,7 +122,6 @@ const ticketService = {
                 }
             }
         );
-
     },
 
     //-------------------------------------------------------
@@ -126,7 +129,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     escalateTicket: async (ticketId, escalationReason) => {
-
         await api.put(
             `/Ticket/${ticketId}/escalate`,
             {
@@ -138,7 +140,6 @@ const ticketService = {
                 }
             }
         );
-
     },
 
     //-------------------------------------------------------
@@ -146,7 +147,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     assignTicket: async (ticketId, assignedToUserId) => {
-
         await api.put(
             `/Ticket/${ticketId}/assign`,
             {
@@ -158,7 +158,6 @@ const ticketService = {
                 }
             }
         );
-
     },
 
     //-------------------------------------------------------
@@ -166,7 +165,6 @@ const ticketService = {
     //-------------------------------------------------------
 
     deleteTicket: async (ticketId) => {
-
         await api.delete(
             `/Ticket/${ticketId}`,
             {
@@ -175,7 +173,42 @@ const ticketService = {
                 }
             }
         );
+    },
 
+    //-------------------------------------------------------
+    // Get Ticket Comments
+    // Matches GET: api/tickets/{ticketId}/comments
+    //-------------------------------------------------------
+
+    getComments: async (ticketId) => {
+        const response = await api.get(
+            `/tickets/${ticketId}/comments`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+        return response.data;
+    },
+
+    //-------------------------------------------------------
+    // Add Comment to Ticket
+    // Matches POST: api/tickets/{ticketId}/comments
+    // Payload expects CreateCommentDto: { message: "..." }
+    //-------------------------------------------------------
+
+    addComment: async (ticketId, commentText) => {
+        const response = await api.post(
+            `/tickets/${ticketId}/comments`,
+            { message: commentText },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+        return response.data;
     }
 
 };

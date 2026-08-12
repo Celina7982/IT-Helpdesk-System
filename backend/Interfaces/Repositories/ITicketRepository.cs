@@ -17,6 +17,10 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
+        Task AddAuditHistoryAsync(TicketAuditHistory auditHistory);
+        Task<List<TicketAuditHistory>> GetAuditHistoryAsync();
+
+
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
         //-------------------------------------------------------

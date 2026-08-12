@@ -98,22 +98,20 @@ namespace IThelpdesk.Controllers
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var jobCard = await _jobCardService.GetByIdAsync(id);
-
-            if (jobCard == null)
-            {
-                return NotFound();
-            }
-
             var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
 
-            int userId = jobCard.AssignedTechnicianId ?? 0;
+            var jobCard = await _jobCardService.GetByIdAsync(id);
 
-            await _auditService.LogAsync(
-                jobCard.JobCardId,
-                userId,
-                JobCardAuditAction.PdfGenerated,
-                $"PDF generated for Job Card {jobCard.JobNumber}");
+            if (jobCard != null)
+            {
+                int userId = jobCard.AssignedTechnicianId ?? 0;
+
+                await _auditService.LogAsync(
+                    jobCard.JobCardId,
+                    userId,
+                    JobCardAuditAction.PdfGenerated,
+                    $"PDF generated for Job Card {jobCard.JobNumber}");
+            }
 
             return File(
                 pdf,
@@ -121,23 +119,44 @@ namespace IThelpdesk.Controllers
                 $"JobCard-{id}.pdf");
         }
 
-
         //---------------------------------------------------------
-        // CREATE JOB CARD
+        // CREATE JOB CARD FROM TICKET
         //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("create-from-ticket")]
-        public async Task<IActionResult> CreateFromTicket([FromBody] CreateJobCardDto request)
+        public async Task<IActionResult> CreateFromTicket(
+            [FromBody] CreateJobCardDto request)
         {
-            var jobCard =
-                await _jobCardService.CreateFromTicketAsync(request.TicketId);
+            if (request == null)
+                return BadRequest(new { message = "Request is required." });
 
-            return CreatedAtAction(
-            nameof(GetDetails),
-            new { id = jobCard.JobCardId },
-            jobCard);
-                }
+            try
+            {
+                var jobCard =
+                    await _jobCardService.CreateFromTicketAsync(request.TicketId);
+
+                // Return ONLY the values the frontend needs.
+                // Do NOT return the complete JobCard entity because
+                // JobCard -> Ticket -> JobCards creates a JSON cycle.
+
+                return Ok(new
+                {
+                    jobCardId = jobCard.JobCardId,
+                    jobNumber = jobCard.JobNumber,
+                    ticketId = jobCard.TicketId,
+                    assignedTechnicianId = jobCard.AssignedTechnicianId,
+                    status = jobCard.Status
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
 
         //---------------------------------------------------------
         // ADD LABOUR
@@ -152,19 +171,6 @@ namespace IThelpdesk.Controllers
             await _jobCardService.AddLabourEntryAsync(id, dto);
 
             return Ok();
-        }
-
-        //---------------------------------------------------------
-        // GET LABOUR
-        //---------------------------------------------------------
-
-        [Authorize(Roles = "Admin,Technician")]
-        [HttpGet("{id}/labour")]
-        public async Task<IActionResult> GetLabour(int id)
-        {
-            var labour = await _jobCardService.GetLabourEntriesAsync(id);
-
-            return Ok(labour);
         }
 
         //---------------------------------------------------------

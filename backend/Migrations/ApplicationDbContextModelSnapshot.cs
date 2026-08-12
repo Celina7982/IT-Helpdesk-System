@@ -91,7 +91,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TicketId");
 
-                    b.ToTable("JobCards");
+                    b.ToTable("JobCards", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
@@ -137,7 +137,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId", "DateCreated");
 
-                    b.ToTable("JobCardAudits");
+                    b.ToTable("JobCardAudits", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
@@ -171,7 +171,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TechnicianId");
 
-                    b.ToTable("JobCardLabours");
+                    b.ToTable("JobCardLabours", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
@@ -197,7 +197,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId");
 
-                    b.ToTable("JobCardParts");
+                    b.ToTable("JobCardParts", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
@@ -263,7 +263,34 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tickets");
+                    b.ToTable("Tickets", (string)null);
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
+                {
+                    b.Property<int>("CommentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentId"));
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CommentId");
+
+                    b.ToTable("TicketComments", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -309,7 +336,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>

@@ -63,14 +63,16 @@ function JobCards() {
     // State
     //--------------------------------------------------
 
+    
     // Complete list returned by the API.
     const [jobCards, setJobCards] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
 
     const [pageNumber, setPageNumber] = useState(1);
 
     const [pageSize, setPageSize] = useState(10);
 
-    const [totalCount, setTotalCount] = useState(0);
+    
 
     // Shows loading spinner while data loads.
     const [loading, setLoading] = useState(true);
@@ -177,7 +179,7 @@ useEffect(() => {
     //
     //--------------------------------------------------
 
- const loadJobCards = async () => {
+const loadJobCards = async () => {
 
     setLoading(true);
 
@@ -185,34 +187,31 @@ useEffect(() => {
 
         const data = await jobCardService.getAll({
 
-    mine: mineOnly,
+            mine: mineOnly,
 
-    status: statusFilter === "All"
-        ? ""
-        : statusFilter,
+            status: statusFilter === "All"
+                ? ""
+                : statusFilter,
 
-    assignedTo: "",
+            assignedTo: "",
 
-    search: debouncedSearch,
+            search: searchTerm,
 
-    sortBy,
+            pageNumber: 1,
 
-    sortDirection,
+            pageSize: 1000
 
-    pageNumber,
+        });
 
-    pageSize
+        setJobCards(data.items);
 
-});
-
-setJobCards(data.items);
-
-setTotalCount(data.totalCount);
+        setTotalCount(data.totalCount);
 
     }
     catch (error) {
 
         console.error(error);
+
         alert("Unable to load Job Cards.");
 
     }
@@ -221,6 +220,7 @@ setTotalCount(data.totalCount);
         setLoading(false);
 
     }
+
 };
 
     //--------------------------------------------------

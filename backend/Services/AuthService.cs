@@ -70,16 +70,24 @@ namespace IThelpdesk.Services
 
             // Create the information that will be stored in the JWT.
             var claims = new[]
-            {
-                // User's unique ID.
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+  {
+    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
 
-                // User's email.
-                new Claim(ClaimTypes.Email, user.Email),
+    // Add this
+    new Claim(
+        ClaimTypes.Name,
+        $"{user.FirstName} {user.LastName}"
+    ),
 
-                // User's role.
-                new Claim(ClaimTypes.Role, user.Role)
-            };
+    // Optional but useful
+    new Claim(ClaimTypes.GivenName, user.FirstName),
+
+    new Claim(ClaimTypes.Surname, user.LastName),
+
+    new Claim(ClaimTypes.Email, user.Email),
+
+    new Claim(ClaimTypes.Role, user.Role)
+};
 
             // Create the secret signing key from appsettings.json.
             var key = new SymmetricSecurityKey(

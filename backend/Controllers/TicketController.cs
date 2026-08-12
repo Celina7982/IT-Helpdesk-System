@@ -209,14 +209,21 @@ namespace IThelpdesk.Controllers
         // ======================================================
 
         // PUT: api/Ticket/5/resolve
+
         [Authorize(Roles = "Admin,Technician")]
         [HttpPut("{id}/resolve")]
         public async Task<IActionResult> ResolveTicket(int id)
         {
-            await _ticketService.ResolveTicketAsync(id);
-
+            var resolvedByUserId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+            await _ticketService.ResolveTicketAsync(
+                    id,
+                    resolvedByUserId
+                );
             return NoContent();
         }
+
 
         // ======================================================
         // DELETE
@@ -245,5 +252,9 @@ namespace IThelpdesk.Controllers
 
             return Ok(tickets);
         }
+
+
+
     }
+
 }

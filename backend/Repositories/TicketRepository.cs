@@ -25,23 +25,45 @@ namespace IThelpdesk.Repositories
 
                 .Include(t => t.AssignedToUser)
 
+                .Where(t => !t.IsArchived)
+
                 .OrderByDescending(t => t.CreatedDate)
 
                 .Select(t => new TicketResponseDto
                 {
                     TicketId = t.TicketId,
+
                     Subject = t.Subject,
+
                     Status = t.Status,
+
                     Priority = t.Priority,
+
                     CustomerName = t.CustomerName,
+
                     CompanyName = t.CompanyName ?? "",
+
                     CreatedDate = t.CreatedDate,
+
                     IsEscalated = t.IsEscalated,
 
                     AssignedTechnician =
                         t.AssignedToUser != null
-                            ? t.AssignedToUser.FirstName + " " + t.AssignedToUser.LastName
-                            : "Not Assigned"
+                            ? t.AssignedToUser.FirstName + " " +
+                              t.AssignedToUser.LastName
+                            : "Not Assigned",
+
+                    //---------------------------------------------------
+                    // Job Card information
+                    //---------------------------------------------------
+
+                    HasJobCard = _context.JobCards
+                        .Any(j => j.TicketId == t.TicketId),
+
+                    JobCardId = _context.JobCards
+                        .Where(j => j.TicketId == t.TicketId)
+                        .Select(j => (int?)j.JobCardId)
+                        .FirstOrDefault()
                 })
 
                 .ToListAsync();
@@ -56,12 +78,16 @@ namespace IThelpdesk.Repositories
             return await _context.Tickets.FindAsync(id);
         }
 
+        //-------------------------------------------------------
+        // Get User By Id
+        //-------------------------------------------------------
 
         public async Task<User?> GetUserByIdAsync(int id)
         {
             return await _context.Users
                 .FirstOrDefaultAsync(u => u.UserId == id);
         }
+
         //-------------------------------------------------------
         // Available Tickets
         //-------------------------------------------------------
@@ -70,7 +96,9 @@ namespace IThelpdesk.Repositories
         {
             return await _context.Tickets
 
-                .Where(t => t.AssignedToUserId == null)
+                .Where(t =>
+                    t.AssignedToUserId == null &&
+                    !t.IsArchived)
 
                 .OrderByDescending(t => t.CreatedDate)
 
@@ -78,16 +106,58 @@ namespace IThelpdesk.Repositories
         }
 
         //-------------------------------------------------------
-        // Technician Tickets
+        // Technician / Admin My Tickets
         //-------------------------------------------------------
 
-        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
+        public async Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(
+            int technicianId)
         {
             return await _context.Tickets
 
-                .Where(t => t.AssignedToUserId == technicianId)
+                .Include(t => t.AssignedToUser)
+
+                .Where(t =>
+                    t.AssignedToUserId == technicianId &&
+                    !t.IsArchived)
 
                 .OrderByDescending(t => t.CreatedDate)
+
+                .Select(t => new TicketResponseDto
+                {
+                    TicketId = t.TicketId,
+
+                    Subject = t.Subject,
+
+                    Status = t.Status,
+
+                    Priority = t.Priority,
+
+                    CustomerName = t.CustomerName,
+
+                    CompanyName = t.CompanyName ?? "",
+
+                    CreatedDate = t.CreatedDate,
+
+                    IsEscalated = t.IsEscalated,
+
+                    AssignedTechnician =
+                        t.AssignedToUser != null
+                            ? t.AssignedToUser.FirstName + " " +
+                              t.AssignedToUser.LastName
+                            : "Not Assigned",
+
+                    //---------------------------------------------------
+                    // Job Card information
+                    //---------------------------------------------------
+
+                    HasJobCard = _context.JobCards
+                        .Any(j => j.TicketId == t.TicketId),
+
+                    JobCardId = _context.JobCards
+                        .Where(j => j.TicketId == t.TicketId)
+                        .Select(j => (int?)j.JobCardId)
+                        .FirstOrDefault()
+                })
 
                 .ToListAsync();
         }
@@ -99,10 +169,14 @@ namespace IThelpdesk.Repositories
         public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
         {
             return await _context.Tickets
+
                 .Where(t =>
                     t.IsEscalated &&
-                    t.Status == "Escalated")
+                    t.Status == "Escalated" &&
+                    !t.IsArchived)
+
                 .OrderByDescending(t => t.CreatedDate)
+
                 .ToListAsync();
         }
 
@@ -114,7 +188,9 @@ namespace IThelpdesk.Repositories
         {
             return await _context.Tickets
 
-                .Where(t => t.UserId == userId)
+                .Where(t =>
+                    t.UserId == userId &&
+                    !t.IsArchived)
 
                 .OrderByDescending(t => t.CreatedDate)
 
@@ -136,21 +212,31 @@ namespace IThelpdesk.Repositories
                 .Select(t => new TicketDetailsDto
                 {
                     TicketId = t.TicketId,
+
                     Subject = t.Subject,
+
                     Description = t.Description,
+
                     CustomerName = t.CustomerName,
+
                     CompanyName = t.CompanyName,
+
                     Category = t.Category,
+
                     Priority = t.Priority,
+
                     Status = t.Status,
+
                     CreatedDate = t.CreatedDate,
 
                     AssignedTechnician =
                         t.AssignedToUser != null
-                            ? t.AssignedToUser.FirstName + " " + t.AssignedToUser.LastName
+                            ? t.AssignedToUser.FirstName + " " +
+                              t.AssignedToUser.LastName
                             : "Not Assigned",
 
                     IsEscalated = t.IsEscalated,
+
                     EscalationReason = t.EscalationReason
                 })
 
@@ -169,32 +255,90 @@ namespace IThelpdesk.Repositories
         public async Task UpdateAsync(Ticket ticket)
         {
             _context.Tickets.Update(ticket);
-            await Task.CompletedTask;
-        }
 
-        public async Task AddAuditHistoryAsync(TicketAuditHistory auditHistory)
-        {
-            await _context.TicketAuditHistory.AddAsync(auditHistory);
-            await _context.SaveChangesAsync();
+            await Task.CompletedTask;
         }
 
         public async Task DeleteAsync(Ticket ticket)
         {
             _context.Tickets.Remove(ticket);
+
             await Task.CompletedTask;
         }
+
+        //-------------------------------------------------------
+        // Archive Ticket
+        //-------------------------------------------------------
+
+        public async Task ArchiveAsync(Ticket ticket)
+        {
+            ticket.IsArchived = true;
+
+            ticket.ArchivedDate = DateTime.UtcNow;
+
+            _context.Tickets.Update(ticket);
+
+            await Task.CompletedTask;
+        }
+
+        //-------------------------------------------------------
+        // Save Changes
+        //-------------------------------------------------------
 
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<TicketAuditHistory>> GetAuditHistoryAsync()
+
+        //-------------------------------------------------------
+        // Archived Tickets
+        //-------------------------------------------------------
+
+        public async Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync()
         {
-            return await _context.TicketAuditHistory
-                .OrderByDescending(x => x.ResolvedDate)
+            return await _context.Tickets
+
+                .Include(t => t.AssignedToUser)
+
+                .Where(t => t.IsArchived)
+
+                .OrderByDescending(t => t.ArchivedDate)
+
+                .Select(t => new TicketResponseDto
+                {
+                    TicketId = t.TicketId,
+
+                    Subject = t.Subject,
+
+                    Status = t.Status,
+
+                    Priority = t.Priority,
+
+                    CustomerName = t.CustomerName,
+
+                    CompanyName = t.CompanyName ?? "",
+
+                    CreatedDate = t.CreatedDate,
+
+                    IsEscalated = t.IsEscalated,
+
+                    AssignedTechnician =
+                        t.AssignedToUser != null
+                            ? t.AssignedToUser.FirstName + " " +
+                              t.AssignedToUser.LastName
+                            : "Not Assigned",
+
+                    HasJobCard = _context.JobCards
+                        .Any(j => j.TicketId == t.TicketId),
+
+                    JobCardId = _context.JobCards
+                        .Where(j => j.TicketId == t.TicketId)
+                        .Select(j => (int?)j.JobCardId)
+                        .FirstOrDefault()
+                })
+
                 .ToListAsync();
         }
-
     }
 }

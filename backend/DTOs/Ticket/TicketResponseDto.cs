@@ -19,9 +19,18 @@
         public bool IsEscalated { get; set; }
 
         // NEW
-        public string? AssignedTechnician { get; set; }
+        public string? AssignedTechnician { get; set; } 
 
         // NEW
         public string Category { get; set; } = string.Empty;
+
+
+        //---------------------------------------------------
+        // Job Card
+        //---------------------------------------------------
+
+        public bool HasJobCard { get; set; }
+
+        public int? JobCardId { get; set; }
     }
 }

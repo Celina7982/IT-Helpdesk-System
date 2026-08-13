@@ -78,6 +78,20 @@ const getDetails = async (id) => {
 
 };
 
+
+//----------------------------------------------------
+// Get Job Card By Ticket ID
+//----------------------------------------------------
+
+const getByTicketId = async (ticketId) => {
+
+    const response = await api.get(
+        `/JobCard/by-ticket/${ticketId}`
+    );
+
+    return response.data;
+};
+
 //----------------------------------------------------
 // Create Job Card
 //----------------------------------------------------
@@ -199,6 +213,7 @@ const jobCardService = {
 
     getAll,
     getDetails,
+    getByTicketId,
     createFromTicket,
     update,
     completeJobCard,

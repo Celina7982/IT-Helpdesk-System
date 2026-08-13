@@ -3,7 +3,6 @@ using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using System.Security.Claims;
 using IThelpdesk.Repositories;
 
 
@@ -34,17 +33,13 @@ namespace IThelpdesk.Services
             return await _ticketRepository.GetAllAsync();
         }
 
-        public async Task<List<TicketAuditHistory>> GetAuditHistoryAsync()
-        {
-            return await _ticketRepository.GetAuditHistoryAsync();
-        }
-
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
         {
             return await _ticketRepository.GetAvailableTicketsAsync();
         }
 
-        public async Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId)
+        public async Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(
+     int technicianId)
         {
             return await _ticketRepository.GetMyTicketsAsync(technicianId);
         }
@@ -222,39 +217,56 @@ namespace IThelpdesk.Services
         // Resolve Ticket
         //-------------------------------------------------------
 
-        public async Task ResolveTicketAsync(int ticketId, int resolvedByUserId)
+        public async Task ResolveTicketAsync(int ticketId, int userId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
-            if (ticket == null)
-            {
-                throw new Exception("Ticket not found.");
-            }
-            // Create audit history record
-            var auditHistory = new TicketAuditHistory
-            {
-                TicketId = ticket.TicketId,
-                Subject = ticket.Subject,
-                Description = ticket.Description,
-                CustomerName = ticket.CustomerName,
-                CompanyName = ticket.CompanyName,
-                Category = ticket.Category,
-                Priority = ticket.Priority,
-                AssignedToUserId = ticket.AssignedToUserId,
-                CreatedDate = ticket.CreatedDate,
-                ResolvedDate = DateTime.UtcNow,
-                ResolvedByUserId = resolvedByUserId,
-                WasEscalated = ticket.IsEscalated,
-                EscalationReason = ticket.EscalationReason,
-                ResolutionNotes = null,
-                FinalStatus = "Resolved"
-            };
-            // Save audit history
-            await _ticketRepository.AddAuditHistoryAsync(auditHistory);
-            // Mark original ticket as resolved
-            ticket.Status = "Resolved";
-            ticket.IsEscalated = false;
-            await _ticketRepository.UpdateAsync(ticket);
 
+            if (ticket == null)
+                throw new Exception("Ticket not found.");
+
+            // Mark ticket as resolved
+            ticket.Status = "Resolved";
+
+            // Remove escalation so it no longer appears
+            // in the Escalated Tickets table
+            ticket.IsEscalated = false;
+            ticket.EscalationReason = null;
+
+            await _ticketRepository.UpdateAsync(ticket);
+            await _ticketRepository.SaveChangesAsync();
         }
+
+
+        //-------------------------------------------------------
+        // Archive Ticket
+        //-------------------------------------------------------
+
+        public async Task ArchiveTicketAsync(int ticketId)
+        {
+            var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+
+            if (ticket == null)
+                throw new Exception("Ticket not found.");
+
+            // Mark ticket as archived
+            ticket.IsArchived = true;
+
+            // Store archive date
+            ticket.ArchivedDate = DateTime.UtcNow;
+
+            await _ticketRepository.ArchiveAsync(ticket);
+
+            await _ticketRepository.SaveChangesAsync();
+        }
+
+        //-------------------------------------------------------
+        // Archived Tickets
+        //-------------------------------------------------------
+
+        public async Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync()
+        {
+            return await _ticketRepository.GetArchivedTicketsAsync();
+        }
+
     }
 }

@@ -615,5 +615,11 @@ namespace IThelpdesk.Services
 
             await _jobCardRepository.SaveChangesAsync();
         }
+
+            public async Task<JobCard?> GetByTicketIdAsync(int ticketId)
+        {
+            return await _jobCardRepository.GetByTicketIdAsync(ticketId);
+        }
+    
     }
 }

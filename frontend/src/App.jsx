@@ -13,7 +13,7 @@ import JobCards from "./pages/JobCards";
 import JobCardDetails from "./pages/JobCardDetails";
 import Users from "./pages/Users";
 import Tickets from "./pages/Tickets";
-
+import AdminArchivedTickets from "./pages/AdminArchivedTickets";
 
 import AdminMyTickets from "./pages/AdminMyTickets";
 
@@ -29,49 +29,50 @@ function App() {
                 element={<Login />}
             />
 
-            {/*=========================
-                ADMIN
-            =========================*/}
-            <Route
-                path="/admin"
-                element={<AdminLayout />}
-            >
-                <Route
-                    index
-                    element={<AdminDashboard />}
-                />
-
-                <Route
-                    path="jobcards"
-                    element={<JobCards />}
-                />
-                
+           {/*=========================
+    ADMIN
+=========================*/}
 
 <Route
-    path="mytickets"
-    element={<AdminMyTickets />}
-/>
-                
-                
-                <Route
-                    path="jobcards/:id"
-                    element={<JobCardDetails />}
-                />
-                  <Route
-                         path="tickets"
-                        element={<Tickets />}
-                    />
-                    <Route
-                        path="users"
-                        element={<Users />}
-                    />
+    path="/admin"
+    element={<AdminLayout />}
+>
+    <Route
+        index
+        element={<AdminDashboard />}
+    />
 
-                <Route
-                    path="users"
-                    element={<Users />}
-                />
+    <Route
+        path="jobcards"
+        element={<JobCards />}
+    />
 
-            </Route>
+    <Route
+        path="mytickets"
+        element={<AdminMyTickets />}
+    />
+
+    <Route
+        path="archivedtickets"
+        element={<AdminArchivedTickets />}
+    />
+
+    <Route
+        path="jobcards/:id"
+        element={<JobCardDetails />}
+    />
+
+    <Route
+        path="tickets"
+        element={<Tickets />}
+    />
+
+    <Route
+        path="users"
+        element={<Users />}
+    />
+
+</Route>
 
             {/*=========================
                 TECHNICIAN

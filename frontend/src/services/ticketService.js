@@ -92,6 +92,24 @@ createTicket: async (ticketData) => {
         return response.data;
     },
 
+
+
+    //-------------------------------------------------------
+// Archived Tickets
+//-------------------------------------------------------
+
+getArchivedTickets: async () => {
+    const response = await api.get(
+        "/Ticket/archived",
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
+
+    return response.data;
+},
     //-------------------------------------------------------
     // Claim Ticket
     //-------------------------------------------------------
@@ -123,6 +141,23 @@ createTicket: async (ticketData) => {
             }
         );
     },
+
+
+    //-------------------------------------------------------
+// Archive Ticket
+//-------------------------------------------------------
+
+archiveTicket: async (ticketId) => {
+    await api.put(
+        `/Ticket/${ticketId}/archive`,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
+},
 
     //-------------------------------------------------------
     // Escalate Ticket

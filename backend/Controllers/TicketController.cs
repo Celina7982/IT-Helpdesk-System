@@ -43,7 +43,7 @@ namespace IThelpdesk.Controllers
         }
 
         // GET: api/Ticket/my
-        // Returns tickets assigned to the logged-in technician
+        // Returns tickets assigned to the logged-in technician/admin
         [Authorize(Roles = "Technician,Admin")]
         [HttpGet("my")]
         public async Task<IActionResult> GetMyTickets()
@@ -52,10 +52,12 @@ namespace IThelpdesk.Controllers
                 User.FindFirst(ClaimTypes.NameIdentifier)!.Value
             );
 
-            var tickets = await _ticketService.GetMyTicketsAsync(technicianId);
+            var tickets =
+                await _ticketService.GetMyTicketsAsync(technicianId);
 
             return Ok(tickets);
         }
+
 
         // ======================================================
         // CLIENT
@@ -224,6 +226,30 @@ namespace IThelpdesk.Controllers
             return NoContent();
         }
 
+        // ======================================================
+        // ARCHIVE
+        // ======================================================
+
+        // PUT: api/Ticket/5/archive
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPut("{id}/archive")]
+        public async Task<IActionResult> ArchiveTicket(int id)
+        {
+            try
+            {
+                await _ticketService.ArchiveTicketAsync(id);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message == "Ticket not found.")
+                    return NotFound(new { message = ex.Message });
+
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
 
         // ======================================================
         // DELETE
@@ -253,7 +279,19 @@ namespace IThelpdesk.Controllers
             return Ok(tickets);
         }
 
+        // ======================================================
+        // ADMIN - ARCHIVED TICKETS
+        // ======================================================
 
+        // GET: api/Ticket/archived
+        [Authorize(Roles = "Admin")]
+        [HttpGet("archived")]
+        public async Task<IActionResult> GetArchivedTickets()
+        {
+            var tickets = await _ticketService.GetArchivedTicketsAsync();
+
+            return Ok(tickets);
+        }
 
     }
 

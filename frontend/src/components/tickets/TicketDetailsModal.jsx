@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ticketService from "../../services/ticketService";
+import jobCardService from "../../services/jobCardService";
+
 
 function TicketDetailsModal({ show, onClose, ticketId }) {
+
+    const navigate = useNavigate();
+
     const [ticket, setTicket] = useState(null);
+    const [jobCard, setJobCard] = useState(null);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
-    
+
     const [loading, setLoading] = useState(false);
     const [submittingComment, setSubmittingComment] = useState(false);
 
@@ -15,25 +22,73 @@ function TicketDetailsModal({ show, onClose, ticketId }) {
         loadTicketAndComments();
     }, [show, ticketId]);
 
-    const loadTicketAndComments = async () => {
-        setLoading(true);
+    
+const loadTicketAndComments = async () => {
+
+    setLoading(true);
+
+    try {
+
+        // ---------------------------------------------
+        // Load ticket + comments
+        // ---------------------------------------------
+
+        const [ticketData, commentsData] = await Promise.all([
+            ticketService.getTicketDetails(ticketId),
+            ticketService.getComments(ticketId)
+        ]);
+
+        setTicket(ticketData);
+        setComments(commentsData || []);
+
+
+        // ---------------------------------------------
+        // Check whether this ticket has a Job Card
+        // ---------------------------------------------
 
         try {
-            // Fetch ticket details and comments concurrently
-            const [ticketData, commentsData] = await Promise.all([
-                ticketService.getTicketDetails(ticketId),
-                ticketService.getComments(ticketId)
-            ]);
 
-            setTicket(ticketData);
-            setComments(commentsData || []);
-        } catch (error) {
-            console.error("Failed to fetch modal data:", error);
-            alert("Unable to load ticket details or comments.");
-        } finally {
-            setLoading(false);
+            const jobCardData =
+                await jobCardService.getByTicketId(ticketId);
+
+            setJobCard(jobCardData);
+
+        } catch (jobCardError) {
+
+            // 404 simply means this ticket has no Job Card.
+            if (jobCardError.response?.status === 404) {
+
+                setJobCard(null);
+
+            } else {
+
+                console.error(
+                    "Failed to load Job Card:",
+                    jobCardError
+                );
+
+                setJobCard(null);
+            }
         }
-    };
+
+    } catch (error) {
+
+        console.error(
+            "Failed to fetch modal data:",
+            error
+        );
+
+        alert(
+            "Unable to load ticket details or comments."
+        );
+
+    } finally {
+
+        setLoading(false);
+
+    }
+};
+
 
     const handleAddComment = async (e) => {
         e.preventDefault();
@@ -148,8 +203,51 @@ function TicketDetailsModal({ show, onClose, ticketId }) {
 
                                 <hr className="my-4" />
 
-                                {/* --- COMMENTS SECTION --- */}
-                                <h5>Comments</h5>
+                                <hr className="my-4" />
+
+{/* ---------------------------------------- */}
+{/* JOB CARD */}
+{/* ---------------------------------------- */}
+
+{jobCard && (
+    <div className="mb-4">
+
+        <div className="d-flex justify-content-between align-items-center">
+
+            <div>
+                <h5 className="mb-1">
+                    Job Card
+                </h5>
+
+                <small className="text-muted">
+                    {jobCard.jobNumber
+                        ? `Job Card ${jobCard.jobNumber}`
+                        : `Job Card #${jobCard.jobCardId}`}
+                </small>
+            </div>
+
+            <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                    onClose();
+
+                    navigate(
+                        `/admin/jobcards/${jobCard.jobCardId}`
+                    );
+                }}
+            >
+                View / Edit Job Card
+            </button>
+
+        </div>
+
+    </div>
+)}
+
+<hr className="my-4" />
+
+<h5>Comments</h5>
 
                                 {/* List of Existing Comments */}
                                 <div 

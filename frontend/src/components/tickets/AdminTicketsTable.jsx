@@ -61,7 +61,7 @@ function AdminTicketsTable({
         );
 
     }
-
+     console.log("Tickets received by AdminTicketsTable:", tickets);
     return (
 
         <>
@@ -144,7 +144,7 @@ function AdminTicketsTable({
 
                                         <td>
 
-                                            {ticket.assignedTechnicianName ||
+                                            {ticket.assignedTechnician ||
                                                 "Unassigned"}
 
                                         </td>

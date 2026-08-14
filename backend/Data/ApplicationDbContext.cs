@@ -25,11 +25,7 @@ namespace IThelpdesk.Data
 
         public DbSet<JobCard> JobCards { get; set; }
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
-<<<<<<< HEAD
-       
-=======
-      
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
+
         public DbSet<JobCardPart> JobCardParts { get; set; }
 
         //--------------------------------------------------

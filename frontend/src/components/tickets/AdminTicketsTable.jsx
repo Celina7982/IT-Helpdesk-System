@@ -4,13 +4,14 @@ import TicketDetailsModal from "./TicketDetailsModal";
 import StatusBadge from "../StatusBadge";
 import PriorityBadge from "../PriorityBadge";
 
-///ALL TICKETS TABLE FOR ADMIN
-
+/// ALL TICKETS TABLE FOR ADMIN
 
 function AdminTicketsTable({
     tickets,
     loading,
-    refreshTickets
+    refreshTickets,
+    onArchive,
+      onDelete
 }) {
 
     const [selectedTicketId, setSelectedTicketId] = useState(null);
@@ -20,28 +21,10 @@ function AdminTicketsTable({
     // Delete Ticket
     //-------------------------------------------------------
 
-    const deleteTicket = async (ticketId) => {
+   
 
-        if (!window.confirm("Delete this ticket?"))
-            return;
-
-        try {
-
-            await ticketService.deleteTicket(ticketId);
-
-            await refreshTickets();
-
-        }
-        catch (error) {
-
-            console.error(error);
-
-            alert("Unable to delete ticket.");
-
-        }
-
-    };
-
+    //-------------------------------------------------------
+    // Loading
     //-------------------------------------------------------
 
     if (loading) {
@@ -61,7 +44,11 @@ function AdminTicketsTable({
         );
 
     }
-     console.log("Tickets received by AdminTicketsTable:", tickets);
+
+    //-------------------------------------------------------
+    // Table
+    //-------------------------------------------------------
+
     return (
 
         <>
@@ -83,13 +70,20 @@ function AdminTicketsTable({
                             <tr>
 
                                 <th>ID</th>
+
                                 <th>Subject</th>
+
                                 <th>Customer</th>
+
                                 <th>Status</th>
+
                                 <th>Priority</th>
+
                                 <th>Assigned Technician</th>
+
                                 <th>Created</th>
-                                <th style={{ width: "180px" }}>
+
+                                <th style={{ width: "220px" }}>
                                     Actions
                                 </th>
 
@@ -99,7 +93,7 @@ function AdminTicketsTable({
 
                         <tbody>
 
-                            {tickets.length === 0 ?
+                            {tickets.length === 0 ? (
 
                                 <tr>
 
@@ -114,17 +108,31 @@ function AdminTicketsTable({
 
                                 </tr>
 
-                                :
+                            ) : (
 
                                 tickets.map(ticket => (
 
                                     <tr key={ticket.ticketId}>
 
-                                        <td>{ticket.ticketId}</td>
+                                        {/* ID */}
 
-                                        <td>{ticket.subject}</td>
+                                        <td>
+                                            {ticket.ticketId}
+                                        </td>
 
-                                        <td>{ticket.customerName}</td>
+                                        {/* Subject */}
+
+                                        <td>
+                                            {ticket.subject}
+                                        </td>
+
+                                        {/* Customer */}
+
+                                        <td>
+                                            {ticket.customerName}
+                                        </td>
+
+                                        {/* Status */}
 
                                         <td>
 
@@ -134,6 +142,8 @@ function AdminTicketsTable({
 
                                         </td>
 
+                                        {/* Priority */}
+
                                         <td>
 
                                             <PriorityBadge
@@ -142,12 +152,16 @@ function AdminTicketsTable({
 
                                         </td>
 
+                                        {/* Assigned Technician */}
+
                                         <td>
 
                                             {ticket.assignedTechnician ||
                                                 "Unassigned"}
 
                                         </td>
+
+                                        {/* Created */}
 
                                         <td>
 
@@ -157,13 +171,20 @@ function AdminTicketsTable({
 
                                         </td>
 
+                                        {/* Actions */}
+
                                         <td>
 
+                                            {/* View */}
+
                                             <button
+                                                type="button"
                                                 className="btn btn-primary btn-sm me-2"
                                                 onClick={() => {
 
-                                                    setSelectedTicketId(ticket.ticketId);
+                                                    setSelectedTicketId(
+                                                        ticket.ticketId
+                                                    );
 
                                                     setShowDetails(true);
 
@@ -172,14 +193,28 @@ function AdminTicketsTable({
                                                 View
                                             </button>
 
+                                            {/* Archive */}
+
                                             <button
-                                                className="btn btn-danger btn-sm"
-                                                onClick={() =>
-                                                    deleteTicket(ticket.ticketId)
-                                                }
-                                            >
-                                                Delete
-                                            </button>
+    type="button"
+    className="btn btn-outline-secondary btn-sm me-2"
+    onClick={() => {
+        onArchive(ticket.ticketId);
+    }}
+>
+    Archive
+</button>
+                                            {/* Delete */}
+
+                                            <button
+    type="button"
+    className="btn btn-danger btn-sm"
+    onClick={() => {
+        onDelete(ticket.ticketId);
+    }}
+>
+    Delete
+</button>
 
                                         </td>
 
@@ -187,7 +222,7 @@ function AdminTicketsTable({
 
                                 ))
 
-                            }
+                            )}
 
                         </tbody>
 
@@ -196,6 +231,8 @@ function AdminTicketsTable({
                 </div>
 
             </div>
+
+            {/* Ticket Details Modal */}
 
             <TicketDetailsModal
 

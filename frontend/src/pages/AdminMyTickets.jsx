@@ -290,24 +290,15 @@ const handleArchive = async (ticketId) => {
     return (
 
         <>
-
-            <AdminTicket
-
-                tickets={tickets}
-
-                loading={loading}
-
-                onView={handleView}
-
-                onResolve={handleResolve}
-
-                onEscalate={handleEscalate}
-
-                onTicketDeleted={loadTickets}
-                 onArchive={handleArchive}
-                onDelete={handleDelete}
-
-            />
+<AdminTicket
+    tickets={tickets}
+    loading={loading}
+    onView={handleView}
+    onResolve={handleResolve}
+    onEscalate={handleEscalate}
+    onTicketDeleted={loadTickets}
+    onArchive={handleArchive}
+/>
             
 
 

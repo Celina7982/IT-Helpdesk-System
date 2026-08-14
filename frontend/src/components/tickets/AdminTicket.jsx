@@ -13,8 +13,7 @@ function AdminTicket({
     onResolve,
     onEscalate,
     onAssign,
-    onTicketDeleted,
-    onArchive  
+    onTicketDeleted
     
 }) {
     const navigate = useNavigate();

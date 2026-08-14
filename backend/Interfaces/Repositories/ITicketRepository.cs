@@ -17,12 +17,7 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
-<<<<<<< HEAD
-=======
-  
 
-
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
         Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();

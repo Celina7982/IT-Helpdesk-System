@@ -6,11 +6,8 @@ import jobCardService from "../../services/jobCardService";
 
 function TicketDetailsModal({ show, onClose, ticketId }) {
 
-<<<<<<< HEAD
     const navigate = useNavigate();
 
-=======
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
     const [ticket, setTicket] = useState(null);
     const [jobCard, setJobCard] = useState(null);
     const [comments, setComments] = useState([]);
@@ -71,7 +68,6 @@ function TicketDetailsModal({ show, onClose, ticketId }) {
 
     }, [show, ticketId]);
 
-<<<<<<< HEAD
     
 const loadTicketAndComments = async () => {
 
@@ -139,12 +135,10 @@ const loadTicketAndComments = async () => {
     }
 };
 
-=======
 
     //-------------------------------------------------------
     // Add Comment
     //-------------------------------------------------------
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
 
     const handleAddComment = async (e) => {
 
@@ -490,7 +484,6 @@ const loadTicketAndComments = async () => {
 
                                 <hr className="my-4" />
 
-<<<<<<< HEAD
                                 <hr className="my-4" />
 
 {/* ---------------------------------------- */}
@@ -536,8 +529,6 @@ const loadTicketAndComments = async () => {
 <hr className="my-4" />
 
 <h5>Comments</h5>
-=======
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
 
                                 {/* COMMENTS */}
 

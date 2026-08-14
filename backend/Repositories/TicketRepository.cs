@@ -256,12 +256,10 @@ namespace IThelpdesk.Repositories
         {
             _context.Tickets.Update(ticket);
 
-<<<<<<< HEAD
+
             await Task.CompletedTask;
         }
-=======
-      
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
+
 
         public async Task DeleteAsync(Ticket ticket)
         {
@@ -294,7 +292,7 @@ namespace IThelpdesk.Repositories
             await _context.SaveChangesAsync();
         }
 
-<<<<<<< HEAD
+
 
         //-------------------------------------------------------
         // Archived Tickets
@@ -345,9 +343,6 @@ namespace IThelpdesk.Repositories
 
                 .ToListAsync();
         }
-=======
-       
 
->>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
     }
 }

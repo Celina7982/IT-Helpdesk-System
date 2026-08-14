@@ -1,6 +1,10 @@
 import { Outlet, Link } from "react-router-dom";
 
 function TechnicianLayout() {
+                   const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+};
     return (
         <div className="container-fluid">
 
@@ -34,11 +38,20 @@ function TechnicianLayout() {
                             >
                                 📋 My Job Cards
                             </Link>
+
+                                      <button
+    type="button"
+    className="btn btn-danger"
+    onClick={handleLogout}
+>
+    Logout
+</button>
                         </li>
 
                     </ul>
 
                 </div>
+        
 
                 {/* Main Content */}
 

@@ -56,6 +56,12 @@ namespace IThelpdesk.Models
         [ForeignKey(nameof(AssignedToUserId))]
         public User? AssignedToUser { get; set; }
 
-        
+        // Indicates whether the ticket has been archived
+        public bool IsArchived { get; set; } = false;
+
+        // Date the ticket was archived
+        public DateTime? ArchivedDate { get; set; }
+
+
     }
     }

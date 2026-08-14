@@ -102,6 +102,8 @@ namespace IThelpdesk.Interfaces.Services
         Task DeletePartAsync(
             int partId);
 
+        Task<JobCard?> GetByTicketIdAsync(int ticketId);
+
     }
 
 

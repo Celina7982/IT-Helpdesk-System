@@ -50,6 +50,12 @@ createTicket: async (ticketData) => {
         return response.data;
     },
 
+
+
+
+
+
+    
     //-------------------------------------------------------
     // My Tickets
     //-------------------------------------------------------
@@ -92,6 +98,24 @@ createTicket: async (ticketData) => {
         return response.data;
     },
 
+
+
+    //-------------------------------------------------------
+// Archived Tickets
+//-------------------------------------------------------
+
+getArchivedTickets: async () => {
+    const response = await api.get(
+        "/Ticket/archived",
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
+
+    return response.data;
+},
     //-------------------------------------------------------
     // Claim Ticket
     //-------------------------------------------------------
@@ -123,6 +147,23 @@ createTicket: async (ticketData) => {
             }
         );
     },
+
+
+    //-------------------------------------------------------
+// Archive Ticket
+//-------------------------------------------------------
+
+archiveTicket: async (ticketId) => {
+    await api.put(
+        `/Ticket/${ticketId}/archive`,
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
+},
 
     //-------------------------------------------------------
     // Escalate Ticket
@@ -209,8 +250,23 @@ createTicket: async (ticketData) => {
             }
         );
         return response.data;
-    }
+    },
+    updateComment: async (ticketId, commentId, message) => {
+    const response = await api.put(
+        `/tickets/${ticketId}/comments/${commentId}`,
+        {
+            message: message
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
 
+    return response.data;
+},
+            
 };
 
 export default ticketService;

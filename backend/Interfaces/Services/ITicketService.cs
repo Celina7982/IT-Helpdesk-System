@@ -13,13 +13,15 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId);
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
+        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
+
+        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();
        
 
-        Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
         //-------------------------------------------------------
         // Single Ticket
@@ -28,6 +30,7 @@ namespace IThelpdesk.Interfaces.Services
         Task<Ticket?> GetTicketByIdAsync(int id);
 
         Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
+
 
         //-------------------------------------------------------
         // CRUD
@@ -39,6 +42,7 @@ namespace IThelpdesk.Interfaces.Services
 
         Task DeleteTicketAsync(int id);
 
+
         //-------------------------------------------------------
         // Ticket Actions
         //-------------------------------------------------------
@@ -47,8 +51,18 @@ namespace IThelpdesk.Interfaces.Services
 
         Task ClaimTicketAsync(int ticketId, int technicianId);
 
-        Task EscalateTicketAsync(int ticketId, string escalationReason);
-        Task ResolveTicketAsync(int id, int resolvedByUserId);
+        Task EscalateTicketAsync(
+            int ticketId,
+            string escalationReason);
 
+        Task ResolveTicketAsync(
+            int id,
+            int resolvedByUserId);
+
+        //-------------------------------------------------------
+        // Archive
+        //-------------------------------------------------------
+
+        Task ArchiveTicketAsync(int ticketId);
     }
 }

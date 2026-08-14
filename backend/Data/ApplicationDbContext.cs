@@ -1,5 +1,6 @@
 ﻿using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+ 
 
 namespace IThelpdesk.Data
 {
@@ -24,6 +25,7 @@ namespace IThelpdesk.Data
 
         public DbSet<JobCard> JobCards { get; set; }
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
+
         public DbSet<JobCardPart> JobCardParts { get; set; }
 
         //--------------------------------------------------

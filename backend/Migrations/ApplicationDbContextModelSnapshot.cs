@@ -91,7 +91,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TicketId");
 
-                    b.ToTable("JobCards", (string)null);
+                    b.ToTable("JobCards");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
@@ -137,7 +137,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId", "DateCreated");
 
-                    b.ToTable("JobCardAudits", (string)null);
+                    b.ToTable("JobCardAudits");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
@@ -171,7 +171,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TechnicianId");
 
-                    b.ToTable("JobCardLabours", (string)null);
+                    b.ToTable("JobCardLabours");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
@@ -197,7 +197,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId");
 
-                    b.ToTable("JobCardParts", (string)null);
+                    b.ToTable("JobCardParts");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
@@ -207,6 +207,9 @@ namespace IThelpdesk.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TicketId"));
+
+                    b.Property<DateTime?>("ArchivedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("AssignedToUserId")
                         .HasColumnType("int");
@@ -236,6 +239,9 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsEscalated")
                         .HasColumnType("bit");
 
@@ -263,7 +269,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tickets", (string)null);
+                    b.ToTable("Tickets");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
@@ -290,7 +296,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("CommentId");
 
-                    b.ToTable("TicketComments", (string)null);
+                    b.ToTable("TicketComments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -336,7 +342,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>

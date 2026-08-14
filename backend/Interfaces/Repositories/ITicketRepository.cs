@@ -13,12 +13,15 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<Ticket>> GetMyTicketsAsync(int technicianId);
+        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId);
 
         Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
 
-      
+
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
+
+        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();
+
 
         //-------------------------------------------------------
         // Single Ticket
@@ -30,15 +33,28 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<User?> GetUserByIdAsync(int id);
 
+
         //-------------------------------------------------------
         // CRUD
         //-------------------------------------------------------
 
         Task AddAsync(Ticket ticket);
-        
+
         Task UpdateAsync(Ticket ticket);
 
         Task DeleteAsync(Ticket ticket);
+
+
+        //-------------------------------------------------------
+        // Archive
+        //-------------------------------------------------------
+
+        Task ArchiveAsync(Ticket ticket);
+
+
+        //-------------------------------------------------------
+        // Save
+        //-------------------------------------------------------
 
         Task SaveChangesAsync();
     }

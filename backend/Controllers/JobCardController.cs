@@ -76,6 +76,28 @@ namespace IThelpdesk.Controllers
         }
 
         //---------------------------------------------------------
+        // GET JOB CARD BY TICKET ID
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpGet("by-ticket/{ticketId}")]
+        public async Task<IActionResult> GetByTicketId(int ticketId)
+        {
+            var jobCard = await _jobCardService.GetByTicketIdAsync(ticketId);
+
+            if (jobCard == null)
+                return NotFound();
+
+            return Ok(new
+            {
+                jobCardId = jobCard.JobCardId,
+                jobNumber = jobCard.JobNumber,
+                ticketId = jobCard.TicketId,
+                status = jobCard.Status
+            });
+        }
+
+        //---------------------------------------------------------
         // GET JOB CARD DETAILS
         //---------------------------------------------------------
 

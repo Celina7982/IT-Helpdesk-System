@@ -75,9 +75,9 @@ function ClientDashboard() {
 
         <div className="container mt-4">
 
-            <h2 className="mb-4">
+            <h1 className="mb-4">
                 Client Dashboard
-            </h2>
+            </h1>
 
             {/* Statistics */}
 

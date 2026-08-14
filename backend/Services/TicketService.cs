@@ -33,6 +33,11 @@ namespace IThelpdesk.Services
             return await _ticketRepository.GetAllAsync();
         }
 
+<<<<<<< HEAD
+=======
+       
+
+>>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
         {
             return await _ticketRepository.GetAvailableTicketsAsync();
@@ -220,6 +225,7 @@ namespace IThelpdesk.Services
         public async Task ResolveTicketAsync(int ticketId, int userId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+<<<<<<< HEAD
 
             if (ticket == null)
                 throw new Exception("Ticket not found.");
@@ -234,6 +240,19 @@ namespace IThelpdesk.Services
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
+=======
+
+            if (ticket == null)
+            {
+                throw new Exception("Ticket not found.");
+            }
+
+            // Mark original ticket as resolved
+            ticket.Status = "Resolved";
+            ticket.IsEscalated = false;
+
+            await _ticketRepository.UpdateAsync(ticket);
+>>>>>>> b57c8eb9e8154251e971dc56694082053e823d09
         }
 
 

@@ -246,7 +246,42 @@ function AdminMyTickets() {
 
         }
     };
+//--------------------------------------------------
+// Archive Ticket
+//--------------------------------------------------
 
+const handleArchive = async (ticketId) => {
+
+    const confirmed = window.confirm(
+        "Are you sure you want to archive this ticket?"
+    );
+
+    if (!confirmed)
+        return;
+
+    try {
+
+        await ticketService.archiveTicket(ticketId);
+
+        alert("Ticket archived successfully.");
+
+        await loadTickets();
+
+    }
+    catch (error) {
+
+        console.error(
+            "Failed to archive ticket:",
+            error
+        );
+
+        alert(
+            error.response?.data?.message ||
+            error.response?.data ||
+            "Unable to archive ticket."
+        );
+    }
+};
 
     //--------------------------------------------------
     // Return
@@ -269,10 +304,11 @@ function AdminMyTickets() {
                 onEscalate={handleEscalate}
 
                 onTicketDeleted={loadTickets}
-
+                 onArchive={handleArchive}
                 onDelete={handleDelete}
 
             />
+            
 
 
             {/* ---------------------------------------- */}

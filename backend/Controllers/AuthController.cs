@@ -16,7 +16,7 @@ namespace IThelpdesk.Controllers
         // The controller asks the service to perform the login.
         private readonly IAuthService _authService;
 
-        // Constructor
+        
         // ASP.NET Core automatically injects AuthService.
         public AuthController(IAuthService authService)
         {

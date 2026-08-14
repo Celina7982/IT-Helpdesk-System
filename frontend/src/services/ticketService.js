@@ -244,8 +244,23 @@ archiveTicket: async (ticketId) => {
             }
         );
         return response.data;
-    }
+    },
+    updateComment: async (ticketId, commentId, message) => {
+    const response = await api.put(
+        `/tickets/${ticketId}/comments/${commentId}`,
+        {
+            message: message
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        }
+    );
 
+    return response.data;
+},
+            
 };
 
 export default ticketService;

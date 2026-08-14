@@ -160,25 +160,26 @@ function CreateTicketModal({ show, onClose, onTicketCreated }) {
 
                             </div>
 
+
+
+                               <div className="col-md-6"></div>
                             <div className="row mt-3">
 
-                                <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label">Category</label>
 
-                                    <label className="form-label">
-
-                                        Category
-
-                                    </label>
-
-                                    <input
-                                        className="form-control"
-                                        name="category"
-                                        value={ticket.category}
-                                        onChange={handleChange}
-                                        required
-                                    />
-
-                                </div>
+                                    <select
+                                   name="category"
+                                    value={ticket.category}
+                                       onChange={handleChange}
+                                       className="form-select"
+                                          required
+                                           >
+                                     <option value="">Select a category</option>
+                                     <option value="Hardware">Hardware</option>
+                                         <option value="Software">Software</option>
+                                           </select>
+                                        </div>
 
                                 <div className="col-md-6">
 

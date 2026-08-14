@@ -14,6 +14,7 @@ function AdminTicket({
     onEscalate,
     onAssign,
     onTicketDeleted,
+    onArchive  
     
 }) {
     const navigate = useNavigate();
@@ -466,6 +467,8 @@ const archiveTicket = async (ticketId) => {
 >
     Delete
 </button>
+
+
 
 
                                                     {/* -------------------------------- */}

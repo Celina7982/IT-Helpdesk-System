@@ -2,6 +2,10 @@ import { Outlet, Link } from "react-router-dom";
 
 
 function AdminLayout() {
+                   const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+};
     return (
         <div className="row">
 
@@ -90,6 +94,14 @@ function AdminLayout() {
                         >
                             👥 Users
                         </Link>
+
+                          <button
+    type="button"
+    className="btn btn-danger"
+    onClick={handleLogout}
+>
+    Logout
+</button>
                     </li>
 
 
@@ -97,8 +109,6 @@ function AdminLayout() {
 
 
             </div>
-
-
             {/* Main Content */}
 
             <div className="col-md-10">

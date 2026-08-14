@@ -24,7 +24,6 @@ namespace IThelpdesk.Data
 
         public DbSet<JobCard> JobCards { get; set; }
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
-        public DbSet<TicketAuditHistory> TicketAuditHistory { get; set; }
         public DbSet<JobCardPart> JobCardParts { get; set; }
 
         //--------------------------------------------------

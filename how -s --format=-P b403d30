@@ -1,0 +1,23 @@
+[33mcommit b403d308dfb97986557f4d628634f272271fb232[m
+Merge: 86989c4 0863247
+Author: Celina7982 <164148894+Celina7982@users.noreply.github.com>
+Date:   Tue Jul 28 16:38:21 2026 +0200
+
+    Merge pull request #4 from Celina7982/feature/jobcard-pdf-pagination
+    
+    Add Job Card PDF export and server-side pagination & sort+ filter +sh…
+
+ backend/Controllers/JobCardController.cs           |  84 [32m+++[m[31m--[m
+ backend/DTOs/Common/PagedResult.cs                 |  13 [32m+[m
+ backend/IThelpdesk.csproj                          |   1 [32m+[m
+ .../Interfaces/Repositories/IJobCardRepository.cs  |  57 [32m++[m[31m-[m
+ backend/Interfaces/Services/IJobCardPdfService.cs  |   9 [32m+[m
+ backend/Interfaces/Services/IJobCardService.cs     |  64 [32m++[m[31m--[m
+ backend/Program.cs                                 |   8 [32m+[m
+ backend/Repositories/JobCardRepository.cs          | 263 [32m+++++++[m[31m------[m
+ backend/Services/JobCardService.cs                 | 188 [32m+++++[m[31m-----[m
+ backend/Services/Pdf/JobCardPdfService.cs          |  69 [32m++++[m
+ frontend/src/pages/JobCardDetails.jsx              |  32 [32m+[m[31m-[m
+ frontend/src/pages/JobCards.jsx                    | 408 [32m+++++++++++++++[m[31m------[m
+ frontend/src/services/jobCardService.js            | 110 [32m++++[m[31m--[m
+ 13 files changed, 839 insertions(+), 467 deletions(-)

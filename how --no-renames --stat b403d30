@@ -1,0 +1,10 @@
+[33m95af7fe[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mlatest[m[33m, [m[1;31morigin/latest[m[33m)[m Job card completion
+[33m740fdb9[m[33m ([m[1;31morigin/feature/Usermanagement[m[33m, [m[1;32mfeature/reset-password[m[33m, [m[1;32mfeature/Usermanagement[m[33m)[m Usermanagement
+[33mee8e27f[m Add backend ticket comment controllers, services, DTOs, and migrations from feature branch
+[33m8cd3a98[m Job ard full functionality
+[33mea05943[m[33m ([m[1;31morigin/feature/TestSystem[m[33m, [m[1;32mfeature/TestSystem[m[33m)[m Latest updates
+[33m51e0686[m Implement Job Card audit history and details enhancements
+[33mb403d30[m Merge pull request #4 from Celina7982/feature/jobcard-pdf-pagination
+[33m0863247[m Add Job Card PDF export and server-side pagination & sort+ filter +show my job cards
+[33m86989c4[m[33m ([m[1;31morigin/feature/job-cards[m[33m, [m[1;32mfeature/job-cards[m[33m)[m Enhance admin dashboard ticket workflow and recent ticket display
+[33m9217948[m backend changes for dashboards

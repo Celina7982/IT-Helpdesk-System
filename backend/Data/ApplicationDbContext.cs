@@ -81,13 +81,13 @@ namespace IThelpdesk.Data
                 .HasForeignKey(l => l.JobCardId);
 
             //--------------------------------------------------
-            // Labour Entry -> Technician
+            // Labour Entry -> Created By User
             //--------------------------------------------------
 
             modelBuilder.Entity<JobCardLabour>()
-                .HasOne(l => l.Technician)
+                .HasOne(l => l.CreatedByUser)
                 .WithMany()
-                .HasForeignKey(l => l.TechnicianId)
+                .HasForeignKey(l => l.CreatedByUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             //--------------------------------------------------

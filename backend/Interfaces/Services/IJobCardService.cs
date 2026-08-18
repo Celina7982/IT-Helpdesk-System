@@ -10,63 +10,43 @@ namespace IThelpdesk.Interfaces.Services
         // Job Cards
         //--------------------------------------------------
 
-        /// <summary>
-        /// Returns all Job Cards.
-        /// </summary>
         Task<IEnumerable<JobCard>> GetAllAsync();
 
-        /// <summary>
-        /// Returns the Job Card List.
-        /// Supports role filtering, searching and sorting.
-        /// </summary>
         Task<PagedResultDto<JobCardListDto>> GetJobCardListAsync(
-         int userId,
-         string role,
-         bool mine,
-         string? status,
-         int? assignedTo,
-         string? search,
-         string? sortBy,
-         string? sortDirection,
-         int pageNumber,
-         int pageSize);
+            int userId,
+            string role,
+            bool mine,
+            string? status,
+            int? assignedTo,
+            string? search,
+            string? sortBy,
+            string? sortDirection,
+            int pageNumber,
+            int pageSize);
 
-        /// <summary>
-        /// Returns a Job Card.
-        /// </summary>
         Task<JobCard?> GetByIdAsync(int id);
 
-        /// <summary>
-        /// Returns Job Card Details.
-        /// </summary>
         Task<JobCardDetailsDto?> GetDetailsAsync(int id);
 
-        /// <summary>
-        /// Creates a Job Card from a Ticket.
-        /// </summary>
-        Task<JobCard> CreateFromTicketAsync(int ticketId);
+        Task<JobCard> CreateFromTicketAsync(
+            int ticketId,
+            int performedByUserId);
 
-        /// <summary>
-        /// Updates a Job Card.
-        /// </summary>
         Task UpdateAsync(JobCard jobCard);
 
-        /// <summary>
-        /// Updates editable Job Card fields.
-        /// </summary>
         Task UpdateJobCardAsync(
+    int id,
+    UpdateJobCardDto dto,
+    int performedByUserId,
+    string role);
+
+        Task CompleteJobCardAsync(
             int id,
-            UpdateJobCardDto dto);
+            int performedByUserId);
 
-        /// <summary>
-        /// Completes a Job Card.
-        /// </summary>
-        Task CompleteJobCardAsync(int id);
-
-        /// <summary>
-        /// Deletes a Job Card.
-        /// </summary>
-        Task DeleteAsync(int id);
+        Task DeleteAsync(
+            int id,
+            int performedByUserId);
 
         //--------------------------------------------------
         // Labour
@@ -74,37 +54,55 @@ namespace IThelpdesk.Interfaces.Services
 
         Task AddLabourEntryAsync(
             int jobCardId,
-            AddLabourEntryDto dto);
+            AddLabourEntryDto dto,
+            int performedByUserId);
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(
             int jobCardId);
+
+        Task UpdateLabourEntryAsync(
+            int jobCardId,
+            int labourId,
+            UpdateLabourEntryDto dto,
+            int performedByUserId,
+            string role);
+
+        Task DeleteLabourEntryAsync(
+            int jobCardId,
+            int labourId,
+            int performedByUserId,
+            string role);
 
         //--------------------------------------------------
         // Parts
         //--------------------------------------------------
 
-        /// <summary>
-        /// Adds a Part to a Job Card.
-        /// </summary>
         Task AddPartAsync(
-            int jobCardId,
-            AddPartDto dto);
+    int jobCardId,
+    AddPartDto dto,
+    int performedByUserId,
+    string role);
 
-        /// <summary>
-        /// Returns all Parts used on a Job Card.
-        /// </summary>
+
         Task<List<JobCardPartDto>> GetPartsAsync(
             int jobCardId);
 
-        /// <summary>
-        /// Deletes a Part from a Job Card.
-        /// </summary>
+        Task UpdatePartAsync(
+            int jobCardId,
+            int partId,
+            UpdatePartDto dto,
+            int performedByUserId,
+            string role);
+
         Task DeletePartAsync(
-            int partId);
+    int partId,
+    int performedByUserId,
+    string role);
+
+        //--------------------------------------------------
+        // Ticket
+        //--------------------------------------------------
 
         Task<JobCard?> GetByTicketIdAsync(int ticketId);
-
     }
-
-
 }

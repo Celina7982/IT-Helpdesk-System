@@ -38,4 +38,10 @@
     <Folder Include="Uploads\" />
   </ItemGroup>
 
+	<ItemGroup>
+		<None Update="Assets\Lbc-Logo.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>

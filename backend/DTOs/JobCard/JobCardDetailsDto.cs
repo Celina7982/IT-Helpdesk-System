@@ -1,4 +1,7 @@
-﻿namespace IThelpdesk.DTOs.JobCard
+﻿using System;
+using System.Collections.Generic;
+
+namespace IThelpdesk.DTOs.JobCard
 {
     public class JobCardDetailsDto
     {
@@ -14,8 +17,8 @@
 
         public DateTime? DateCompleted { get; set; }
 
-
         public int? AssignedTechnicianId { get; set; }
+
         // Technician assigned to this Job Card
         public string AssignedTechnician { get; set; } = "Not Assigned";
 
@@ -34,5 +37,10 @@
         public string CustomerSignature { get; set; } = string.Empty;
 
         public DateTime? SignedDate { get; set; }
+
+        // Mapped Collections
+        public List<JobCardLabourDto> LabourEntries { get; set; } = new();
+
+        public List<JobCardPartDto> PartsUsed { get; set; } = new();
     }
 }

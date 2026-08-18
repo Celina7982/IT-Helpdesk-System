@@ -76,6 +76,15 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId);
 
+        // Returns a single labour entry by id including related JobCard and Technician
+        Task<JobCardLabour?> GetLabourEntryByIdAsync(int labourId);
+
+        // Marks an existing labour entry as updated in the DbContext (does not SaveChanges)
+        Task UpdateLabourEntryAsync(JobCardLabour labour);
+
+        // Removes a labour entry from the DbContext (does not SaveChanges)
+        Task DeleteLabourEntryAsync(JobCardLabour labour);
+
         //--------------------------------------------------
         // Parts
         //--------------------------------------------------
@@ -95,6 +104,8 @@ namespace IThelpdesk.Interfaces.Repositories
         /// </summary>
         Task<JobCardPart?> GetPartByIdAsync(int partId);
 
+
+        Task UpdatePartAsync(JobCardPart part);
         /// <summary>
         /// Deletes a Part from a Job Card.
         /// </summary>

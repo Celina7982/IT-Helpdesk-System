@@ -79,8 +79,8 @@ namespace IThelpdesk.Models
 
         public ICollection<JobCardLabour> LabourEntries { get; set; }
             = new List<JobCardLabour>();
-
         public ICollection<JobCardPart> PartsUsed { get; set; }
+
             = new List<JobCardPart>();
 
         //--------------------------------------------------

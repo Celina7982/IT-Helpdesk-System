@@ -21,7 +21,6 @@ function JobCardDetails() {
     const token = localStorage.getItem("token");
 
     let role = "";
-    // prevents the page from crashing if the JWT is invalid.
     try {
         if (token) {
             const decoded = jwtDecode(token);
@@ -70,7 +69,7 @@ function JobCardDetails() {
     };
 
     //--------------------------------------------------
-    // Add Labour Entry
+    // Labour Handlers
     //--------------------------------------------------
 
     const addLabourEntry = async (entry) => {
@@ -84,13 +83,32 @@ function JobCardDetails() {
         }
     };
 
-//--------------------------------------------------
-// Add Part
-//--------------------------------------------------
+    const updateLabourEntry = async (labourId, entry) => {
+        try {
+            await jobCardService.updateLabourEntry(jobCard.jobCardId, labourId, entry);
+            await loadJobCard();
+            alert("Labour entry updated successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Unable to update labour entry.");
+        }
+    };
 
-   //--------------------------------------------------
-    // Add Part
+    const deleteLabourEntry = async (labourId) => {
+        try {
+            await jobCardService.deleteLabourEntry(jobCard.jobCardId, labourId);
+            await loadJobCard();
+            alert("Labour entry deleted successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Unable to delete labour entry.");
+        }
+    };
+
     //--------------------------------------------------
+    // Parts Handlers
+    //--------------------------------------------------
+
     const addPart = async (part) => {
         try {
             await jobCardService.addPart(jobCard.jobCardId, part);
@@ -100,28 +118,33 @@ function JobCardDetails() {
             console.error(error);
             alert("Unable to add part.");
         }
-    };;
+    };
 
-//--------------------------------------------------
-// Delete Part
-//--------------------------------------------------
+    const updatePart = async (partId, part) => {
+        try {
+            await jobCardService.updatePart(jobCard.jobCardId, partId, part);
+            await loadJobCard();
+            alert("Part updated successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Unable to update part.");
+        }
+    };
 
-const deletePart = async (partId) => {
+    const deletePart = async (partId) => {
+        try {
+            await jobCardService.deletePart(jobCard.jobCardId, partId);
+            await loadJobCard();
+            alert("Part deleted successfully.");
+        } catch (error) {
+            console.error(error);
+            alert("Unable to delete part.");
+        }
+    };
 
-    try {
-
-        await jobCardService.deletePart(partId);
-
-        await loadJobCard();
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Unable to delete part.");
-    }
-};
-
+    //--------------------------------------------------
+    // Complete Job Card
+    //--------------------------------------------------
 
     const completeJobCard = async () => {
         const confirmed = window.confirm(
@@ -155,8 +178,6 @@ const deletePart = async (partId) => {
         return <div className="alert alert-danger">Job Card not found.</div>;
     }
 
-    //--------------------------------------------------
-
     return (
         <div className="container mt-4">
             <JobCardHeader jobCard={jobCard} />
@@ -189,14 +210,15 @@ const deletePart = async (partId) => {
                     </button>
                 </li>
 
-                    <li className="nav-item">
-                        <button
-                            className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
-                            onClick={() => setActiveTab("parts")}
-                        >
-                            Parts
-                        </button>
-                    </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
+                        onClick={() => setActiveTab("parts")}
+                    >
+                        Parts
+                    </button>
+                </li>
+
                 <li className="nav-item">
                     <button
                         className={`nav-link ${activeTab === "history" ? "active" : ""}`}
@@ -226,21 +248,23 @@ const deletePart = async (partId) => {
                     <LabourEntries
                         labourEntries={jobCard.labourEntries || []}
                         onAdd={addLabourEntry}
+                        onUpdate={updateLabourEntry}
+                        onDelete={deleteLabourEntry}
                         role={role}
                         status={jobCard.status}
                     />
                 )}
 
-                  {/* ✅ FIXED: Removed duplicate <li> and now render JobCardParts component */}
                 {activeTab === "parts" && (
                     <JobCardParts
                         parts={jobCard.partsUsed || []}
                         onAdd={addPart}
+                        onUpdate={updatePart}
                         onDelete={deletePart}
                         role={role}
                         status={jobCard.status}
                     />
-                )}     
+                )}
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

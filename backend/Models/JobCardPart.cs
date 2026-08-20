@@ -20,5 +20,11 @@ namespace IThelpdesk.Models
 
         [Required]
         public int Quantity { get; set; }
+
+        // NEW: who added the part
+        public int CreatedByUserId { get; set; }
+
+        // NEW: when the part was added
+        public DateTime DateAdded { get; set; }
     }
 }

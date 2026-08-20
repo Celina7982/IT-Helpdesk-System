@@ -198,28 +198,96 @@ namespace IThelpdesk.Controllers
         //---------------------------------------------------------
         // ADD PART
         //---------------------------------------------------------
-
+        // CHANGE: extract authenticated user id and role and pass them to service.
+        // Reason: backend needs to record who added the part (CreatedByUserId) and enforce permissions.
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("{id}/parts")]
         public async Task<IActionResult> AddPart(
             int id,
             [FromBody] AddPartDto dto)
         {
-            await _jobCardService.AddPartAsync(id, dto);
+            // Get authenticated user id and role from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) ||
+                string.IsNullOrEmpty(role))
+            {
+                return Unauthorized();
+            }
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            // Pass performedByUserId and role to service so it can set CreatedByUserId and DateAdded,
+            // and enforce technician/admin permissions.
+            await _jobCardService.AddPartAsync(id, dto, userId, role);
 
             return Ok();
         }
 
+        //---------------------------------------------------------
+        // UPDATE PART
+        //---------------------------------------------------------
+        // CHANGE: added UpdatePart endpoint to support editing parts (Edit flow in frontend).
+        // Reason: frontend needs to update part name and quantity; service enforces permissions and audits.
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPut("{id}/parts/{partId}")]
+        public async Task<IActionResult> UpdatePart(
+            int id,
+            int partId,
+            [FromBody] UpdatePartDto dto)
+        {
+            // Get authenticated user id and role from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) ||
+                string.IsNullOrEmpty(role))
+            {
+                return Unauthorized();
+            }
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            // Call service with performedByUserId and role for permission checks and audit logging.
+            await _jobCardService.UpdatePartAsync(id, partId, dto, userId, role);
+
+            // Return NoContent to match typical REST update semantics.
+            return NoContent();
+        }
 
         //---------------------------------------------------------
         // DELETE PART
         //---------------------------------------------------------
-
+        // CHANGE: extract authenticated user id and role and pass them to service.
+        // Reason: service must enforce permissions and record who performed the deletion in audit.
         [Authorize(Roles = "Admin,Technician")]
         [HttpDelete("parts/{partId}")]
         public async Task<IActionResult> DeletePart(int partId)
         {
-            await _jobCardService.DeletePartAsync(partId);
+            // Get authenticated user id and role from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) ||
+                string.IsNullOrEmpty(role))
+            {
+                return Unauthorized();
+            }
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized();
+            }
+
+            // Pass performedByUserId and role to service so it can enforce permissions and audit the deletion.
+            await _jobCardService.DeletePartAsync(partId, userId, role);
 
             return NoContent();
         }
@@ -236,6 +304,7 @@ namespace IThelpdesk.Controllers
 
             return Ok(parts);
         }
+
         //---------------------------------------------------------
         // UPDATE JOB CARD
         //---------------------------------------------------------

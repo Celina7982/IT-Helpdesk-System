@@ -359,40 +359,65 @@ namespace IThelpdesk.Repositories
         }
 
 
-        //--------------------------------------------------
-        // Parts
-        //--------------------------------------------------
 
-        public async Task AddPartAsync(JobCardPart part)
-        {
-            await _context.JobCardParts.AddAsync(part);
-        }
-
-        //--------------------------------------------------
-
+        //---------------------------------------------------
+        // GetPartsAsync
+        //---------------------------------------------------
         public async Task<List<JobCardPart>> GetPartsAsync(int jobCardId)
         {
             return await _context.JobCardParts
+                .AsNoTracking()
                 .Where(p => p.JobCardId == jobCardId)
-                .OrderBy(p => p.PartName)
+                .OrderByDescending(p => p.DateAdded)
                 .ToListAsync();
         }
 
-        //--------------------------------------------------
-
+        //---------------------------------------------------
+        // GetPartByIdAsync
+        //---------------------------------------------------
         public async Task<JobCardPart?> GetPartByIdAsync(int partId)
         {
             return await _context.JobCardParts
                 .FirstOrDefaultAsync(p => p.PartId == partId);
         }
 
-        //--------------------------------------------------
+        //---------------------------------------------------
+        // AddPartAsync
+        //---------------------------------------------------
+        public async Task AddPartAsync(JobCardPart part)
+        {
+            await _context.JobCardParts.AddAsync(part);
+        }
 
-        public async Task DeletePartAsync(JobCardPart part)
+        //---------------------------------------------------
+        // UpdatePartAsync
+        //---------------------------------------------------
+        public Task UpdatePartAsync(JobCardPart part)
+        {
+            // Attach if not tracked and mark modified
+            var tracked = _context.ChangeTracker
+                .Entries<JobCardPart>()
+                .FirstOrDefault(e => e.Entity.PartId == part.PartId);
+
+            if (tracked == null)
+            {
+                _context.JobCardParts.Attach(part);
+            }
+
+            _context.Entry(part).State = EntityState.Modified;
+
+            // Do not call SaveChanges here; service will call SaveChangesAsync
+            return Task.CompletedTask;
+        }
+
+        //---------------------------------------------------
+        // DeletePartAsync
+        //---------------------------------------------------
+        public Task DeletePartAsync(JobCardPart part)
         {
             _context.JobCardParts.Remove(part);
-
-            await Task.CompletedTask;
+            // Do not call SaveChanges here; service will call SaveChangesAsync
+            return Task.CompletedTask;
         }
     }
 }

@@ -1,234 +1,143 @@
 //----------------------------------------------------
 // API Instance
 //----------------------------------------------------
-
 import api from "./api";
 
-
-
 //----------------------------------------------------
 // Get Job Cards
 //----------------------------------------------------
-//
-// Optional filters:
-//
-// mine=true
-// status=Open
-// assignedTo=5
-// search=laptop
-//
-//----------------------------------------------------
-
-
-
-//----------------------------------------------------
-// Get Job Cards
-//----------------------------------------------------
-
 const getAll = async (filters = {}) => {
+  const params = {};
 
-    const params = {};
+  if (filters.mine !== undefined) params.mine = filters.mine;
+  if (filters.status) params.status = filters.status;
+  if (filters.assignedTo) params.assignedTo = filters.assignedTo;
+  if (filters.search) params.search = filters.search;
 
-    if (filters.mine !== undefined)
-        params.mine = filters.mine;
+  // Sorting
+  if (filters.sortBy) params.sortBy = filters.sortBy;
+  if (filters.sortDirection) params.sortDirection = filters.sortDirection;
 
-    if (filters.status)
-        params.status = filters.status;
+  // Pagination
+  params.pageNumber = filters.pageNumber ?? 1;
+  params.pageSize = filters.pageSize ?? 10;
 
-    if (filters.assignedTo)
-        params.assignedTo = filters.assignedTo;
-
-    if (filters.search)
-        params.search = filters.search;
-
-    //----------------------------------------
-    // Sorting
-    //----------------------------------------
-
-    if (filters.sortBy)
-        params.sortBy = filters.sortBy;
-
-    if (filters.sortDirection)
-        params.sortDirection = filters.sortDirection;
-
-    //----------------------------------------
-    // Pagination
-    //----------------------------------------
-
-    params.pageNumber = filters.pageNumber ?? 1;
-    params.pageSize = filters.pageSize ?? 10;
-
-    const response = await api.get("/JobCard", {
-        params
-    });
-
-    return response.data;
+  const response = await api.get("/JobCard", { params });
+  return response.data;
 };
-
 
 //----------------------------------------------------
 // Get Job Card Details
 //----------------------------------------------------
-
 const getDetails = async (id) => {
-
-    const response = await api.get(`/JobCard/${id}`);
-
-    return response.data;
-
+  const response = await api.get(`/JobCard/${id}`);
+  return response.data;
 };
-
 
 //----------------------------------------------------
 // Get Job Card By Ticket ID
 //----------------------------------------------------
-
 const getByTicketId = async (ticketId) => {
-
-    const response = await api.get(
-        `/JobCard/by-ticket/${ticketId}`
-    );
-
-    return response.data;
+  const response = await api.get(`/JobCard/by-ticket/${ticketId}`);
+  return response.data;
 };
 
 //----------------------------------------------------
 // Create Job Card
 //----------------------------------------------------
-
 const createFromTicket = async (ticketId) => {
-
-    const response = await api.post(
-        "/JobCard/create-from-ticket",
-        {
-            ticketId
-        }
-    );
-
-    return response.data;
-
+  const response = await api.post("/JobCard/create-from-ticket", { ticketId });
+  return response.data;
 };
 
 //----------------------------------------------------
 // Update Job Card
 //----------------------------------------------------
-
 const update = async (id, jobCard) => {
-
-    await api.put(`/JobCard/${id}`, jobCard);
-
+  await api.put(`/JobCard/${id}`, jobCard);
 };
 
 //----------------------------------------------------
 // Complete Job Card
 //----------------------------------------------------
-
 const completeJobCard = async (jobCardId) => {
-
-    await api.put(`/JobCard/${jobCardId}/complete`);
-
+  await api.put(`/JobCard/${jobCardId}/complete`);
 };
 
 //----------------------------------------------------
 // Add Labour Entry
 //----------------------------------------------------
-
 const addLabourEntry = async (jobCardId, labourEntry) => {
-
-    await api.post(
-        `/JobCard/${jobCardId}/labour`,
-        labourEntry
-    );
-
+  await api.post(`/JobCard/${jobCardId}/labour`, labourEntry);
 };
-
 
 //----------------------------------------------------
 // Get Parts
 //----------------------------------------------------
-
 const getParts = async (jobCardId) => {
-
-    const response = await api.get(`/JobCard/${jobCardId}/parts`);
-
-    return response.data;
+  const response = await api.get(`/JobCard/${jobCardId}/parts`);
+  return response.data;
 };
 
 //----------------------------------------------------
 // Add Part
 //----------------------------------------------------
-
 const addPart = async (jobCardId, part) => {
-
-    await api.post(
-        `/JobCard/${jobCardId}/parts`,
-        part
-    );
+  const response = await api.post(`/JobCard/${jobCardId}/parts`, part);
+  return response.data;
 };
 
 //----------------------------------------------------
-// Delete Part
+// Update Part (FIXED)
 //----------------------------------------------------
+const updatePart = async (jobCardId, partId, updateDto) => {
+  const response = await api.put(`/JobCard/${jobCardId}/parts/${partId}`, updateDto);
+  return response.data;
+};
 
+//----------------------------------------------------
+// Delete Part (FIXED)
+//----------------------------------------------------
 const deletePart = async (partId) => {
-
-    await api.delete(`/JobCard/parts/${partId}`);
+  const response = await api.delete(`/JobCard/parts/${partId}`);
+  return response.data;
 };
-
 
 //----------------------------------------------------
 // Get Audit History
 //----------------------------------------------------
-
 const getAuditHistory = async (jobCardId) => {
-
-    const response = await api.get(`/JobCard/${jobCardId}/audit`);
-
-    return response.data;
-
+  const response = await api.get(`/JobCard/${jobCardId}/audit`);
+  return response.data;
 };
 
 //----------------------------------------------------
-// print Job Card
+// Print Job Card
 //----------------------------------------------------
-
 const downloadPdf = async (jobCardId) => {
-    const response = await api.get(
-        `/JobCard/${jobCardId}/pdf`,
-        {
-            responseType: "blob"
-        }
-    );
-
-    return response.data;
+  const response = await api.get(`/JobCard/${jobCardId}/pdf`, {
+    responseType: "blob",
+  });
+  return response.data;
 };
-
-
 
 //----------------------------------------------------
 // Export Service
 //----------------------------------------------------
-
 const jobCardService = {
-
-    getAll,
-    getDetails,
-    getByTicketId,
-    createFromTicket,
-    update,
-    completeJobCard,
-
-    addLabourEntry,
-
-    getParts,
-    addPart,
-    deletePart,
-
-    getAuditHistory,
-    downloadPdf
-
+  getAll,
+  getDetails,
+  getByTicketId,
+  createFromTicket,
+  update,
+  completeJobCard,
+  addLabourEntry,
+  getParts,
+  addPart,
+  updatePart,
+  deletePart,
+  getAuditHistory,
+  downloadPdf,
 };
-
-
 
 export default jobCardService;

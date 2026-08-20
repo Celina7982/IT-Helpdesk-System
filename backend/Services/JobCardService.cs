@@ -10,19 +10,12 @@ namespace IThelpdesk.Services
 {
     public class JobCardService : IJobCardService
     {
+        // Existing fields
         private readonly IJobCardRepository _jobCardRepository;
         private readonly ITicketRepository _ticketRepository;
         private readonly IJobCardAuditService _auditService;
 
-        public JobCardService(
-            IJobCardRepository jobCardRepository,
-            ITicketRepository ticketRepository,
-            IJobCardAuditService auditService)
-        {
-            _jobCardRepository = jobCardRepository;
-            _ticketRepository = ticketRepository;
-            _auditService = auditService;
-        }
+       
 
         //---------------------------------------------------
         // Get All Job Cards
@@ -499,124 +492,200 @@ namespace IThelpdesk.Services
                 .GetLabourEntriesAsync(jobCardId);
         }
 
+
         //---------------------------------------------------
-        // Add Part
+        // Parts: Add / Get / Update / Delete
         //---------------------------------------------------
+
+        // NOTE: Updated GetPartsAsync to resolve AddedBy using IUserRepository.
+        // Inject IUserRepository into JobCardService constructor and store in _userRepository.
+
+        private readonly IUserRepository _userRepository; // NEW
+
+        public JobCardService(
+            IJobCardRepository jobCardRepository,
+            ITicketRepository ticketRepository,
+            IJobCardAuditService auditService,
+            IUserRepository userRepository) // NEW parameter
+        {
+            _jobCardRepository = jobCardRepository;
+            _ticketRepository = ticketRepository;
+            _auditService = auditService;
+            _userRepository = userRepository; // NEW assignment
+        }
 
         public async Task AddPartAsync(
             int jobCardId,
-            AddPartDto dto)
+            AddPartDto dto,
+            int performedByUserId,
+            string role)
         {
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(jobCardId);
-
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
 
-            //---------------------------------------------------
-            // Validate quantity
-            //---------------------------------------------------
+            if (string.Equals(role, "Technician", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(jobCard.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Technicians cannot add parts to a completed Job Card.");
+
+                if (jobCard.AssignedTechnicianId != performedByUserId)
+                    throw new Exception("You can only add parts to Job Cards assigned to you.");
+            }
 
             if (dto.Quantity <= 0)
-            {
-                throw new Exception(
-                    "Quantity must be greater than zero.");
-            }
-
-            //---------------------------------------------------
-            // Validate part name
-            //---------------------------------------------------
+                throw new Exception("Quantity must be greater than zero.");
 
             if (string.IsNullOrWhiteSpace(dto.PartName))
-            {
-                throw new Exception(
-                    "Part name is required.");
-            }
-
-            //---------------------------------------------------
-            // Create Part
-            //---------------------------------------------------
+                throw new Exception("Part name is required.");
 
             var part = new JobCardPart
             {
                 JobCardId = jobCardId,
-
-                PartName = dto.PartName,
-
-                Quantity = dto.Quantity
+                PartName = dto.PartName.Trim(),
+                Quantity = dto.Quantity,
+                CreatedByUserId = performedByUserId,
+                DateAdded = DateTime.UtcNow
             };
 
             await _jobCardRepository.AddPartAsync(part);
-
             await _jobCardRepository.SaveChangesAsync();
-
-            //---------------------------------------------------
-            // Audit
-            //---------------------------------------------------
 
             await _auditService.LogAsync(
                 jobCard.JobCardId,
-                jobCard.AssignedTechnicianId ?? 0,
+                performedByUserId,
                 JobCardAuditAction.PartAdded,
-                $"Added part '{dto.PartName}' x{dto.Quantity}");
+                $"Added part '{part.PartName}' x{part.Quantity}");
         }
 
-        //---------------------------------------------------
-        // Get Parts
-        //---------------------------------------------------
-
-        public async Task<List<JobCardPartDto>> GetPartsAsync(
-            int jobCardId)
+        public async Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId)
         {
-            var parts =
-                await _jobCardRepository.GetPartsAsync(jobCardId);
+            var parts = await _jobCardRepository.GetPartsAsync(jobCardId);
 
-            return parts
-                .Select(p => new JobCardPartDto
+            var result = new List<JobCardPartDto>();
+
+            foreach (var p in parts)
+            {
+                // Look up user details
+                var user = await _userRepository.GetUserEntityByIdAsync(p.CreatedByUserId);
+
+                string addedBy = user != null
+                    ? $"{user.FirstName} {user.LastName}"
+                    : $"User {p.CreatedByUserId}";
+                result.Add(new JobCardPartDto
                 {
                     PartId = p.PartId,
+                    JobCardId = p.JobCardId,
                     PartName = p.PartName,
-                    Quantity = p.Quantity
-                })
-                .ToList();
+                    Quantity = p.Quantity,
+                    AddedByName = addedBy,
+                    AddedByUserId = p.CreatedByUserId,
+                    DateAdded = p.DateAdded
+                });
+            }
+
+            return result;
         }
 
-        //---------------------------------------------------
-        // Delete Part
-        //---------------------------------------------------
-
-        public async Task DeletePartAsync(int partId)
+        public async Task UpdatePartAsync(
+            int jobCardId,
+            int partId,
+            UpdatePartDto dto,
+            int performedByUserId,
+            string role)
         {
-            var part =
-                await _jobCardRepository.GetPartByIdAsync(partId);
-
+            var part = await _jobCardRepository.GetPartByIdAsync(partId);
             if (part == null)
                 throw new Exception("Part not found.");
 
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(
-                    part.JobCardId);
+            if (part.JobCardId != jobCardId)
+                throw new Exception("Part does not belong to this Job Card.");
 
-            //---------------------------------------------------
-            // Audit before deleting
-            //---------------------------------------------------
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
+            if (jobCard == null)
+                throw new Exception("Job Card not found.");
+
+            if (string.Equals(role, "Technician", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(jobCard.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Technicians cannot modify parts on a completed Job Card.");
+
+                if (jobCard.AssignedTechnicianId != performedByUserId)
+                    throw new Exception("You can only modify parts on Job Cards assigned to you.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.PartName))
+                throw new Exception("Part name is required.");
+
+            if (dto.Quantity <= 0)
+                throw new Exception("Quantity must be greater than zero.");
+
+            var oldPartName = part.PartName;
+            var oldQuantity = part.Quantity;
+
+            part.PartName = dto.PartName.Trim();
+            part.Quantity = dto.Quantity;
+
+            await _jobCardRepository.UpdatePartAsync(part);
+            await _jobCardRepository.SaveChangesAsync();
+
+            if (oldPartName != dto.PartName)
+            {
+                await _auditService.LogAsync(
+                    jobCard.JobCardId,
+                    performedByUserId,
+                    JobCardAuditAction.PartNameUpdated,
+                    "Part name updated",
+                    oldPartName,
+                    dto.PartName);
+            }
+
+            if (oldQuantity != dto.Quantity)
+            {
+                await _auditService.LogAsync(
+                    jobCard.JobCardId,
+                    performedByUserId,
+                    JobCardAuditAction.PartQuantityUpdated,
+                    "Part quantity updated",
+                    oldQuantity.ToString(),
+                    dto.Quantity.ToString());
+            }
+        }
+
+        public async Task DeletePartAsync(
+            int partId,
+            int performedByUserId,
+            string role)
+        {
+            var part = await _jobCardRepository.GetPartByIdAsync(partId);
+            if (part == null)
+                throw new Exception("Part not found.");
+
+            var jobCard = await _jobCardRepository.GetByIdAsync(part.JobCardId);
+            if (jobCard == null)
+                throw new Exception("Job Card not found.");
+
+            if (string.Equals(role, "Technician", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(jobCard.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Technicians cannot delete parts from a completed Job Card.");
+
+                if (jobCard.AssignedTechnicianId != performedByUserId)
+                    throw new Exception("You can only delete parts on Job Cards assigned to you.");
+            }
 
             await _auditService.LogAsync(
-                part.JobCardId,
-                jobCard?.AssignedTechnicianId ?? 0,
+                jobCard.JobCardId,
+                performedByUserId,
                 JobCardAuditAction.PartDeleted,
                 $"Deleted part '{part.PartName}' x{part.Quantity}");
 
-            //---------------------------------------------------
-            // Delete
-            //---------------------------------------------------
-
             await _jobCardRepository.DeletePartAsync(part);
-
             await _jobCardRepository.SaveChangesAsync();
         }
 
-            public async Task<JobCard?> GetByTicketIdAsync(int ticketId)
+
+        public async Task<JobCard?> GetByTicketIdAsync(int ticketId)
         {
             return await _jobCardRepository.GetByTicketIdAsync(ticketId);
         }

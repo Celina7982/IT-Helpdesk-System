@@ -30,6 +30,8 @@
         PartAdded,
         PartUpdated,
         PartDeleted,
+        PartQuantityUpdated,
+        PartNameUpdated,
 
         PdfGenerated
     }

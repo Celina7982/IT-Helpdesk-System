@@ -230,17 +230,15 @@ const deletePart = async (partId) => {
                         status={jobCard.status}
                     />
                 )}
-
-                  {/* ✅ FIXED: Removed duplicate <li> and now render JobCardParts component */}
-                {activeTab === "parts" && (
+                    {activeTab === "parts" && (
                     <JobCardParts
-                        parts={jobCard.partsUsed || []}
-                        onAdd={addPart}
-                        onDelete={deletePart}
+                        jobCardId={jobCard.jobCardId}
                         role={role}
                         status={jobCard.status}
                     />
-                )}     
+                    )}
+
+
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

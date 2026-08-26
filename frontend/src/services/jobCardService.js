@@ -65,10 +65,26 @@ const completeJobCard = async (jobCardId) => {
 };
 
 //----------------------------------------------------
-// Add Labour Entry
+// Labour Entries API Calls (ADDED & FIXED)
 //----------------------------------------------------
+const getLabourEntries = async (jobCardId) => {
+  const response = await api.get(`/JobCard/${jobCardId}/labour`);
+  return response.data;
+};
+
 const addLabourEntry = async (jobCardId, labourEntry) => {
-  await api.post(`/JobCard/${jobCardId}/labour`, labourEntry);
+  const response = await api.post(`/JobCard/${jobCardId}/labour`, labourEntry);
+  return response.data;
+};
+
+const updateLabourEntry = async (jobCardId, entryId, labourEntry) => {
+  const response = await api.put(`/JobCard/${jobCardId}/labour/${entryId}`, labourEntry);
+  return response.data;
+};
+
+const deleteLabourEntry = async (entryId) => {
+  const response = await api.delete(`/JobCard/labour/${entryId}`);
+  return response.data;
 };
 
 //----------------------------------------------------
@@ -88,7 +104,7 @@ const addPart = async (jobCardId, part) => {
 };
 
 //----------------------------------------------------
-// Update Part (FIXED)
+// Update Part
 //----------------------------------------------------
 const updatePart = async (jobCardId, partId, updateDto) => {
   const response = await api.put(`/JobCard/${jobCardId}/parts/${partId}`, updateDto);
@@ -96,7 +112,7 @@ const updatePart = async (jobCardId, partId, updateDto) => {
 };
 
 //----------------------------------------------------
-// Delete Part (FIXED)
+// Delete Part
 //----------------------------------------------------
 const deletePart = async (partId) => {
   const response = await api.delete(`/JobCard/parts/${partId}`);
@@ -131,7 +147,10 @@ const jobCardService = {
   createFromTicket,
   update,
   completeJobCard,
-  addLabourEntry,
+  getLabourEntries,    // Exported
+  addLabourEntry,      // Exported
+  updateLabourEntry,   // Exported
+  deleteLabourEntry,   // Exported
   getParts,
   addPart,
   updatePart,

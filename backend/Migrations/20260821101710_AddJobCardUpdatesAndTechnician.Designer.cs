@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260812121331_UpdateTicketArchive")]
-    partial class UpdateTicketArchive
+    [Migration("20260821101710_AddJobCardUpdatesAndTechnician")]
+    partial class AddJobCardUpdatesAndTechnician
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -184,6 +184,12 @@ namespace IThelpdesk.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PartId"));
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("JobCardId")
                         .HasColumnType("int");

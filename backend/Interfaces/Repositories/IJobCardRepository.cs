@@ -76,6 +76,13 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId);
 
+        // Added methods for single labour entry operations
+        Task<JobCardLabour?> GetLabourByIdAsync(int labourId);
+
+        Task UpdateLabourEntryAsync(JobCardLabour labour);
+
+        Task DeleteLabourEntryAsync(JobCardLabour labour);
+
         //--------------------------------------------------
         // Parts
         //--------------------------------------------------

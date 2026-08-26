@@ -14,7 +14,6 @@
 
         public DateTime? DateCompleted { get; set; }
 
-
         public int? AssignedTechnicianId { get; set; }
         // Technician assigned to this Job Card
         public string AssignedTechnician { get; set; } = "Not Assigned";
@@ -34,5 +33,10 @@
         public string CustomerSignature { get; set; } = string.Empty;
 
         public DateTime? SignedDate { get; set; }
+
+        // Navigation collections for PDF & Detail views
+        public List<JobCardLabourEntryDto> LabourEntries { get; set; } = new();
+
+        public List<JobCardPartDto> Parts { get; set; } = new();
     }
 }

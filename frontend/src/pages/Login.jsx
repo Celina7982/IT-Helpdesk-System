@@ -9,9 +9,12 @@ function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = async () => {
+    const handleLogin = async (e) => {
+        if (e) e.preventDefault();
         setError("");
+        setLoading(true);
 
         try {
             const response = await api.post("/Auth/login", {
@@ -20,18 +23,16 @@ function Login() {
             });
 
             const token = response.data.token;
-
             localStorage.setItem("token", token);
 
             const decoded = jwtDecode(token);
 
-            console.log(decoded);
-
+            // Extract role handling standard JWT claims and Microsoft identity claim formats
             const role =
                 decoded.role ||
-                decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
-           
+                decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+                decoded["role"] ||
+                "";
 
             if (role === "Admin") {
                 navigate("/admin");
@@ -42,7 +43,13 @@ function Login() {
             }
         } catch (err) {
             console.error(err);
-            setError("Invalid email or password.");
+            if (err.response && err.response.status === 401) {
+                setError("Invalid email or password.");
+            } else {
+                setError("Unable to connect to the server. Please check if backend is running.");
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -57,41 +64,44 @@ function Login() {
 
                         <div className="card-body">
                             {error && (
-                                <div className="alert alert-danger">
+                                <div className="alert alert-danger" role="alert">
                                     {error}
                                 </div>
                             )}
 
-                            <div className="mb-3">
-                                <label className="form-label">Email</label>
+                            <form onSubmit={handleLogin}>
+                                <div className="mb-3">
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        placeholder="Enter your email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
 
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    placeholder="Enter your email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
+                                <div className="mb-3">
+                                    <label className="form-label">Password</label>
+                                    <input
+                                        type="password"
+                                        className="form-control"
+                                        placeholder="Enter your password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
 
-                            <div className="mb-3">
-                                <label className="form-label">Password</label>
-
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    placeholder="Enter your password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </div>
-
-                            <button
-                                className="btn btn-primary w-100"
-                                onClick={handleLogin}
-                            >
-                                Login
-                            </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary w-100"
+                                    disabled={loading}
+                                >
+                                    {loading ? "Logging in..." : "Login"}
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

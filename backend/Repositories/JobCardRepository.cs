@@ -275,7 +275,38 @@ namespace IThelpdesk.Repositories
                         j.AssignedTechnician != null
                             ? j.AssignedTechnician.FirstName + " " +
                               j.AssignedTechnician.LastName
-                            : "Not Assigned"
+                            : "Not Assigned",
+
+                    // Map labour entries for PDF
+                    LabourEntries = j.LabourEntries
+                        .Select(l => new JobCardLabourEntryDto
+                        {
+                            LabourId = l.LabourId,
+                            JobCardId = l.JobCardId,
+                            TechnicianId = l.TechnicianId,
+                            TechnicianName = l.Technician != null
+                                ? l.Technician.FirstName + " " + l.Technician.LastName
+                                : string.Empty,
+                            HoursWorked = l.HoursWorked,
+                            WorkPerformed = l.WorkPerformed,
+                            DateWorked = l.DateWorked
+                        })
+                        .ToList(),
+
+                    // Map parts used for PDF (only name/quantity/date needed for PDF view)
+                    Parts = j.PartsUsed
+                        .Select(p => new JobCardPartDto
+                        {
+                            PartId = p.PartId,
+                            JobCardId = p.JobCardId,
+                            PartName = p.PartName,
+                            Quantity = p.Quantity,
+                            // CreatedByUserId is stored as string in the model; PDF only needs name & qty
+                            AddedByName = string.Empty,
+                            AddedByUserId = 0,
+                            DateAdded = p.DateAdded
+                        })
+                        .ToList()
                 })
 
                 .FirstOrDefaultAsync();
@@ -356,6 +387,44 @@ namespace IThelpdesk.Repositories
                 .Where(l => l.JobCardId == jobCardId)
                 .OrderBy(l => l.DateWorked)
                 .ToListAsync();
+        }
+
+        //---------------------------------------------------
+        // Get single labour entry
+        //---------------------------------------------------
+        public async Task<JobCardLabour?> GetLabourByIdAsync(int labourId)
+        {
+            return await _context.JobCardLabours
+                .Include(l => l.Technician)
+                .FirstOrDefaultAsync(l => l.LabourId == labourId);
+        }
+
+        //---------------------------------------------------
+        // Update labour entry
+        //---------------------------------------------------
+        public Task UpdateLabourEntryAsync(JobCardLabour labour)
+        {
+            var tracked = _context.ChangeTracker
+                .Entries<JobCardLabour>()
+                .FirstOrDefault(e => e.Entity.LabourId == labour.LabourId);
+
+            if (tracked == null)
+            {
+                _context.JobCardLabours.Attach(labour);
+            }
+
+            _context.Entry(labour).State = EntityState.Modified;
+
+            return Task.CompletedTask;
+        }
+
+        //---------------------------------------------------
+        // Delete labour entry
+        //---------------------------------------------------
+        public Task DeleteLabourEntryAsync(JobCardLabour labour)
+        {
+            _context.JobCardLabours.Remove(labour);
+            return Task.CompletedTask;
         }
 
 

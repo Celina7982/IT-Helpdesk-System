@@ -1,39 +1,36 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System;
 
 #nullable disable
 
 namespace IThelpdesk.Migrations
 {
-    /// <inheritdoc />
-    public partial class UpdateTicketArchive : Migration
+    public partial class AddArchivedFieldsToTickets : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ArchivedDate",
-                table: "Tickets",
-                type: "datetime2",
-                nullable: true);
-
             migrationBuilder.AddColumn<bool>(
                 name: "IsArchived",
                 table: "Tickets",
                 type: "bit",
                 nullable: false,
                 defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "ArchivedDate",
+                table: "Tickets",
+                type: "datetime2",
+                nullable: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "ArchivedDate",
+                name: "IsArchived",
                 table: "Tickets");
 
             migrationBuilder.DropColumn(
-                name: "IsArchived",
+                name: "ArchivedDate",
                 table: "Tickets");
         }
     }

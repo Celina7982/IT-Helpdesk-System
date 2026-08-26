@@ -84,13 +84,10 @@ function JobCardDetails() {
         }
     };
 
-//--------------------------------------------------
-// Add Part
-//--------------------------------------------------
-
-   //--------------------------------------------------
+    //--------------------------------------------------
     // Add Part
     //--------------------------------------------------
+
     const addPart = async (part) => {
         try {
             await jobCardService.addPart(jobCard.jobCardId, part);
@@ -100,28 +97,25 @@ function JobCardDetails() {
             console.error(error);
             alert("Unable to add part.");
         }
-    };;
+    };
 
-//--------------------------------------------------
-// Delete Part
-//--------------------------------------------------
+    //--------------------------------------------------
+    // Delete Part
+    //--------------------------------------------------
 
-const deletePart = async (partId) => {
+    const deletePart = async (partId) => {
+        try {
+            await jobCardService.deletePart(jobCard.jobCardId, partId);
+            await loadJobCard();
+        } catch (error) {
+            console.error(error);
+            alert("Unable to delete part.");
+        }
+    };
 
-    try {
-
-        await jobCardService.deletePart(partId);
-
-        await loadJobCard();
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Unable to delete part.");
-    }
-};
-
+    //--------------------------------------------------
+    // Complete Job Card
+    //--------------------------------------------------
 
     const completeJobCard = async () => {
         const confirmed = window.confirm(
@@ -189,14 +183,15 @@ const deletePart = async (partId) => {
                     </button>
                 </li>
 
-                    <li className="nav-item">
-                        <button
-                            className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
-                            onClick={() => setActiveTab("parts")}
-                        >
-                            Parts
-                        </button>
-                    </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${activeTab === "parts" ? "active" : ""}`}
+                        onClick={() => setActiveTab("parts")}
+                    >
+                        Parts
+                    </button>
+                </li>
+
                 <li className="nav-item">
                     <button
                         className={`nav-link ${activeTab === "history" ? "active" : ""}`}
@@ -223,22 +218,23 @@ const deletePart = async (partId) => {
                 )}
 
                 {activeTab === "labour" && (
-                    <LabourEntries
-                        labourEntries={jobCard.labourEntries || []}
-                        onAdd={addLabourEntry}
+    <LabourEntries
+        jobCardId={jobCard.jobCardId}
+        status={jobCard.status}
+        onChangeParent={loadJobCard}
+    />
+)}
+
+                {activeTab === "parts" && (
+                    <JobCardParts
+                        jobCardId={jobCard.jobCardId}
+                        parts={jobCard.parts || []}
+                        onAdd={addPart}
+                        onDelete={deletePart}
                         role={role}
                         status={jobCard.status}
                     />
                 )}
-                    {activeTab === "parts" && (
-                    <JobCardParts
-                        jobCardId={jobCard.jobCardId}
-                        role={role}
-                        status={jobCard.status}
-                    />
-                    )}
-
-
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

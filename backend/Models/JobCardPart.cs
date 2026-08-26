@@ -21,10 +21,9 @@ namespace IThelpdesk.Models
         [Required]
         public int Quantity { get; set; }
 
-        // NEW: who added the part
-        public int CreatedByUserId { get; set; }
+        // Updated: Changed from int to string? to match nvarchar in SQL
+        public string? CreatedByUserId { get; set; }
 
-        // NEW: when the part was added
         public DateTime DateAdded { get; set; }
     }
 }

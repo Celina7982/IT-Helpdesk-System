@@ -4,10 +4,14 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using IThelpdesk.Repositories;
 using IThelpdesk.Services;
-using IThelpdesk.Services.Pdf;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using IThelpdesk.Services.Pdf;
+// Add this using near the other service usings
+
+
+
 
 using QuestPDF.Infrastructure;
 
@@ -82,6 +86,7 @@ builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
 builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
 builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
 builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
+
 
 /*
  When AuthController asks for an IAuthService
@@ -162,30 +167,35 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
-
-// Create a test admin user if one doesn't exist
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-    context.Database.Migrate();
-
-    if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
+    try
     {
-        context.Users.Add(new User
-        {
-            FirstName = "Admin",
-            LastName = "User",
-            Email = "admin@ithelpdesk.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
-            Role = "Admin",
-            IsActive = true,
-            CreatedDate = DateTime.UtcNow
-        });
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
 
-        context.SaveChanges();
+        if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
+        {
+            context.Users.Add(new User
+            {
+                FirstName = "Admin",
+                LastName = "User",
+                Email = "admin@ithelpdesk.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+                Role = "Admin",
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            });
+
+            context.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Database Migration Warning]: {ex.Message}");
     }
 }
+
 
 // 2. Configure HTTP Pipeline
 if (app.Environment.IsDevelopment())
@@ -194,8 +204,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // Serves the Swagger GUI
 }
 
-app.UseHttpsRedirection(); // Redirects HTTP requests to HTTPS
-
+// app.UseHttpsRedirection(); // Commented out to prevent redirecting to port 7112
 
 app.UseCors("AllowReact");
 

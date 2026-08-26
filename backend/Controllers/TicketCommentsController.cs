@@ -1,13 +1,11 @@
-﻿
-
-    using IThelpdesk.Data;
-    using IThelpdesk.DTOs;
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.EntityFrameworkCore;
-    using System.Security.Claims;
-    using IThelpdesk.Data; // Adjust to your DbContext namespace
-    using IThelpdesk.DTOs;
+﻿using IThelpdesk.Data;
+using IThelpdesk.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using IThelpdesk.Data; // Adjust to your DbContext namespace
+using IThelpdesk.DTOs;
     using IThelpdesk.Models;
 
     namespace IThelpdesk.Controllers

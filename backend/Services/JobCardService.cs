@@ -10,12 +10,22 @@ namespace IThelpdesk.Services
 {
     public class JobCardService : IJobCardService
     {
-        // Existing fields
         private readonly IJobCardRepository _jobCardRepository;
         private readonly ITicketRepository _ticketRepository;
         private readonly IJobCardAuditService _auditService;
+        private readonly IUserRepository _userRepository;
 
-       
+        public JobCardService(
+            IJobCardRepository jobCardRepository,
+            ITicketRepository ticketRepository,
+            IJobCardAuditService auditService,
+            IUserRepository userRepository)
+        {
+            _jobCardRepository = jobCardRepository;
+            _ticketRepository = ticketRepository;
+            _auditService = auditService;
+            _userRepository = userRepository;
+        }
 
         //---------------------------------------------------
         // Get All Job Cards
@@ -44,25 +54,13 @@ namespace IThelpdesk.Services
         {
             int? technicianId = null;
 
-            //---------------------------------------------------
-            // Administrators
-            //---------------------------------------------------
-
-            if (string.Equals(
-                role,
-                "Admin",
-                StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
             {
                 if (mine)
                 {
                     technicianId = userId;
                 }
             }
-
-            //---------------------------------------------------
-            // Technicians
-            //---------------------------------------------------
-
             else
             {
                 technicianId = userId;
@@ -103,31 +101,15 @@ namespace IThelpdesk.Services
 
         public async Task<JobCard> CreateFromTicketAsync(int ticketId)
         {
-            //---------------------------------------------------
-            // Find Ticket
-            //---------------------------------------------------
-
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
-            //---------------------------------------------------
-            // Ticket must be resolved
-            //---------------------------------------------------
-
-            if (!string.Equals(
-                ticket.Status,
-                "Resolved",
-                StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase))
             {
-                throw new Exception(
-                    "A Job Card can only be created after the ticket has been resolved.");
+                throw new Exception("A Job Card can only be created after the ticket has been resolved.");
             }
-
-            //---------------------------------------------------
-            // Check whether Job Card already exists
-            //---------------------------------------------------
 
             var existing = await _jobCardRepository.GetByTicketIdAsync(ticketId);
 
@@ -136,75 +118,40 @@ namespace IThelpdesk.Services
                 return existing;
             }
 
-            //---------------------------------------------------
-            // Generate Job Number
-            //---------------------------------------------------
-
             var latest = await _jobCardRepository.GetLatestJobCardAsync();
 
             int nextNumber = 1;
 
-            if (latest != null &&
-                !string.IsNullOrWhiteSpace(latest.JobNumber))
+            if (latest != null && !string.IsNullOrWhiteSpace(latest.JobNumber))
             {
                 var parts = latest.JobNumber.Split('-');
 
-                if (parts.Length == 3 &&
-                    int.TryParse(parts[2], out int lastNumber))
+                if (parts.Length == 3 && int.TryParse(parts[2], out int lastNumber))
                 {
                     nextNumber = lastNumber + 1;
                 }
             }
 
-            string jobNumber =
-                $"JC-{DateTime.Now.Year}-{nextNumber:D6}";
-
-            //---------------------------------------------------
-            // Create Job Card
-            //---------------------------------------------------
+            string jobNumber = $"JC-{DateTime.Now.Year}-{nextNumber:D6}";
 
             var jobCard = new JobCard
             {
                 TicketId = ticket.TicketId,
-
-                AssignedTechnicianId =
-                    ticket.AssignedToUserId,
-
+                AssignedTechnicianId = ticket.AssignedToUserId,
                 JobNumber = jobNumber,
-
                 Status = "Open",
-
                 DateCreated = DateTime.UtcNow,
-
                 FaultReported = ticket.Description,
-
                 FaultFound = "",
-
                 WorkPerformed = "",
-
                 CompletionNotes = "",
-
                 CustomerName = ticket.CustomerName,
-
                 CustomerSignature = "",
-
                 SignedDate = null
             };
 
-            //---------------------------------------------------
-            // Save Job Card
-            //---------------------------------------------------
-
             await _jobCardRepository.AddAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
-
-            //---------------------------------------------------
-            // Audit
-            //---------------------------------------------------
-            // Do NOT allow an audit failure to make the
-            // Job Card creation request appear to have failed.
-            //---------------------------------------------------
 
             try
             {
@@ -217,18 +164,9 @@ namespace IThelpdesk.Services
             }
             catch (Exception auditException)
             {
-                // The Job Card was already successfully created.
-                // Log the audit failure but do not return HTTP 500.
-                Console.WriteLine(
-                    $"WARNING: Job Card {jobCard.JobCardId} was created, " +
-                    $"but audit logging failed.");
-
+                Console.WriteLine($"WARNING: Job Card {jobCard.JobCardId} was created, but audit logging failed.");
                 Console.WriteLine(auditException);
             }
-
-            //---------------------------------------------------
-            // Return Job Card
-            //---------------------------------------------------
 
             return jobCard;
         }
@@ -237,19 +175,12 @@ namespace IThelpdesk.Services
         // Update Job Card
         //---------------------------------------------------
 
-        public async Task UpdateJobCardAsync(
-            int id,
-            UpdateJobCardDto dto)
+        public async Task UpdateJobCardAsync(int id, UpdateJobCardDto dto)
         {
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(id);
+            var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
-
-            //---------------------------------------------------
-            // Store Original Values
-            //---------------------------------------------------
 
             var oldStatus = jobCard.Status;
             var oldFaultFound = jobCard.FaultFound;
@@ -257,46 +188,24 @@ namespace IThelpdesk.Services
             var oldCompletionNotes = jobCard.CompletionNotes;
             var oldCustomerSignature = jobCard.CustomerSignature;
 
-            //---------------------------------------------------
-            // Update Values
-            //---------------------------------------------------
-
             jobCard.Status = dto.Status;
             jobCard.FaultFound = dto.FaultFound;
             jobCard.WorkPerformed = dto.WorkPerformed;
             jobCard.CompletionNotes = dto.CompletionNotes;
             jobCard.CustomerSignature = dto.CustomerSignature;
 
-            jobCard.DateCompleted =
-                dto.Status == "Completed"
-                    ? DateTime.UtcNow
-                    : null;
-
-            //---------------------------------------------------
-            // Save
-            //---------------------------------------------------
+            jobCard.DateCompleted = dto.Status == "Completed" ? DateTime.UtcNow : null;
 
             await _jobCardRepository.UpdateAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
 
-            //---------------------------------------------------
-            // Audit Changes
-            //---------------------------------------------------
-
-            int userId =
-                jobCard.AssignedTechnicianId ?? 0;
-
-            //---------------------------------------------------
-            // Status Changed
-            //---------------------------------------------------
+            int userId = jobCard.AssignedTechnicianId ?? 0;
 
             if (oldStatus != dto.Status)
             {
-                var action =
-                    dto.Status == "Completed"
-                        ? JobCardAuditAction.JobCardCompleted
-                        : JobCardAuditAction.StatusChanged;
+                var action = dto.Status == "Completed"
+                    ? JobCardAuditAction.JobCardCompleted
+                    : JobCardAuditAction.StatusChanged;
 
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
@@ -306,10 +215,6 @@ namespace IThelpdesk.Services
                     oldStatus,
                     dto.Status);
             }
-
-            //---------------------------------------------------
-            // Fault Found Updated
-            //---------------------------------------------------
 
             if (oldFaultFound != dto.FaultFound)
             {
@@ -322,10 +227,6 @@ namespace IThelpdesk.Services
                     dto.FaultFound);
             }
 
-            //---------------------------------------------------
-            // Work Performed Updated
-            //---------------------------------------------------
-
             if (oldWorkPerformed != dto.WorkPerformed)
             {
                 await _auditService.LogAsync(
@@ -336,10 +237,6 @@ namespace IThelpdesk.Services
                     oldWorkPerformed,
                     dto.WorkPerformed);
             }
-
-            //---------------------------------------------------
-            // Completion Notes Updated
-            //---------------------------------------------------
 
             if (oldCompletionNotes != dto.CompletionNotes)
             {
@@ -352,12 +249,7 @@ namespace IThelpdesk.Services
                     dto.CompletionNotes);
             }
 
-            //---------------------------------------------------
-            // Customer Signature Added
-            //---------------------------------------------------
-
-            if (oldCustomerSignature != dto.CustomerSignature &&
-                !string.IsNullOrWhiteSpace(dto.CustomerSignature))
+            if (oldCustomerSignature != dto.CustomerSignature && !string.IsNullOrWhiteSpace(dto.CustomerSignature))
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
@@ -373,52 +265,30 @@ namespace IThelpdesk.Services
 
         public async Task CompleteJobCardAsync(int id)
         {
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(id);
+            var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
 
             jobCard.Status = "Completed";
-
             jobCard.DateCompleted = DateTime.UtcNow;
 
             await _jobCardRepository.UpdateAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
-
-            // NOTE:
-            // Completion audit is handled in
-            // UpdateJobCardAsync to avoid duplicate
-            // completion entries.
         }
-
-        //---------------------------------------------------
-        // Update
-        //---------------------------------------------------
 
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
         }
 
-        //---------------------------------------------------
-        // Delete
-        //---------------------------------------------------
-
         public async Task DeleteAsync(int id)
         {
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(id);
+            var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 return;
-
-            //---------------------------------------------------
-            // Audit deletion before removing the record
-            //---------------------------------------------------
 
             await _auditService.LogAsync(
                 jobCard.JobCardId,
@@ -426,25 +296,17 @@ namespace IThelpdesk.Services
                 JobCardAuditAction.JobCardDeleted,
                 $"Job Card {jobCard.JobNumber} deleted");
 
-            //---------------------------------------------------
-            // Delete
-            //---------------------------------------------------
-
             await _jobCardRepository.DeleteAsync(jobCard);
-
             await _jobCardRepository.SaveChangesAsync();
         }
 
         //---------------------------------------------------
-        // Add Labour
+        // Add / Get Labour
         //---------------------------------------------------
 
-        public async Task AddLabourEntryAsync(
-            int jobCardId,
-            AddLabourEntryDto dto)
+        public async Task AddLabourEntryAsync(int jobCardId, AddLabourEntryDto dto, int performedByUserId)
         {
-            var jobCard =
-                await _jobCardRepository.GetByIdAsync(jobCardId);
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
@@ -455,69 +317,145 @@ namespace IThelpdesk.Services
             var labour = new JobCardLabour
             {
                 JobCardId = jobCardId,
-
-                TechnicianId =
-                    jobCard.AssignedTechnicianId.Value,
-
+                // Use the logged-in user's id (performedByUserId) as the TechnicianId
+                TechnicianId = performedByUserId,
                 HoursWorked = dto.HoursWorked,
-
                 WorkPerformed = dto.WorkPerformed,
-
                 DateWorked = DateTime.UtcNow
             };
 
             await _jobCardRepository.AddLabourEntryAsync(labour);
-
             await _jobCardRepository.SaveChangesAsync();
-
-            //---------------------------------------------------
-            // Audit
-            //---------------------------------------------------
 
             await _auditService.LogAsync(
                 jobCard.JobCardId,
-                jobCard.AssignedTechnicianId.Value,
+                performedByUserId,
                 JobCardAuditAction.LabourAdded,
                 $"Added {dto.HoursWorked} hours of labour.");
         }
 
+        public async Task<List<JobCardLabourEntryDto>> GetLabourEntriesAsync(int jobCardId)
+        {
+            var labourEntries = await _jobCardRepository.GetLabourEntriesAsync(jobCardId);
+            var result = new List<JobCardLabourEntryDto>();
+
+            foreach (var entry in labourEntries)
+            {
+                var user = await _userRepository.GetUserEntityByIdAsync(entry.TechnicianId);
+
+                string technicianName = user != null
+                    ? $"{user.FirstName} {user.LastName}"
+                    : $"Technician {entry.TechnicianId}";
+
+                result.Add(new JobCardLabourEntryDto
+                {
+                    LabourId = entry.LabourId,
+                    JobCardId = entry.JobCardId,
+                    TechnicianId = entry.TechnicianId,
+                    TechnicianName = technicianName,
+                    HoursWorked = entry.HoursWorked,
+                    WorkPerformed = entry.WorkPerformed,
+                    DateWorked = entry.DateWorked
+                });
+            }
+
+            return result;
+        }
+
         //---------------------------------------------------
-        // Get Labour
+        // Update / Delete Labour
         //---------------------------------------------------
 
-        public async Task<List<JobCardLabour>> GetLabourEntriesAsync(
-            int jobCardId)
+        public async Task UpdateLabourEntryAsync(
+            int jobCardId,
+            int labourId,
+            UpdateLabourEntryDto dto,
+            int performedByUserId,
+            string role)
         {
-            return await _jobCardRepository
-                .GetLabourEntriesAsync(jobCardId);
+            var labour = await _jobCardRepository.GetLabourByIdAsync(labourId);
+            if (labour == null)
+                throw new Exception("Labour entry not found.");
+
+            if (labour.JobCardId != jobCardId)
+                throw new Exception("Labour entry does not belong to this Job Card.");
+
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
+            if (jobCard == null)
+                throw new Exception("Job Card not found.");
+
+            if (string.Equals(role, "Technician", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(jobCard.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Technicians cannot modify labour on a completed Job Card.");
+
+                if (jobCard.AssignedTechnicianId != performedByUserId)
+                    throw new Exception("You can only modify labour on Job Cards assigned to you.");
+            }
+
+            if (dto.HoursWorked <= 0)
+                throw new Exception("Hours worked must be greater than zero.");
+
+            var oldHours = labour.HoursWorked;
+            var oldWork = labour.WorkPerformed;
+
+            labour.HoursWorked = dto.HoursWorked;
+            labour.WorkPerformed = dto.WorkPerformed;
+
+            await _jobCardRepository.UpdateLabourEntryAsync(labour);
+            await _jobCardRepository.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                jobCard.JobCardId,
+                performedByUserId,
+                JobCardAuditAction.LabourUpdated,
+                $"Updated labour entry from {oldHours}h to {dto.HoursWorked}h.");
         }
+
+        public async Task DeleteLabourEntryAsync(
+            int labourId,
+            int performedByUserId,
+            string role)
+        {
+            var labour = await _jobCardRepository.GetLabourByIdAsync(labourId);
+            if (labour == null)
+                throw new Exception("Labour entry not found.");
+
+            var jobCardId = labour.JobCardId;
+
+            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
+            if (jobCard == null)
+                throw new Exception("Job Card not found.");
+
+            if (string.Equals(role, "Technician", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(jobCard.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Technicians cannot delete labour from a completed Job Card.");
+
+                if (jobCard.AssignedTechnicianId != performedByUserId)
+                    throw new Exception("You can only delete labour on Job Cards assigned to you.");
+            }
+
+            await _auditService.LogAsync(
+                jobCard.JobCardId,
+                performedByUserId,
+                JobCardAuditAction.LabourDeleted,
+                $"Deleted labour entry of {labour.HoursWorked} hours.");
+
+            await _jobCardRepository.DeleteLabourEntryAsync(labour);
+            await _jobCardRepository.SaveChangesAsync();
+        }
+
 
 
         //---------------------------------------------------
         // Parts: Add / Get / Update / Delete
         //---------------------------------------------------
 
-        // NOTE: Updated GetPartsAsync to resolve AddedBy using IUserRepository.
-        // Inject IUserRepository into JobCardService constructor and store in _userRepository.
-
-        private readonly IUserRepository _userRepository; // NEW
-
-        public JobCardService(
-            IJobCardRepository jobCardRepository,
-            ITicketRepository ticketRepository,
-            IJobCardAuditService auditService,
-            IUserRepository userRepository) // NEW parameter
-        {
-            _jobCardRepository = jobCardRepository;
-            _ticketRepository = ticketRepository;
-            _auditService = auditService;
-            _userRepository = userRepository; // NEW assignment
-        }
-
         public async Task AddPartAsync(
             int jobCardId,
             AddPartDto dto,
-            int performedByUserId,
+            int performedByUserId, // Match interface (int)
             string role)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
@@ -544,7 +482,7 @@ namespace IThelpdesk.Services
                 JobCardId = jobCardId,
                 PartName = dto.PartName.Trim(),
                 Quantity = dto.Quantity,
-                CreatedByUserId = performedByUserId,
+                CreatedByUserId = performedByUserId.ToString(), // Convert int to string for Model
                 DateAdded = DateTime.UtcNow
             };
 
@@ -561,17 +499,21 @@ namespace IThelpdesk.Services
         public async Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId)
         {
             var parts = await _jobCardRepository.GetPartsAsync(jobCardId);
-
             var result = new List<JobCardPartDto>();
 
             foreach (var p in parts)
             {
-                // Look up user details
-                var user = await _userRepository.GetUserEntityByIdAsync(p.CreatedByUserId);
+                // Parse string CreatedByUserId to int for repository lookup (CS1503 resolved)
+                int.TryParse(p.CreatedByUserId, out int createdById);
+
+                var user = createdById > 0
+                    ? await _userRepository.GetUserEntityByIdAsync(createdById)
+                    : null;
 
                 string addedBy = user != null
                     ? $"{user.FirstName} {user.LastName}"
                     : $"User {p.CreatedByUserId}";
+
                 result.Add(new JobCardPartDto
                 {
                     PartId = p.PartId,
@@ -579,7 +521,7 @@ namespace IThelpdesk.Services
                     PartName = p.PartName,
                     Quantity = p.Quantity,
                     AddedByName = addedBy,
-                    AddedByUserId = p.CreatedByUserId,
+                    AddedByUserId = createdById, // Assign parsed int (CS0029 resolved)
                     DateAdded = p.DateAdded
                 });
             }
@@ -591,7 +533,7 @@ namespace IThelpdesk.Services
             int jobCardId,
             int partId,
             UpdatePartDto dto,
-            int performedByUserId,
+            int performedByUserId, // Match interface (int)
             string role)
         {
             var part = await _jobCardRepository.GetPartByIdAsync(partId);
@@ -654,7 +596,7 @@ namespace IThelpdesk.Services
 
         public async Task DeletePartAsync(
             int partId,
-            int performedByUserId,
+            int performedByUserId, // Match interface (int)
             string role)
         {
             var part = await _jobCardRepository.GetPartByIdAsync(partId);
@@ -683,12 +625,9 @@ namespace IThelpdesk.Services
             await _jobCardRepository.DeletePartAsync(part);
             await _jobCardRepository.SaveChangesAsync();
         }
-
-
         public async Task<JobCard?> GetByTicketIdAsync(int ticketId)
         {
             return await _jobCardRepository.GetByTicketIdAsync(ticketId);
         }
-    
     }
 }

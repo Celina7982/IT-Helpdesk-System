@@ -44,9 +44,13 @@ namespace IThelpdesk.Interfaces.Services
         // Labour
         //--------------------------------------------------
 
-        Task AddLabourEntryAsync(int jobCardId, AddLabourEntryDto dto);
+        Task AddLabourEntryAsync(int jobCardId, AddLabourEntryDto dto, int performedByUserId);
 
-        Task<List<JobCardLabour>> GetLabourEntriesAsync(int jobCardId);
+        Task<List<JobCardLabourEntryDto>> GetLabourEntriesAsync(int jobCardId);
+
+        Task UpdateLabourEntryAsync(int jobCardId, int labourId, UpdateLabourEntryDto dto, int userId, string role);
+
+        Task DeleteLabourEntryAsync(int labourId, int performedByUserId, string role);
 
         //--------------------------------------------------
         // Parts

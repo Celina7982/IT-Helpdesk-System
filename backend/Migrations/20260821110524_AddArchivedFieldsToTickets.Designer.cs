@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260819082703_AddJobCardPartCreatedByAndDateAdded")]
-    partial class AddJobCardPartCreatedByAndDateAdded
+    [Migration("20260821110524_AddArchivedFieldsToTickets")]
+    partial class AddArchivedFieldsToTickets
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

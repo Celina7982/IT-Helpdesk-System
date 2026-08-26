@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace IThelpdesk.Models
 {
@@ -15,6 +18,10 @@ namespace IThelpdesk.Models
         [StringLength(100)]
         public string LastName { get; set; } = string.Empty;
 
+        // Computed property for easy full name retrieval
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}".Trim();
+
         [Required]
         [EmailAddress]
         [StringLength(150)]
@@ -25,7 +32,7 @@ namespace IThelpdesk.Models
 
         [Required]
         [StringLength(20)]
-        public string Role { get; set; } = "Client"; //client,technician,admin
+        public string Role { get; set; } = "Client"; // Client, Technician, Admin
 
         public bool IsActive { get; set; } = true;
 

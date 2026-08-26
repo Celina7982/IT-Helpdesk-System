@@ -1,29 +1,28 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System;
 
 #nullable disable
 
 namespace IThelpdesk.Migrations
 {
     /// <inheritdoc />
-    public partial class AddJobCardPartCreatedByAndDateAdded : Migration
+    public partial class FixJobCardPartsSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
+            migrationBuilder.AddColumn<string>(
                 name: "CreatedByUserId",
                 table: "JobCardParts",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+                type: "nvarchar(450)",
+                nullable: true);
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "DateAdded",
                 table: "JobCardParts",
                 type: "datetime2",
                 nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+                defaultValueSql: "GETUTCDATE()");
         }
 
         /// <inheritdoc />

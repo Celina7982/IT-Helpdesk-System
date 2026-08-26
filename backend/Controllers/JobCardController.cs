@@ -112,7 +112,6 @@ namespace IThelpdesk.Controllers
 
             return Ok(jobCard);
         }
-
         //---------------------------------------------------------
         // EXPORT JOB CARD PDF
         //---------------------------------------------------------
@@ -120,12 +119,25 @@ namespace IThelpdesk.Controllers
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
-
-            var jobCard = await _jobCardService.GetByIdAsync(id);
-
-            if (jobCard != null)
+            try
             {
+                // 1. Fetch the job card first to verify existence
+                var jobCard = await _jobCardService.GetByIdAsync(id);
+
+                if (jobCard == null)
+                {
+                    return NotFound($"Job Card with ID {id} was not found.");
+                }
+
+                // 2. Generate the PDF byte array
+                var pdf = await _jobCardPdfService.GenerateJobCardPdfAsync(id);
+
+                if (pdf == null || pdf.Length == 0)
+                {
+                    return StatusCode(500, "An error occurred while generating the PDF binary payload.");
+                }
+
+                // 3. Log the audit action safely
                 int userId = jobCard.AssignedTechnicianId ?? 0;
 
                 await _auditService.LogAsync(
@@ -133,12 +145,21 @@ namespace IThelpdesk.Controllers
                     userId,
                     JobCardAuditAction.PdfGenerated,
                     $"PDF generated for Job Card {jobCard.JobNumber}");
-            }
 
-            return File(
-                pdf,
-                "application/pdf",
-                $"JobCard-{id}.pdf");
+                // 4. Return the valid byte array as a downloadable PDF stream
+                return File(
+                    pdf,
+                    "application/pdf",
+                    $"JobCard-{jobCard.JobNumber ?? id.ToString()}.pdf");
+            }
+            catch (Exception ex)
+            {
+                // Print the exact error to your terminal console so you can see why it failed
+                Console.WriteLine($"[PDF GENERATION ERROR]: {ex.Message}");
+                Console.WriteLine($"[STACK TRACE]: {ex.StackTrace}");
+
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
         //---------------------------------------------------------
@@ -190,9 +211,81 @@ namespace IThelpdesk.Controllers
             int id,
             [FromBody] AddLabourEntryDto dto)
         {
-            await _jobCardService.AddLabourEntryAsync(id, dto);
+            // Extract logged-in user's id from JWT claims and pass to service
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            await _jobCardService.AddLabourEntryAsync(id, dto, userId);
 
             return Ok();
+        }
+
+
+
+
+        //---------------------------------------------------------
+        // GET LABOUR ENTRIES
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpGet("{id}/labour")]
+        public async Task<IActionResult> GetLabourEntries(int id)
+        {
+            var entries = await _jobCardService.GetLabourEntriesAsync(id);
+
+            return Ok(entries);
+        }
+
+        //---------------------------------------------------------
+        // UPDATE LABOUR ENTRY
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPut("{id}/labour/{labourId}")]
+        public async Task<IActionResult> UpdateLabourEntry(
+            int id,
+            int labourId,
+            [FromBody] UpdateLabourEntryDto dto)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(role))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            await _jobCardService.UpdateLabourEntryAsync(id, labourId, dto, userId, role);
+
+            return NoContent();
+        }
+
+        //---------------------------------------------------------
+        // DELETE LABOUR ENTRY
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpDelete("labour/{labourId}")]
+        public async Task<IActionResult> DeleteLabourEntry(int labourId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(role))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            await _jobCardService.DeleteLabourEntryAsync(labourId, userId, role);
+
+            return NoContent();
         }
 
         //---------------------------------------------------------

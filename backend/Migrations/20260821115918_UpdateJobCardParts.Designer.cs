@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260812115937_AddTicketArchive")]
-    partial class AddTicketArchive
+    [Migration("20260821115918_UpdateJobCardParts")]
+    partial class UpdateJobCardParts
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -185,6 +185,12 @@ namespace IThelpdesk.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PartId"));
 
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("JobCardId")
                         .HasColumnType("int");
 
@@ -210,6 +216,9 @@ namespace IThelpdesk.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TicketId"));
+
+                    b.Property<DateTime?>("ArchivedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("AssignedToUserId")
                         .HasColumnType("int");
@@ -238,6 +247,9 @@ namespace IThelpdesk.Migrations
                     b.Property<string>("EscalationReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsEscalated")
                         .HasColumnType("bit");

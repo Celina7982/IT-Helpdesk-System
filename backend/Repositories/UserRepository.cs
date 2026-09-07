@@ -56,6 +56,7 @@ namespace IThelpdesk.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        
         public async Task<User?> GetUserEntityByIdAsync(int id)
         {
             return await _context.Users.FindAsync(id);
@@ -93,6 +94,13 @@ namespace IThelpdesk.Repositories
             return await _context.Users
                 .Where(u => u.Role == "Technician")
                 .OrderBy(u => u.FirstName)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetAdminsAsync()
+        {
+            return await _context.Users
+                .Where(u => u.Role == "Admin" && u.IsActive)
                 .ToListAsync();
         }
     }

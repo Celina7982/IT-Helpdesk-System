@@ -4,6 +4,7 @@ using IThelpdesk.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260826123638_AddNotifications")]
+    partial class AddNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,7 +94,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TicketId");
 
-                    b.ToTable("JobCards", (string)null);
+                    b.ToTable("JobCards");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
@@ -137,7 +140,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId", "DateCreated");
 
-                    b.ToTable("JobCardAudits", (string)null);
+                    b.ToTable("JobCardAudits");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
@@ -171,7 +174,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("TechnicianId");
 
-                    b.ToTable("JobCardLabours", (string)null);
+                    b.ToTable("JobCardLabours");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
@@ -203,7 +206,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId");
 
-                    b.ToTable("JobCardParts", (string)null);
+                    b.ToTable("JobCardParts");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
@@ -225,9 +228,6 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int?>("TicketId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -238,11 +238,9 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("TicketId");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
@@ -314,7 +312,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tickets", (string)null);
+                    b.ToTable("Tickets");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
@@ -341,7 +339,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("CommentId");
 
-                    b.ToTable("TicketComments", (string)null);
+                    b.ToTable("TicketComments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -387,7 +385,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
@@ -458,17 +456,11 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
                 {
-                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId");
-
                     b.HasOne("IThelpdesk.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Ticket");
 
                     b.Navigation("User");
                 });

@@ -137,15 +137,21 @@ namespace IThelpdesk.Controllers
                     return StatusCode(500, "An error occurred while generating the PDF binary payload.");
                 }
 
-                // 3. Log the audit action safely
-                int userId = jobCard.AssignedTechnicianId ?? 0;
+               // 3. Get the logged-in user who generated the PDF
+var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                await _auditService.LogAsync(
-                    jobCard.JobCardId,
-                    userId,
-                    JobCardAuditAction.PdfGenerated,
-                    $"PDF generated for Job Card {jobCard.JobNumber}");
+if (string.IsNullOrEmpty(userIdClaim))
+    return Unauthorized();
 
+if (!int.TryParse(userIdClaim, out int userId))
+    return Unauthorized();
+
+// Log the audit using the actual user who generated the PDF
+await _auditService.LogAsync(
+    jobCard.JobCardId,
+    userId,
+    JobCardAuditAction.PdfGenerated,
+    $"PDF generated for Job Card {jobCard.JobNumber}");
                 // 4. Return the valid byte array as a downloadable PDF stream
                 return File(
                     pdf,
@@ -169,15 +175,26 @@ namespace IThelpdesk.Controllers
         [Authorize(Roles = "Admin,Technician")]
         [HttpPost("create-from-ticket")]
         public async Task<IActionResult> CreateFromTicket(
-            [FromBody] CreateJobCardDto request)
+     [FromBody] CreateJobCardDto request)
         {
             if (request == null)
                 return BadRequest(new { message = "Request is required." });
 
+            // Get the logged-in user's ID from the JWT
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
             try
             {
                 var jobCard =
-                    await _jobCardService.CreateFromTicketAsync(request.TicketId);
+                    await _jobCardService.CreateFromTicketAsync(
+                        request.TicketId,
+                        userId);
 
                 // Return ONLY the values the frontend needs.
                 // Do NOT return the complete JobCard entity because
@@ -199,7 +216,7 @@ namespace IThelpdesk.Controllers
                     message = ex.Message
                 });
             }
-        }
+        }   
 
         //---------------------------------------------------------
         // ADD LABOUR
@@ -408,23 +425,48 @@ namespace IThelpdesk.Controllers
             int id,
             [FromBody] UpdateJobCardDto dto)
         {
-            await _jobCardService.UpdateJobCardAsync(id, dto);
+            // Get the logged-in user's ID from the JWT
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            // Pass the actual user performing the action
+            await _jobCardService.UpdateJobCardAsync(
+                id,
+                dto,
+                userId);
 
             return NoContent();
         }
 
         //---------------------------------------------------------
-        // COMPLETE JOB CARD
-        //---------------------------------------------------------
+// COMPLETE JOB CARD
+//---------------------------------------------------------
 
-        [Authorize(Roles = "Admin,Technician")]
-        [HttpPut("{id}/complete")]
-        public async Task<IActionResult> Complete(int id)
-        {
-            await _jobCardService.CompleteJobCardAsync(id);
+[Authorize(Roles = "Admin,Technician")]
+[HttpPut("{id}/complete")]
+public async Task<IActionResult> Complete(int id)
+{
+    // Get the logged-in user's ID from the JWT
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            return NoContent();
-        }
+    if (string.IsNullOrEmpty(userIdClaim))
+        return Unauthorized();
+
+    if (!int.TryParse(userIdClaim, out int userId))
+        return Unauthorized();
+
+    // Pass the actual user performing the completion
+    await _jobCardService.CompleteJobCardAsync(
+        id,
+        userId);
+
+    return NoContent();
+}
 
         //---------------------------------------------------------
         // DELETE JOB CARD

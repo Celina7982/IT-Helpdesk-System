@@ -20,6 +20,8 @@ PUT /api/tickets/{id}
 
 DELETE /api/tickets/{id}
 
+
+
 ---
 
 ## Technician

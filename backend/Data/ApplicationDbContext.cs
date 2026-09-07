@@ -28,6 +28,9 @@ namespace IThelpdesk.Data
 
         public DbSet<JobCardPart> JobCardParts { get; set; }
 
+        //Notifications
+        public DbSet<Notification> Notifications { get; set; }
+
         //--------------------------------------------------
         // Job Card Audit History
         //--------------------------------------------------
@@ -134,6 +137,19 @@ namespace IThelpdesk.Data
                 {
                     a.JobCardId,
                     a.DateCreated
+                });
+
+
+            //---------------------------------------
+            // Ticket Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.AssignedToUserId,
+                    t.IsArchived,
+                    t.CreatedDate
                 });
 
         }

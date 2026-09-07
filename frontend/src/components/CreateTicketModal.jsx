@@ -2,6 +2,7 @@ import { useState } from "react";
 import clientService from "../services/clientService";
 
 function CreateTicketModal({ show, onClose, onTicketCreated }) {
+    const [saving, setSaving] = useState(false);
 
     const [ticket, setTicket] = useState({
         subject: "",
@@ -13,19 +14,20 @@ function CreateTicketModal({ show, onClose, onTicketCreated }) {
     });
 
     const handleChange = (e) => {
-
         setTicket({
             ...ticket,
             [e.target.name]: e.target.value
         });
-
     };
 
     const handleSubmit = async (e) => {
-
         e.preventDefault();
 
+        // Prevent double submit if already saving
+        if (saving) return;
+
         try {
+            setSaving(true);
 
             await clientService.createTicket(ticket);
 
@@ -44,71 +46,49 @@ function CreateTicketModal({ show, onClose, onTicketCreated }) {
                 priority: "Medium"
             });
 
-        }
-        catch (error) {
-
+        } catch (error) {
             console.error(error);
-
             alert("Unable to create ticket.");
-
+        } finally {
+            setSaving(false);
         }
-
     };
 
     if (!show) return null;
 
     return (
-
         <div
             className="modal d-block"
             style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
         >
-
             <div className="modal-dialog modal-lg">
-
                 <div className="modal-content">
-
                     <div className="modal-header">
-
                         <h5>Create New Ticket</h5>
-
                         <button
+                            type="button"
                             className="btn-close"
                             onClick={onClose}
+                            disabled={saving}
                         />
-
                     </div>
 
                     <form onSubmit={handleSubmit}>
-
                         <div className="modal-body">
-
                             <div className="mb-3">
-
-                                <label className="form-label">
-
-                                    Subject
-
-                                </label>
-
+                                <label className="form-label">Subject</label>
                                 <input
                                     className="form-control"
                                     name="subject"
                                     value={ticket.subject}
                                     onChange={handleChange}
                                     required
+                                    disabled={saving}
                                 />
-
                             </div>
 
                             <div className="mb-3">
-
-                                <label className="form-label">
-
-                                    Description
-
-                                </label>
-
+                                <label className="form-label">Description</label>
                                 <textarea
                                     className="form-control"
                                     rows="4"
@@ -116,131 +96,93 @@ function CreateTicketModal({ show, onClose, onTicketCreated }) {
                                     value={ticket.description}
                                     onChange={handleChange}
                                     required
+                                    disabled={saving}
                                 />
-
                             </div>
 
                             <div className="row">
-
                                 <div className="col-md-6">
-
-                                    <label className="form-label">
-
-                                        Customer Name
-
-                                    </label>
-
+                                    <label className="form-label">Customer Name</label>
                                     <input
                                         className="form-control"
                                         name="customerName"
                                         value={ticket.customerName}
                                         onChange={handleChange}
                                         required
+                                        disabled={saving}
                                     />
-
                                 </div>
 
                                 <div className="col-md-6">
-
-                                    <label className="form-label">
-
-                                        Company Name
-
-                                    </label>
-
+                                    <label className="form-label">Company Name</label>
                                     <input
                                         className="form-control"
                                         name="companyName"
                                         value={ticket.companyName}
                                         onChange={handleChange}
                                         required
+                                        disabled={saving}
                                     />
-
                                 </div>
-
                             </div>
 
-
-                              
-                               <div className="col-md-6"></div>
                             <div className="row mt-3">
-
-                                <div className="mb-3">
-                                  <label className="form-label">Category</label>
-
+                                <div className="mb-3 col-md-6">
+                                    <label className="form-label">Category</label>
                                     <select
-                                   name="category"
-                                    value={ticket.category}
-                                       onChange={handleChange}
-                                       className="form-select"
-                                          required
-                                           >
-                                     <option value="">Select a category</option>
-                                     <option value="Hardware">Hardware</option>
-                                         <option value="Software">Software</option>
-                                           </select>
-                                        </div>
+                                        name="category"
+                                        value={ticket.category}
+                                        onChange={handleChange}
+                                        className="form-select"
+                                        required
+                                        disabled={saving}
+                                    >
+                                        <option value="">Select a category</option>
+                                        <option value="Hardware">Hardware</option>
+                                        <option value="Software">Software</option>
+                                    </select>
+                                </div>
 
                                 <div className="col-md-6">
-
-                                    <label className="form-label">
-
-                                        Priority
-
-                                    </label>
-
+                                    <label className="form-label">Priority</label>
                                     <select
                                         className="form-select"
                                         name="priority"
                                         value={ticket.priority}
                                         onChange={handleChange}
+                                        disabled={saving}
                                     >
-
                                         <option>Low</option>
                                         <option>Medium</option>
                                         <option>High</option>
-
                                     </select>
-
                                 </div>
-
                             </div>
-
                         </div>
 
                         <div className="modal-footer">
-
                             <button
                                 type="button"
                                 className="btn btn-secondary"
                                 onClick={onClose}
+                                disabled={saving}
                             >
-
                                 Cancel
-
                             </button>
 
                             <button
                                 type="submit"
                                 className="btn btn-primary"
+                                disabled={saving}
                             >
-
-                                Create Ticket
-
+                                {saving ? "Creating..." : "Create Ticket"}
                             </button>
-
                         </div>
-
                     </form>
-
                 </div>
-
             </div>
-
         </div>
-
     );
-
 }
 
 export default CreateTicketModal;

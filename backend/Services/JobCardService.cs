@@ -13,18 +13,21 @@ namespace IThelpdesk.Services
         private readonly IJobCardRepository _jobCardRepository;
         private readonly ITicketRepository _ticketRepository;
         private readonly IJobCardAuditService _auditService;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepository _userRepository;    
+        private readonly INotificationService _notificationService;
 
         public JobCardService(
-            IJobCardRepository jobCardRepository,
-            ITicketRepository ticketRepository,
-            IJobCardAuditService auditService,
-            IUserRepository userRepository)
+    IJobCardRepository jobCardRepository,
+    ITicketRepository ticketRepository,
+    IJobCardAuditService auditService,
+    IUserRepository userRepository,
+    INotificationService notificationService)
         {
             _jobCardRepository = jobCardRepository;
             _ticketRepository = ticketRepository;
             _auditService = auditService;
             _userRepository = userRepository;
+            _notificationService = notificationService;
         }
 
         //---------------------------------------------------
@@ -98,8 +101,9 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         // Create From Ticket
         //---------------------------------------------------
-
-        public async Task<JobCard> CreateFromTicketAsync(int ticketId)
+        public async Task<JobCard> CreateFromTicketAsync(
+    int ticketId,
+    int performedByUserId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
@@ -157,15 +161,31 @@ namespace IThelpdesk.Services
             {
                 await _auditService.LogAsync(
                     jobCard.JobCardId,
-                    jobCard.AssignedTechnicianId ?? 0,
+                    performedByUserId,
                     JobCardAuditAction.JobCardCreated,
                     $"Job Card {jobCard.JobNumber} created from Ticket #{ticket.TicketId}"
                 );
             }
             catch (Exception auditException)
             {
-                Console.WriteLine($"WARNING: Job Card {jobCard.JobCardId} was created, but audit logging failed.");
+                Console.WriteLine(
+                    $"WARNING: Job Card {jobCard.JobCardId} was created, but audit logging failed."
+                );
+
                 Console.WriteLine(auditException);
+            }
+
+            //--------------------------------------------------
+            // Notify the assigned technician that the Job Card
+            // was created.
+            //--------------------------------------------------
+
+            if (jobCard.AssignedTechnicianId.HasValue)
+            {
+                await _notificationService.CreateAsync(
+                    jobCard.AssignedTechnicianId.Value,
+                    "New Job Card Assigned",
+                    $"Job Card {jobCard.JobNumber} has been created and assigned to you.");
             }
 
             return jobCard;
@@ -175,7 +195,10 @@ namespace IThelpdesk.Services
         // Update Job Card
         //---------------------------------------------------
 
-        public async Task UpdateJobCardAsync(int id, UpdateJobCardDto dto)
+        public async Task UpdateJobCardAsync(
+    int id,
+    UpdateJobCardDto dto,
+    int performedByUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
@@ -199,7 +222,7 @@ namespace IThelpdesk.Services
             await _jobCardRepository.UpdateAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
 
-            int userId = jobCard.AssignedTechnicianId ?? 0;
+            int userId = performedByUserId;
 
             if (oldStatus != dto.Status)
             {
@@ -263,26 +286,51 @@ namespace IThelpdesk.Services
         // Complete Job Card
         //---------------------------------------------------
 
-        public async Task CompleteJobCardAsync(int id)
+        public async Task CompleteJobCardAsync(
+          int id,
+          int performedByUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
 
+            var oldStatus = jobCard.Status;
+
             jobCard.Status = "Completed";
             jobCard.DateCompleted = DateTime.UtcNow;
 
             await _jobCardRepository.UpdateAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
-        }
 
+            // Record the actual user who performed the completion.
+            await _auditService.LogAsync(
+                jobCard.JobCardId,
+                performedByUserId,
+                JobCardAuditAction.JobCardCompleted,
+                $"Job Card {jobCard.JobNumber} completed.",
+                oldStatus,
+                "Completed");
+
+            //--------------------------------------------------
+            // Notify Admins that the Job Card was completed
+            //--------------------------------------------------
+
+            var admins = await _userRepository.GetAdminsAsync();
+
+            foreach (var admin in admins)
+            {
+                await _notificationService.CreateAsync(
+                    admin.UserId,
+                    "Job Card Completed",
+                    $"Job Card {jobCard.JobNumber} has been completed.");
+            }
+        }
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
         }
-
         public async Task DeleteAsync(int id)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
@@ -490,10 +538,24 @@ namespace IThelpdesk.Services
             await _jobCardRepository.SaveChangesAsync();
 
             await _auditService.LogAsync(
-                jobCard.JobCardId,
-                performedByUserId,
-                JobCardAuditAction.PartAdded,
-                $"Added part '{part.PartName}' x{part.Quantity}");
+      jobCard.JobCardId,
+      performedByUserId,
+      JobCardAuditAction.PartAdded,
+      $"Added part '{part.PartName}' x{part.Quantity}");
+
+            //--------------------------------------------------
+            // Notify Admins that a part was added
+            //--------------------------------------------------
+
+            var admins = await _userRepository.GetAdminsAsync();
+
+            foreach (var admin in admins)
+            {
+                await _notificationService.CreateAsync(
+                    admin.UserId,
+                    "Part Added",
+                    $"Part '{part.PartName}' x{part.Quantity} was added to Job Card {jobCard.JobNumber}.");
+            }
         }
 
         public async Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId)

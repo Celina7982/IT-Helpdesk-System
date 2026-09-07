@@ -1,35 +1,46 @@
 ﻿using IThelpdesk.Data;
 using IThelpdesk.DTOs;
+using IThelpdesk.Interfaces.Services;
+using IThelpdesk.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using IThelpdesk.Data; // Adjust to your DbContext namespace
-using IThelpdesk.DTOs;
-    using IThelpdesk.Models;
 
-    namespace IThelpdesk.Controllers
+namespace IThelpdesk.Controllers
 {
     [ApiController]
     [Route("api/tickets/{ticketId}/comments")]
-    [Authorize] // Requires valid JWT Token
+    [Authorize]
     public class TicketCommentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public TicketCommentsController(ApplicationDbContext context)
+        public TicketCommentsController(
+            ApplicationDbContext context,
+            INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
+        //-------------------------------------------------------
         // GET: api/tickets/{ticketId}/comments
+        //-------------------------------------------------------
+
         [HttpGet]
         public async Task<IActionResult> GetComments(int ticketId)
         {
-            var ticketExists = await _context.Tickets.AnyAsync(t => t.TicketId == ticketId);
+            var ticketExists = await _context.Tickets
+                .AnyAsync(t => t.TicketId == ticketId);
+
             if (!ticketExists)
             {
-                return NotFound(new { message = "Ticket not found." });
+                return NotFound(new
+                {
+                    message = "Ticket not found."
+                });
             }
 
             var comments = await _context.TicketComments
@@ -48,46 +59,123 @@ using IThelpdesk.DTOs;
             return Ok(comments);
         }
 
+        //-------------------------------------------------------
         // POST: api/tickets/{ticketId}/comments
+        //-------------------------------------------------------
+
         [HttpPost]
-        public async Task<IActionResult> AddComment(int ticketId, [FromBody] CreateCommentDto dto)
+        public async Task<IActionResult> AddComment(
+            int ticketId,
+            [FromBody] CreateCommentDto dto)
         {
+            //---------------------------------------------------
+            // Validate comment
+            //---------------------------------------------------
+
             if (dto == null || string.IsNullOrWhiteSpace(dto.Message))
             {
-                return BadRequest(new { message = "Comment message cannot be empty." });
+                return BadRequest(new
+                {
+                    message = "Comment message cannot be empty."
+                });
             }
 
-            // 1. Find the ticket
-            var ticket = await _context.Tickets.FindAsync(ticketId);
+            //---------------------------------------------------
+            // Find ticket
+            //---------------------------------------------------
+
+            var ticket = await _context.Tickets
+                .FindAsync(ticketId);
+
             if (ticket == null)
             {
-                return NotFound(new { message = "Ticket not found." });
+                return NotFound(new
+                {
+                    message = "Ticket not found."
+                });
             }
 
-            if (string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase) ||
-string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
+            //---------------------------------------------------
+            // Prevent comments on resolved/closed tickets
+            //---------------------------------------------------
+
+            if (string.Equals(
+                    ticket.Status,
+                    "Resolved",
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    ticket.Status,
+                    "Closed",
+                    StringComparison.OrdinalIgnoreCase))
             {
-                return BadRequest(new { message = "Comments are disabled for resolved or closed tickets." });
+                return BadRequest(new
+                {
+                    message = "Comments are disabled for resolved or closed tickets."
+                });
             }
 
-            // 3. Extract the logged-in user's name from JWT claims
-            var authorName = User.FindFirstValue(ClaimTypes.Name)
-                              ?? User.FindFirstValue(ClaimTypes.GivenName)
-                              ?? "Client";
+            //---------------------------------------------------
+            // Get logged-in user's ID from JWT
+            //---------------------------------------------------
 
-            // 4. Save Comment
+            var userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(userIdClaim, out int loggedInUserId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Unable to identify logged-in user."
+                });
+            }
+
+            //---------------------------------------------------
+            // Get logged-in user's name
+            //---------------------------------------------------
+
+            var authorName =
+                User.FindFirstValue(ClaimTypes.Name)
+                ?? User.FindFirstValue(ClaimTypes.GivenName)
+                ?? "User";
+
+            //---------------------------------------------------
+            // Create comment
+            //---------------------------------------------------
+
             var comment = new TicketComment
             {
                 TicketId = ticketId,
                 AuthorName = authorName,
                 Message = dto.Message.Trim(),
-                CreatedDate = DateTime.Now
+                CreatedDate = DateTime.UtcNow
             };
 
             _context.TicketComments.Add(comment);
+
             await _context.SaveChangesAsync();
 
-            // 5. Return Created Comment Response
+            //---------------------------------------------------
+            // Notify Customer
+            //---------------------------------------------------
+            //
+            // If the person adding the comment is NOT the
+            // customer who owns the ticket, notify the customer.
+            //
+            //---------------------------------------------------
+
+            if (ticket.UserId != loggedInUserId)
+            {
+                await _notificationService.CreateAsync(
+                ticket.UserId,
+                "New Ticket Update",
+                $"There is a new update on your ticket '{ticket.Subject}'.",
+                ticket.TicketId);
+            }
+
+            //---------------------------------------------------
+            // Return Created Comment
+            //---------------------------------------------------
+
             var response = new CommentResponseDto
             {
                 CommentId = comment.CommentId,
@@ -100,14 +188,21 @@ string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
             return Ok(response);
         }
 
-        // PUT: api/tickets/{ticketId}/comments/{commentId}
+        //-------------------------------------------------------
+        // PUT:
+        // api/tickets/{ticketId}/comments/{commentId}
+        //-------------------------------------------------------
+
         [HttpPut("{commentId}")]
         public async Task<IActionResult> UpdateComment(
             int ticketId,
             int commentId,
             [FromBody] UpdateCommentDto dto)
         {
-            // Check that the new comment isn't empty
+            //---------------------------------------------------
+            // Validate comment
+            //---------------------------------------------------
+
             if (dto == null || string.IsNullOrWhiteSpace(dto.Message))
             {
                 return BadRequest(new
@@ -116,13 +211,15 @@ string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
                 });
             }
 
-            // Find the comment
+            //---------------------------------------------------
+            // Find comment
+            //---------------------------------------------------
+
             var comment = await _context.TicketComments
                 .FirstOrDefaultAsync(c =>
                     c.CommentId == commentId &&
                     c.TicketId == ticketId);
 
-            // Check if the comment exists
             if (comment == null)
             {
                 return NotFound(new
@@ -131,7 +228,10 @@ string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
                 });
             }
 
-            // Check that the ticket exists
+            //---------------------------------------------------
+            // Find ticket
+            //---------------------------------------------------
+
             var ticket = await _context.Tickets
                 .FindAsync(ticketId);
 
@@ -143,9 +243,18 @@ string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
                 });
             }
 
-            // Don't allow editing comments on resolved/closed tickets
-            if (string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
+            //---------------------------------------------------
+            // Prevent editing comments on resolved/closed tickets
+            //---------------------------------------------------
+
+            if (string.Equals(
+                    ticket.Status,
+                    "Resolved",
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    ticket.Status,
+                    "Closed",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest(new
                 {
@@ -153,12 +262,18 @@ string.Equals(ticket.Status, "Closed", StringComparison.OrdinalIgnoreCase))
                 });
             }
 
-            // Update the comment
+            //---------------------------------------------------
+            // Update comment
+            //---------------------------------------------------
+
             comment.Message = dto.Message.Trim();
 
             await _context.SaveChangesAsync();
 
-            // Return the updated comment
+            //---------------------------------------------------
+            // Return updated comment
+            //---------------------------------------------------
+
             var response = new CommentResponseDto
             {
                 CommentId = comment.CommentId,

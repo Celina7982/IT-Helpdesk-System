@@ -78,12 +78,16 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IJobCardService, JobCardService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
 builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+
+
 builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
 builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
 

@@ -30,13 +30,16 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<JobCardDetailsDto?> GetDetailsAsync(int id);
 
-        Task<JobCard> CreateFromTicketAsync(int ticketId);
+        Task<JobCard> CreateFromTicketAsync(int ticketId, int performedByUserId);
 
         Task UpdateAsync(JobCard jobCard);
 
-        Task UpdateJobCardAsync(int id, UpdateJobCardDto dto);
+        Task UpdateJobCardAsync(
+    int id,
+    UpdateJobCardDto dto,
+    int performedByUserId);
 
-        Task CompleteJobCardAsync(int id);
+        Task CompleteJobCardAsync(int id, int performedByUserId);
 
         Task DeleteAsync(int id);
 

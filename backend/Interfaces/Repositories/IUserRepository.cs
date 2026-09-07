@@ -17,6 +17,7 @@ namespace IThelpdesk.Interfaces.Repositories
         Task<User?> GetUserByEmailAsync(string email);
 
         Task<IEnumerable<User>> GetTechniciansAsync();
+        Task<IEnumerable<User>> GetAdminsAsync();
 
         //--------------------------------------------------
         // CRUD

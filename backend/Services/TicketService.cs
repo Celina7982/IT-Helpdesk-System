@@ -3,8 +3,6 @@ using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using IThelpdesk.Repositories;
-
 
 namespace IThelpdesk.Services
 {
@@ -13,15 +11,18 @@ namespace IThelpdesk.Services
         private readonly ITicketRepository _ticketRepository;
         private readonly IJobCardRepository _jobCardRepository;
         private readonly IJobCardAuditService _auditService;
+        private readonly INotificationService _notificationService;
 
         public TicketService(
-        ITicketRepository ticketRepository,
-        IJobCardRepository jobCardRepository,
-        IJobCardAuditService auditService)
+            ITicketRepository ticketRepository,
+            IJobCardRepository jobCardRepository,
+            IJobCardAuditService auditService,
+            INotificationService notificationService)
         {
             _ticketRepository = ticketRepository;
             _jobCardRepository = jobCardRepository;
             _auditService = auditService;
+            _notificationService = notificationService;
         }
 
         //-------------------------------------------------------
@@ -33,14 +34,13 @@ namespace IThelpdesk.Services
             return await _ticketRepository.GetAllAsync();
         }
 
-
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
         {
             return await _ticketRepository.GetAvailableTicketsAsync();
         }
 
         public async Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(
-     int technicianId)
+            int technicianId)
         {
             return await _ticketRepository.GetMyTicketsAsync(technicianId);
         }
@@ -100,7 +100,9 @@ namespace IThelpdesk.Services
         // Assign Ticket
         //-------------------------------------------------------
 
-        public async Task AssignTicketAsync(int ticketId, int assignedToUserId)
+        public async Task AssignTicketAsync(
+            int ticketId,
+            int assignedToUserId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
@@ -126,6 +128,23 @@ namespace IThelpdesk.Services
             await _ticketRepository.SaveChangesAsync();
 
             //-------------------------------------------------------
+            // Notify Customer
+            //-------------------------------------------------------
+
+            var technician =
+      await _ticketRepository.GetUserByIdAsync(
+          assignedToUserId);
+
+            var technicianName = technician != null
+                ? $"{technician.FirstName} {technician.LastName}"
+                : "a technician";
+
+            await _notificationService.CreateAsync(
+                ticket.UserId,
+                "Ticket Assigned",
+                $"Your ticket '{ticket.Subject}' has been assigned to {technicianName}.");
+
+            //-------------------------------------------------------
             // Update Job Card technician if one exists
             //-------------------------------------------------------
 
@@ -139,16 +158,19 @@ namespace IThelpdesk.Services
                 await _jobCardRepository.SaveChangesAsync();
 
                 //-------------------------------------------------------
-                // Audit technician reassignment (use user names)
+                // Audit technician reassignment
                 //-------------------------------------------------------
 
-                if (oldTechnicianId.HasValue && oldTechnicianId.Value != assignedToUserId)
+                if (oldTechnicianId.HasValue &&
+                    oldTechnicianId.Value != assignedToUserId)
                 {
-                    var oldTech = oldTechnicianId.HasValue
-                        ? await _ticketRepository.GetUserByIdAsync(oldTechnicianId.Value)
-                        : null;
+                    var oldTech =
+                        await _ticketRepository.GetUserByIdAsync(
+                            oldTechnicianId.Value);
 
-                    var newTech = await _ticketRepository.GetUserByIdAsync(assignedToUserId);
+                    var newTech =
+                        await _ticketRepository.GetUserByIdAsync(
+                            assignedToUserId);
 
                     string oldName = oldTech != null
                         ? $"{oldTech.FirstName} {oldTech.LastName}"
@@ -173,7 +195,9 @@ namespace IThelpdesk.Services
         // Claim Ticket
         //-------------------------------------------------------
 
-        public async Task ClaimTicketAsync(int ticketId, int technicianId)
+        public async Task ClaimTicketAsync(
+            int ticketId,
+            int technicianId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
@@ -188,13 +212,32 @@ namespace IThelpdesk.Services
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
+
+            //-------------------------------------------------------
+            // Notify Customer
+            //-------------------------------------------------------
+
+            var technician =
+                await _ticketRepository.GetUserByIdAsync(
+                    technicianId);
+
+            var technicianName = technician != null
+                ? $"{technician.FirstName} {technician.LastName}"
+                : "a technician";
+
+            await _notificationService.CreateAsync(
+                ticket.UserId,
+                "Ticket Assigned",
+                $"Your ticket '{ticket.Subject}' has been assigned to {technicianName}.");
         }
 
         //-------------------------------------------------------
         // Escalate Ticket
         //-------------------------------------------------------
 
-        public async Task EscalateTicketAsync(int ticketId, string escalationReason)
+        public async Task EscalateTicketAsync(
+            int ticketId,
+            string escalationReason)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
@@ -208,47 +251,47 @@ namespace IThelpdesk.Services
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
+
+            //-------------------------------------------------------
+            // Notify Customer
+            //-------------------------------------------------------
+
+            await _notificationService.CreateAsync(
+                ticket.UserId,
+                "Ticket Escalated",
+                $"Your ticket '{ticket.Subject}' has been escalated for further attention.");
         }
 
         //-------------------------------------------------------
         // Resolve Ticket
         //-------------------------------------------------------
 
-        //-------------------------------------------------------
-        // Resolve Ticket
-        //-------------------------------------------------------
-
-        public async Task ResolveTicketAsync(int ticketId, int userId)
+        public async Task ResolveTicketAsync(
+            int ticketId,
+            int userId)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
-            // Mark ticket as resolved
             ticket.Status = "Resolved";
 
-            // Remove escalation so it no longer appears
-            // in the Escalated Tickets table
             ticket.IsEscalated = false;
             ticket.EscalationReason = null;
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
 
+            //-------------------------------------------------------
+            // Notify Customer
+            //-------------------------------------------------------
 
-            if (ticket == null)
-            {
-                throw new Exception("Ticket not found.");
-            }
-
-            // Mark original ticket as resolved
-            ticket.Status = "Resolved";
-            ticket.IsEscalated = false;
-
-            await _ticketRepository.UpdateAsync(ticket);
+            await _notificationService.CreateAsync(
+                ticket.UserId,
+                "Ticket Resolved",
+                $"Your ticket '{ticket.Subject}' has been resolved.");
         }
-
 
         //-------------------------------------------------------
         // Archive Ticket
@@ -261,14 +304,10 @@ namespace IThelpdesk.Services
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
-            // Mark ticket as archived
             ticket.IsArchived = true;
-
-            // Store archive date
             ticket.ArchivedDate = DateTime.UtcNow;
 
             await _ticketRepository.ArchiveAsync(ticket);
-
             await _ticketRepository.SaveChangesAsync();
         }
 
@@ -280,6 +319,5 @@ namespace IThelpdesk.Services
         {
             return await _ticketRepository.GetArchivedTicketsAsync();
         }
-
     }
 }

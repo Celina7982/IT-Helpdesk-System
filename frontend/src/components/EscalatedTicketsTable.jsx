@@ -6,10 +6,14 @@ function EscalatedTicketsTable() {
     const [tickets, setTickets] = useState([]);
     const [technicians, setTechnicians] = useState([]);
     const [selectedTechnicians, setSelectedTechnicians] = useState({});
+    
+    // Pagination states
+    const [pageNumber, setPageNumber] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const loadData = async () => {
         try {
-            const escalated = await ticketService.getEscalatedTickets();
+            const escalated = await ticketService.getEscalatedTickets(pageNumber, pageSize);
             const techs = await userService.getTechnicians();
 
             setTickets(escalated);
@@ -20,12 +24,8 @@ function EscalatedTicketsTable() {
     };
 
     useEffect(() => {
-        const fetchData = async () => {
-            await loadData();
-        };
-
-        fetchData();
-    }, []);
+        loadData();
+    }, [pageNumber, pageSize]);
 
     const handleSelection = (ticketId, technicianId) => {
         setSelectedTechnicians(prev => ({
@@ -44,9 +44,7 @@ function EscalatedTicketsTable() {
 
         try {
             await ticketService.assignTicket(ticketId, technicianId);
-
             alert("Ticket assigned successfully.");
-
             await loadData();
         } catch (error) {
             console.error(error);
@@ -63,9 +61,7 @@ function EscalatedTicketsTable() {
 
         try {
             await ticketService.resolveTicket(ticketId);
-
             alert("Ticket resolved successfully.");
-
             setTickets(prev =>
                 prev.filter(ticket => ticket.ticketId !== ticketId)
             );
@@ -85,85 +81,99 @@ function EscalatedTicketsTable() {
                 {tickets.length === 0 ? (
                     <p className="text-muted">No escalated tickets.</p>
                 ) : (
-                    <table className="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Subject</th>
-                                <th>Priority</th>
-                                <th>Reason</th>
-                                <th>Assign To</th>
-                                <th>Assign</th>
-                                <th>Resolve</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {tickets.map(ticket => (
-                                <tr key={ticket.ticketId}>
-                                    <td>{ticket.ticketId}</td>
-
-                                    <td>{ticket.subject}</td>
-
-                                    <td>
-                                        <span className="badge bg-warning text-dark">
-                                            {ticket.priority}
-                                        </span>
-                                    </td>
-
-                                    <td>{ticket.escalationReason}</td>
-
-                                    <td>
-                                        <select
-                                            className="form-select"
-                                            value={selectedTechnicians[ticket.ticketId] || ""}
-                                            onChange={(e) =>
-                                                handleSelection(
-                                                    ticket.ticketId,
-                                                    Number(e.target.value)
-                                                )
-                                            }
-                                        >
-                                            <option value="">
-                                                Select Technician
-                                            </option>
-
-                                            {technicians.map(tech => (
-                                                <option
-                                                    key={tech.userId}
-                                                    value={tech.userId}
-                                                >
-                                                    {tech.firstName} {tech.lastName}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </td>
-
-                                    <td>
-                                        <button
-                                            className="btn btn-success"
-                                            onClick={() =>
-                                                assignTicket(ticket.ticketId)
-                                            }
-                                        >
-                                            Assign
-                                        </button>
-                                    </td>
-
-                                    <td>
-                                        <button
-                                            className="btn btn-danger"
-                                            onClick={() =>
-                                                resolveTicket(ticket.ticketId)
-                                            }
-                                        >
-                                            Resolve
-                                        </button>
-                                    </td>
+                    <>
+                        <table className="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Subject</th>
+                                    <th>Priority</th>
+                                    <th>Reason</th>
+                                    <th>Assign To</th>
+                                    <th>Assign</th>
+                                    <th>Resolve</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+
+                            <tbody>
+                                {tickets.map(ticket => (
+                                    <tr key={ticket.ticketId}>
+                                        <td>{ticket.ticketId}</td>
+                                        <td>{ticket.subject}</td>
+                                        <td>
+                                            <span className="badge bg-warning text-dark">
+                                                {ticket.priority}
+                                            </span>
+                                        </td>
+                                        <td>{ticket.escalationReason}</td>
+                                        <td>
+                                            <select
+                                                className="form-select"
+                                                value={selectedTechnicians[ticket.ticketId] || ""}
+                                                onChange={(e) =>
+                                                    handleSelection(
+                                                        ticket.ticketId,
+                                                        Number(e.target.value)
+                                                    )
+                                                }
+                                            >
+                                                <option value="">
+                                                    Select Technician
+                                                </option>
+                                                {technicians.map(tech => (
+                                                    <option
+                                                        key={tech.userId}
+                                                        value={tech.userId}
+                                                    >
+                                                        {tech.firstName} {tech.lastName}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn btn-success"
+                                                onClick={() =>
+                                                    assignTicket(ticket.ticketId)
+                                                }
+                                            >
+                                                Assign
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="btn btn-danger"
+                                                onClick={() =>
+                                                    resolveTicket(ticket.ticketId)
+                                                }
+                                            >
+                                                Resolve
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {/* Pagination Controls */}
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                            <button
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                                disabled={pageNumber === 1}
+                            >
+                                Previous
+                            </button>
+                            <span>Page {pageNumber}</span>
+                            <button
+                                className="btn btn-outline-secondary btn-sm"
+                                onClick={() => setPageNumber(prev => prev + 1)}
+                                disabled={tickets.length < pageSize}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

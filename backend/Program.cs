@@ -208,7 +208,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // Serves the Swagger GUI
 }
 
-// app.UseHttpsRedirection(); // Commented out to prevent redirecting to port 7112
+/* app.UseHttpsRedirection();*/ // Commented out to prevent redirecting to port 7112
 
 app.UseCors("AllowReact");
 

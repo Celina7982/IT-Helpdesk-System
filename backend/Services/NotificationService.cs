@@ -1,4 +1,5 @@
-﻿using IThelpdesk.Interfaces.Repositories;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 
@@ -19,10 +20,10 @@ namespace IThelpdesk.Services
         //--------------------------------------------------
 
         public async Task CreateAsync(
-    int userId,
-    string title,
-    string message,
-    int? ticketId = null)
+            int userId,
+            string title,
+            string message,
+            int? ticketId = null)
         {
             var notification = new Notification
             {
@@ -40,26 +41,33 @@ namespace IThelpdesk.Services
 
 
         //--------------------------------------------------
-        // Get User Notifications
+        // Get Paginated Notifications For User
         //--------------------------------------------------
 
-        public async Task<List<Notification>> GetByUserIdAsync(
-            int userId)
+        public async Task<PagedResultDto<NotificationDto>> GetPagedByUserIdAsync(
+            int userId,
+            int pageNumber,
+            int pageSize)
         {
-            return await _notificationRepository
-                .GetByUserIdAsync(userId);
+            return await _notificationRepository.GetPagedByUserIdAsync(
+                userId,
+                pageNumber,
+                pageSize);
         }
+
 
         //--------------------------------------------------
         // Get Unread Notifications
         //--------------------------------------------------
 
-        public async Task<List<Notification>> GetUnreadByUserIdAsync(
-            int userId)
+        public async Task<int> GetUnreadCountByUserIdAsync(
+    int userId
+)
         {
             return await _notificationRepository
-                .GetUnreadByUserIdAsync(userId);
+                .GetUnreadCountByUserIdAsync(userId);
         }
+
 
         //--------------------------------------------------
         // Mark Notification As Read
@@ -91,6 +99,7 @@ namespace IThelpdesk.Services
 
             await _notificationRepository.SaveChangesAsync();
         }
+
 
         //--------------------------------------------------
         // Delete Notification

@@ -1,7 +1,8 @@
-﻿using IThelpdesk.Interfaces.Repositories;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.DTOs.User;
+using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using IThelpdesk.DTOs.User;
 
 namespace IThelpdesk.Services
 {
@@ -14,9 +15,19 @@ namespace IThelpdesk.Services
             _userRepository = userRepository;
         }
 
-        public async Task<IEnumerable<UserListDto>> GetAllUsersAsync()
+        //--------------------------------------------------
+        // User Lists
+        //--------------------------------------------------
+
+        public async Task<PagedResultDto<UserListDto>> GetAllUsersAsync(
+            int pageNumber,
+            int pageSize,
+            string? search)
         {
-            return await _userRepository.GetAllUsersAsync();
+            return await _userRepository.GetAllUsersAsync(
+                pageNumber,
+                pageSize,
+                search);
         }
 
         public async Task<UserDetailsDto?> GetUserByIdAsync(int id)
@@ -33,6 +44,10 @@ namespace IThelpdesk.Services
         {
             return await _userRepository.GetUserByEmailAsync(email);
         }
+
+        //--------------------------------------------------
+        // CRUD
+        //--------------------------------------------------
 
         public async Task CreateUserAsync(User user)
         {
@@ -71,7 +86,6 @@ namespace IThelpdesk.Services
             await _userRepository.SaveChangesAsync();
         }
 
-
         public async Task ResetPasswordAsync(int id, string newPassword)
         {
             var user = await _userRepository.GetUserEntityByIdAsync(id);
@@ -87,6 +101,7 @@ namespace IThelpdesk.Services
             await _userRepository.UpdateUserAsync(user);
             await _userRepository.SaveChangesAsync();
         }
+
         public async Task<IEnumerable<User>> GetTechniciansAsync()
         {
             return await _userRepository.GetTechniciansAsync();

@@ -139,7 +139,6 @@ namespace IThelpdesk.Data
                     a.DateCreated
                 });
 
-
             //---------------------------------------
             // Ticket Indexes
             //---------------------------------------
@@ -150,8 +149,106 @@ namespace IThelpdesk.Data
                     t.AssignedToUserId,
                     t.IsArchived,
                     t.CreatedDate
-                });
+                })
+                .HasDatabaseName("IX_Tickets_AssignedToUserId_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.UserId,
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_UserId_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsEscalated,
+                    t.Status,
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_Escalation_Status_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsArchived,
+                    t.ArchivedDate
+                })
+                .HasDatabaseName("IX_Tickets_IsArchived_ArchivedDate");
+
+
+
+            //---------------------------------------
+            // Job Card Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCard>()
+                .HasIndex(j => j.TicketId)
+                .HasDatabaseName("IX_JobCards_TicketId");
+
+            modelBuilder.Entity<JobCard>()
+                .HasIndex(j => j.AssignedTechnicianId)
+                .HasDatabaseName("IX_JobCards_AssignedTechnicianId");
+
+
+            //---------------------------------------
+            // Job Card Labour Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCardLabour>()
+                .HasIndex(l => l.JobCardId)
+                .HasDatabaseName("IX_JobCardLabours_JobCardId");
+
+            modelBuilder.Entity<JobCardLabour>()
+                .HasIndex(l => l.TechnicianId)
+                .HasDatabaseName("IX_JobCardLabours_TechnicianId");
+
+
+
+            //---------------------------------------
+            // Job Card Part Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCardPart>()
+                .HasIndex(p => p.JobCardId)
+                .HasDatabaseName("IX_JobCardParts_JobCardId");
+
+
+            //---------------------------------------
+            // Notification Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.TicketId)
+                .HasDatabaseName("IX_Notifications_TicketId");
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.UserId)
+                .HasDatabaseName("IX_Notifications_UserId");
+
+            
+
+            //---------------------------------------
+            // User Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_Email");
 
         }
+
     }
 }

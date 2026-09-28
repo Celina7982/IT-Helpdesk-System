@@ -9,18 +9,19 @@ namespace IThelpdesk.Interfaces.Repositories
         // Ticket Lists
         //-------------------------------------------------------
 
-        Task<IEnumerable<TicketResponseDto>> GetAllAsync();
+        Task<IEnumerable<TicketResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId);
+        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId, int pageNumber = 1, int pageSize = 10);
 
-        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+       
 
 
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
-        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync(int pageNumber = 1, int pageSize = 10);
+        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync(int pageNumber = 1, int pageSize = 10);
 
 
         //-------------------------------------------------------

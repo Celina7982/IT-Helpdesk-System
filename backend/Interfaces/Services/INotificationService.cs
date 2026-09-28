@@ -1,4 +1,5 @@
-﻿using IThelpdesk.Models;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Services
 {
@@ -7,25 +8,29 @@ namespace IThelpdesk.Interfaces.Services
         //--------------------------------------------------
         // Create Notification
         //--------------------------------------------------
+
         Task CreateAsync(
-    int userId,
-    string title,
-    string message,
-    int? ticketId = null);
+            int userId,
+            string title,
+            string message,
+            int? ticketId = null);
+
 
         //--------------------------------------------------
-        // Get User Notifications
+        // Get Paginated Notifications For User
         //--------------------------------------------------
 
-        Task<List<Notification>> GetByUserIdAsync(
-            int userId);
+        Task<PagedResultDto<NotificationDto>> GetPagedByUserIdAsync(
+            int userId,
+            int pageNumber,
+            int pageSize);
+
 
         //--------------------------------------------------
         // Get Unread Notifications
         //--------------------------------------------------
 
-        Task<List<Notification>> GetUnreadByUserIdAsync(
-            int userId);
+        Task<int> GetUnreadCountByUserIdAsync(int userId);
 
         //--------------------------------------------------
         // Mark Notification As Read
@@ -34,6 +39,7 @@ namespace IThelpdesk.Interfaces.Services
         Task MarkAsReadAsync(
             int notificationId,
             int userId);
+
 
         //--------------------------------------------------
         // Delete Notification

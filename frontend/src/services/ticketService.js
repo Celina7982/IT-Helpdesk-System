@@ -1,45 +1,32 @@
 import api from "./api";
 
 const ticketService = {
-
     //-------------------------------------------------------
     // Get All Tickets (Admin)
     //-------------------------------------------------------
-
-    getAllTickets: async () => {
-        const response = await api.get("/Ticket", {
+    getAllTickets: async (pageNumber = 1, pageSize = 10) => {
+        const response = await api.get(`/Ticket?pageNumber=${pageNumber}&pageSize=${pageSize}`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
         return response.data;
     },
-    //-------------------------------------------------------
-// Create Ticket
-//-------------------------------------------------------
 
-createTicket: async (ticketData) => {
-
-    const response = await api.post(
-
-        "/Ticket",
-
-        ticketData,
-
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+    // Create Ticket
+    createTicket: async (ticketData) => {
+        const response = await api.post(
+            "/Ticket",
+            ticketData,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
             }
-        }
+        );
+        return response.data;
+    },
 
-    );
-
-    return response.data;
-
-},
-    //-------------------------------------------------------
-    // Available Tickets
-    //-------------------------------------------------------
 
     getAvailableTickets: async () => {
         const response = await api.get("/Ticket/available", {
@@ -50,41 +37,28 @@ createTicket: async (ticketData) => {
         return response.data;
     },
 
+    getMyTickets: async (pageNumber = 1, pageSize = 10) => {
+        const response = await api.get(
+            `/Ticket/my?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+        return response.data;
+    },
 
-
-
-
-
-    
-    //-------------------------------------------------------
-    // My Tickets
-    //-------------------------------------------------------
-
-    getMyTickets: async () => {
-        const response = await api.get("/Ticket/my", {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+    getEscalatedTickets: async (pageNumber = 1, pageSize = 10) => {
+        const response = await api.get(
+            `/Ticket/escalated?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
             }
         });
         return response.data;
     },
-
-    //-------------------------------------------------------
-    // Escalated Tickets
-    //-------------------------------------------------------
-
-    getEscalatedTickets: async () => {
-        const response = await api.get("/Ticket/escalated", {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-        });
-        return response.data;
-    },
-
-    //-------------------------------------------------------
-    // Ticket Details
-    //-------------------------------------------------------
 
     getTicketDetails: async (ticketId) => {
         const response = await api.get(
@@ -98,27 +72,15 @@ createTicket: async (ticketData) => {
         return response.data;
     },
 
-
-
-    //-------------------------------------------------------
-// Archived Tickets
-//-------------------------------------------------------
-
-getArchivedTickets: async () => {
+   getArchivedTickets: async (pageNumber = 1, pageSize = 10) => {
     const response = await api.get(
-        "/Ticket/archived",
+        `/Ticket/archived?pageNumber=${pageNumber}&pageSize=${pageSize}`,
         {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
     );
-
     return response.data;
 },
-    //-------------------------------------------------------
-    // Claim Ticket
-    //-------------------------------------------------------
 
     claimTicket: async (ticketId) => {
         await api.put(
@@ -132,10 +94,6 @@ getArchivedTickets: async () => {
         );
     },
 
-    //-------------------------------------------------------
-    // Resolve Ticket
-    //-------------------------------------------------------
-
     resolveTicket: async (ticketId) => {
         await api.put(
             `/Ticket/${ticketId}/resolve`,
@@ -148,33 +106,22 @@ getArchivedTickets: async () => {
         );
     },
 
-
-    //-------------------------------------------------------
-// Archive Ticket
-//-------------------------------------------------------
-
-archiveTicket: async (ticketId) => {
-    await api.put(
-        `/Ticket/${ticketId}/archive`,
-        {},
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+    archiveTicket: async (ticketId) => {
+        await api.put(
+            `/Ticket/${ticketId}/archive`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
             }
-        }
-    );
-},
-
-    //-------------------------------------------------------
-    // Escalate Ticket
-    //-------------------------------------------------------
+        );
+    },
 
     escalateTicket: async (ticketId, escalationReason) => {
         await api.put(
             `/Ticket/${ticketId}/escalate`,
-            {
-                escalationReason
-            },
+            { escalationReason },
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -182,17 +129,11 @@ archiveTicket: async (ticketId) => {
             }
         );
     },
-
-    //-------------------------------------------------------
-    // Assign Ticket
-    //-------------------------------------------------------
 
     assignTicket: async (ticketId, assignedToUserId) => {
         await api.put(
             `/Ticket/${ticketId}/assign`,
-            {
-                assignedToUserId
-            },
+            { assignedToUserId },
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -200,10 +141,6 @@ archiveTicket: async (ticketId) => {
             }
         );
     },
-
-    //-------------------------------------------------------
-    // Delete Ticket
-    //-------------------------------------------------------
 
     deleteTicket: async (ticketId) => {
         await api.delete(
@@ -215,11 +152,6 @@ archiveTicket: async (ticketId) => {
             }
         );
     },
-
-    //-------------------------------------------------------
-    // Get Ticket Comments
-    // Matches GET: api/tickets/{ticketId}/comments
-    //-------------------------------------------------------
 
     getComments: async (ticketId) => {
         const response = await api.get(
@@ -233,12 +165,6 @@ archiveTicket: async (ticketId) => {
         return response.data;
     },
 
-    //-------------------------------------------------------
-    // Add Comment to Ticket
-    // Matches POST: api/tickets/{ticketId}/comments
-    // Payload expects CreateCommentDto: { message: "..." }
-    //-------------------------------------------------------
-
     addComment: async (ticketId, commentText) => {
         const response = await api.post(
             `/tickets/${ticketId}/comments`,
@@ -251,22 +177,19 @@ archiveTicket: async (ticketId) => {
         );
         return response.data;
     },
-    updateComment: async (ticketId, commentId, message) => {
-    const response = await api.put(
-        `/tickets/${ticketId}/comments/${commentId}`,
-        {
-            message: message
-        },
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
-            }
-        }
-    );
 
-    return response.data;
-},
-            
+    updateComment: async (ticketId, commentId, message) => {
+        const response = await api.put(
+            `/tickets/${ticketId}/comments/${commentId}`,
+            { message },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+        return response.data;
+    }
 };
 
 export default ticketService;

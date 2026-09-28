@@ -8,18 +8,21 @@ namespace IThelpdesk.Interfaces.Services
         //-------------------------------------------------------
         // Ticket Lists
         //-------------------------------------------------------
-
-        Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync();
+        
+        //updated with serverside pagination
+        Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync(int pageNumber = 1, int pageSize = 10);
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId);
-
-        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+        //includes serverside pagination
+        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId, int pageNumber = 1, int pageSize = 10);
+      
 
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
-        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync(int pageNumber = 1, int pageSize = 10);
+
+        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync(int pageNumber = 1, int pageSize = 10);
 
 
         //-------------------------------------------------------

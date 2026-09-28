@@ -26,9 +26,11 @@ namespace IThelpdesk.Controllers
         // GET: api/Ticket
         [Authorize(Roles = "Admin,Technician")]
         [HttpGet]
-        public async Task<IActionResult> GetAllTickets()
+        public async Task<IActionResult> GetAllTickets(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var tickets = await _ticketService.GetAllTicketsAsync();
+            var tickets = await _ticketService.GetAllTicketsAsync(pageNumber, pageSize);
             return Ok(tickets);
         }
 
@@ -46,14 +48,16 @@ namespace IThelpdesk.Controllers
         // Returns tickets assigned to the logged-in technician/admin
         [Authorize(Roles = "Technician,Admin")]
         [HttpGet("my")]
-        public async Task<IActionResult> GetMyTickets()
+        public async Task<IActionResult> GetMyTickets(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             var technicianId = int.Parse(
                 User.FindFirst(ClaimTypes.NameIdentifier)!.Value
             );
 
             var tickets =
-                await _ticketService.GetMyTicketsAsync(technicianId);
+                await _ticketService.GetMyTicketsAsync(technicianId, pageNumber, pageSize);
 
             return Ok(tickets);
         }
@@ -272,9 +276,11 @@ namespace IThelpdesk.Controllers
         // GET: api/Ticket/escalated
         [Authorize(Roles = "Admin")]
         [HttpGet("escalated")]
-        public async Task<IActionResult> GetEscalatedTickets()
+        public async Task<IActionResult> GetEscalatedTickets(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var tickets = await _ticketService.GetEscalatedTicketsAsync();
+            var tickets = await _ticketService.GetEscalatedTicketsAsync(pageNumber, pageSize);
 
             return Ok(tickets);
         }
@@ -286,13 +292,14 @@ namespace IThelpdesk.Controllers
         // GET: api/Ticket/archived
         [Authorize(Roles = "Admin")]
         [HttpGet("archived")]
-        public async Task<IActionResult> GetArchivedTickets()
+        public async Task<IActionResult> GetArchivedTickets(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var tickets = await _ticketService.GetArchivedTicketsAsync();
+            var tickets = await _ticketService.GetArchivedTicketsAsync(pageNumber, pageSize);
 
             return Ok(tickets);
         }
 
     }
-
 }

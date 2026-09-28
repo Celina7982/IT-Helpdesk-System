@@ -3,38 +3,89 @@ import notificationService from "../../services/notificationService";
 
 function NotificationPanel({ onViewTicket }) {
 
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showPanel, setShowPanel] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [loading, setLoading] = useState(true);
+const [showPanel, setShowPanel] = useState(false);
+const [currentPage, setCurrentPage] = useState(1);
+const [totalCount, setTotalCount] = useState(0);
 
-    //--------------------------------------------------
-    // Load Notifications
-    //--------------------------------------------------
 
-    const loadNotifications = async () => {
+const pageSize = 10;
 
-        try {
+const totalPages = Math.max(
+    1,
+    Math.ceil(totalCount / pageSize)
+);
+//--------------------------------------------------
+// Load paginated notifications
+//--------------------------------------------------
 
-            const data =
-                await notificationService.getMyNotifications();
+const loadNotifications = async () => {
 
-            setNotifications(data);
+    setLoading(true);
 
-        }
-        catch (error) {
+    try {
 
-            console.error(
-                "Unable to load notifications:",
-                error
+        const data =
+            await notificationService.getMyNotifications(
+                currentPage,
+                pageSize
             );
 
-        }
-        finally {
+        setNotifications(
+            data.items || []
+        );
 
-            setLoading(false);
+        setTotalCount(
+            data.totalCount || 0
+        );
 
-        }
-    };
+    }
+    catch (error) {
+
+        console.error(
+            "Unable to load notifications:",
+            error
+        );
+
+    }
+    finally {
+
+        setLoading(false);
+
+    }
+};
+    
+
+
+   //--------------------------------------------------
+// Load unread notification count
+//--------------------------------------------------
+
+const loadUnreadCount = async () => {
+
+    try {
+
+        const data =
+            await notificationService
+                .getUnreadNotificationCount();
+
+        setUnreadCount(
+            data.count || 0
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Unable to load unread notification count:",
+            error
+        );
+
+    }
+};
+
 
     //--------------------------------------------------
     // Initial Load
@@ -44,7 +95,10 @@ function NotificationPanel({ onViewTicket }) {
 
         loadNotifications();
 
-    }, []);
+        loadUnreadCount();
+
+    }, [currentPage]);
+
 
     //--------------------------------------------------
     // Automatically refresh notifications
@@ -57,20 +111,14 @@ function NotificationPanel({ onViewTicket }) {
 
             loadNotifications();
 
+            loadUnreadCount();
+
         }, 30000);
 
         return () => clearInterval(interval);
 
-    }, []);
+    }, [currentPage]);
 
-    //--------------------------------------------------
-    // Count unread notifications
-    //--------------------------------------------------
-
-    const unreadCount =
-        notifications.filter(
-            notification => !notification.isRead
-        ).length;
 
     //--------------------------------------------------
     // View Notification / Ticket
@@ -79,9 +127,10 @@ function NotificationPanel({ onViewTicket }) {
     // When the user clicks "View Ticket":
     //
     // 1. Mark notification as read
-    // 2. Update the notification locally
-    // 3. Close the notification panel
-    // 4. Open the related ticket
+    // 2. Update notification locally
+    // 3. Update unread count
+    // 4. Close notification panel
+    // 5. Open related ticket
     //
     //--------------------------------------------------
 
@@ -99,19 +148,26 @@ function NotificationPanel({ onViewTicket }) {
                     notification.notificationId
                 );
 
-                setNotifications(previousNotifications =>
-                    previousNotifications.map(item =>
-                        item.notificationId ===
-                        notification.notificationId
-                            ? {
-                                ...item,
-                                isRead: true
-                            }
-                            : item
-                    )
+                setNotifications(
+                    previousNotifications =>
+                        previousNotifications.map(item =>
+                            item.notificationId ===
+                            notification.notificationId
+                                ? {
+                                    ...item,
+                                    isRead: true
+                                }
+                                : item
+                        )
+                );
+
+                setUnreadCount(
+                    previousCount =>
+                        Math.max(0, previousCount - 1)
                 );
 
             }
+
 
             //--------------------------------------------------
             // Make sure notification has a TicketId
@@ -127,11 +183,13 @@ function NotificationPanel({ onViewTicket }) {
                 return;
             }
 
+
             //--------------------------------------------------
             // Close notification panel
             //--------------------------------------------------
 
             setShowPanel(false);
+
 
             //--------------------------------------------------
             // Open TicketDetailsModal
@@ -156,6 +214,7 @@ function NotificationPanel({ onViewTicket }) {
         }
     };
 
+
     //--------------------------------------------------
     // Delete notification
     //--------------------------------------------------
@@ -173,12 +232,13 @@ function NotificationPanel({ onViewTicket }) {
                 notificationId
             );
 
-            setNotifications(previousNotifications =>
-                previousNotifications.filter(
-                    notification =>
-                        notification.notificationId !==
-                        notificationId
-                )
+            setNotifications(
+                previousNotifications =>
+                    previousNotifications.filter(
+                        notification =>
+                            notification.notificationId !==
+                            notificationId
+                    )
             );
 
         }
@@ -192,6 +252,7 @@ function NotificationPanel({ onViewTicket }) {
         }
     };
 
+
     //--------------------------------------------------
     // Format Date
     //--------------------------------------------------
@@ -204,6 +265,7 @@ function NotificationPanel({ onViewTicket }) {
         return new Date(date).toLocaleString();
 
     };
+
 
     //--------------------------------------------------
     // Component
@@ -238,6 +300,7 @@ function NotificationPanel({ onViewTicket }) {
                 >
                     🔔
                 </span>
+
 
                 {/* Unread Badge */}
 
@@ -449,6 +512,7 @@ function NotificationPanel({ onViewTicket }) {
 
                                         )}
 
+
                                         {/* Delete */}
 
                                         <button
@@ -471,6 +535,56 @@ function NotificationPanel({ onViewTicket }) {
                             ))
 
                         )}
+
+                    </div>
+
+
+                    {/* =================================================
+                        PAGINATION
+                    ================================================= */}
+
+                    <div
+                        className="card-footer d-flex justify-content-between align-items-center"
+                    >
+
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            disabled={currentPage === 1}
+                            onClick={() =>
+                                setCurrentPage(
+                                    previousPage =>
+                                        Math.max(
+                                            1,
+                                            previousPage - 1
+                                        )
+                                )
+                            }
+                        >
+                            ← Previous
+                        </button>
+
+
+                        <span className="small text-muted">
+                           Page {currentPage} of {totalPages}
+                        </span>
+
+
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            disabled={
+                                currentPage >= totalPages
+                            }
+                            onClick={() =>
+                                setCurrentPage(
+                                    previousPage =>
+                                        previousPage + 1
+                                )
+                            }
+                        >
+                            Next →
+                        </button>
 
                     </div>
 

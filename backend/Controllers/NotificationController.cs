@@ -18,15 +18,20 @@ namespace IThelpdesk.Controllers
             _notificationService = notificationService;
         }
 
+
         //--------------------------------------------------
         // Get My Notifications
         //--------------------------------------------------
 
-        // GET: api/notifications
+        // GET: api/notifications?pageNumber=1&pageSize=10
+
         [HttpGet]
-        public async Task<IActionResult> GetMyNotifications()
+        public async Task<IActionResult> GetMyNotifications(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int userId))
             {
@@ -36,21 +41,55 @@ namespace IThelpdesk.Controllers
                 });
             }
 
+            //--------------------------------------------------
+            // Validate pagination
+            //--------------------------------------------------
+
+            if (pageNumber < 1)
+            {
+                pageNumber = 1;
+            }
+
+            if (pageSize < 1)
+            {
+                pageSize = 10;
+            }
+
+            //--------------------------------------------------
+            // Prevent excessively large requests
+            //--------------------------------------------------
+
+            if (pageSize > 50)
+            {
+                pageSize = 50;
+            }
+
+            //--------------------------------------------------
+            // Get paginated notifications
+            //--------------------------------------------------
+
             var notifications =
-                await _notificationService.GetByUserIdAsync(userId);
+                await _notificationService.GetPagedByUserIdAsync(
+                    userId,
+                    pageNumber,
+                    pageSize);
 
             return Ok(notifications);
         }
 
+
+
         //--------------------------------------------------
-        // Get My Unread Notifications
+        // Get My Unread Notification Count
         //--------------------------------------------------
 
-        // GET: api/notifications/unread
-        [HttpGet("unread")]
-        public async Task<IActionResult> GetUnreadNotifications()
+        // GET: api/notifications/unread/count
+
+        [HttpGet("unread/count")]
+        public async Task<IActionResult> GetUnreadNotificationCount()
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int userId))
             {
@@ -59,22 +98,28 @@ namespace IThelpdesk.Controllers
                     message = "Invalid user identity."
                 });
             }
+            
+            var unreadCount =
+                await _notificationService
+                    .GetUnreadCountByUserIdAsync(userId);
 
-            var notifications =
-                await _notificationService.GetUnreadByUserIdAsync(userId);
-
-            return Ok(notifications);
+            return Ok(new
+            {
+                count = unreadCount
+            });
         }
-
         //--------------------------------------------------
         // Mark Notification As Read
         //--------------------------------------------------
 
         // PUT: api/notifications/{notificationId}/read
+
         [HttpPut("{notificationId}/read")]
-        public async Task<IActionResult> MarkAsRead(int notificationId)
+        public async Task<IActionResult> MarkAsRead(
+            int notificationId)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int userId))
             {
@@ -94,16 +139,19 @@ namespace IThelpdesk.Controllers
             });
         }
 
+
         //--------------------------------------------------
         // Delete Notification
         //--------------------------------------------------
 
         // DELETE: api/notifications/{notificationId}
+
         [HttpDelete("{notificationId}")]
         public async Task<IActionResult> DeleteNotification(
             int notificationId)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdClaim =
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdClaim, out int userId))
             {
@@ -122,11 +170,5 @@ namespace IThelpdesk.Controllers
                 message = "Notification deleted."
             });
         }
-
-       
-
-
-
     }
-
 }

@@ -29,9 +29,9 @@ namespace IThelpdesk.Services
         // Ticket Lists
         //-------------------------------------------------------
 
-        public async Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync()
+        public async Task<IEnumerable<TicketResponseDto>> GetAllTicketsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            return await _ticketRepository.GetAllAsync();
+            return await _ticketRepository.GetAllAsync(pageNumber, pageSize);
         }
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
@@ -40,15 +40,21 @@ namespace IThelpdesk.Services
         }
 
         public async Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(
-            int technicianId)
+     int technicianId, int pageNumber = 1, int pageSize = 10)
         {
-            return await _ticketRepository.GetMyTicketsAsync(technicianId);
+            return await _ticketRepository.GetMyTicketsAsync(technicianId, pageNumber, pageSize);
         }
 
-        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync()
+        public async Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            return await _ticketRepository.GetEscalatedTicketsAsync();
+            return await _ticketRepository.GetEscalatedTicketsAsync(pageNumber, pageSize);
         }
+
+        public async Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync(int pageNumber = 1, int pageSize = 10)
+        {
+            return await _ticketRepository.GetArchivedTicketsAsync(pageNumber, pageSize);
+        }
+
 
         public async Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId)
         {
@@ -311,13 +317,8 @@ namespace IThelpdesk.Services
             await _ticketRepository.SaveChangesAsync();
         }
 
-        //-------------------------------------------------------
-        // Archived Tickets
-        //-------------------------------------------------------
+     
 
-        public async Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync()
-        {
-            return await _ticketRepository.GetArchivedTicketsAsync();
-        }
+       
     }
 }

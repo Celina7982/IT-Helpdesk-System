@@ -1,4 +1,5 @@
 ﻿using IThelpdesk.Models;
+using IThelpdesk.DTOs.Common;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
@@ -11,16 +12,20 @@ namespace IThelpdesk.Interfaces.Repositories
         Task AddAsync(Notification notification);
 
         //--------------------------------------------------
-        // Get All Notifications For User
+        // Get Paginated Notifications For User
         //--------------------------------------------------
+        Task<PagedResultDto<NotificationDto>> GetPagedByUserIdAsync(
+            int userId,
+            int pageNumber,
+            int pageSize);
 
-        Task<List<Notification>> GetByUserIdAsync(int userId);
+
 
         //--------------------------------------------------
         // Get Unread Notifications For User
         //--------------------------------------------------
 
-        Task<List<Notification>> GetUnreadByUserIdAsync(int userId);
+        Task<int> GetUnreadCountByUserIdAsync(int userId);
 
         //--------------------------------------------------
         // Get Notification By ID

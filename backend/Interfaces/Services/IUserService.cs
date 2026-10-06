@@ -20,6 +20,8 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<IEnumerable<User>> GetTechniciansAsync();
 
+        Task<IEnumerable<User>> GetAssignableUsersAsync();
+
         //--------------------------------------------------
         // CRUD
         //--------------------------------------------------

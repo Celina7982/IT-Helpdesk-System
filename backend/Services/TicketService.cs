@@ -3,6 +3,7 @@ using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
+using IThelpdesk.Repositories;
 
 namespace IThelpdesk.Services
 {
@@ -12,17 +13,20 @@ namespace IThelpdesk.Services
         private readonly IJobCardRepository _jobCardRepository;
         private readonly IJobCardAuditService _auditService;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepository;
 
         public TicketService(
-            ITicketRepository ticketRepository,
-            IJobCardRepository jobCardRepository,
-            IJobCardAuditService auditService,
-            INotificationService notificationService)
+    ITicketRepository ticketRepository,
+    IJobCardRepository jobCardRepository,
+    IJobCardAuditService auditService,
+    INotificationService notificationService,
+    IUserRepository userRepository)
         {
             _ticketRepository = ticketRepository;
             _jobCardRepository = jobCardRepository;
             _auditService = auditService;
             _notificationService = notificationService;
+            _userRepository = userRepository;
         }
 
         //-------------------------------------------------------
@@ -112,8 +116,34 @@ namespace IThelpdesk.Services
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
-            if (ticket == null)
+            if (ticket == null) // ticket null check
                 throw new Exception("Ticket not found.");
+
+            // -------------------------------------------------------
+            // Validate the user receiving the ticket
+            // Only active Admins and Technicians may be assigned.
+            // -------------------------------------------------------
+
+            var assignedUser =
+                await _userRepository.GetUserEntityByIdAsync(assignedToUserId);
+
+            if (assignedUser == null)
+            {
+                throw new Exception("Selected user was not found.");
+            }
+
+            if (!assignedUser.IsActive)
+            {
+                throw new Exception("Tickets cannot be assigned to an inactive user.");
+            }
+
+            if (assignedUser.Role != "Admin" &&
+                assignedUser.Role != "Technician")
+            {
+                throw new Exception(
+                    "Tickets can only be assigned to an Admin or Technician."
+                );
+            }
 
             //-------------------------------------------------------
             // Store previous technician
@@ -128,7 +158,7 @@ namespace IThelpdesk.Services
             ticket.AssignedToUserId = assignedToUserId;
             ticket.Status = "In Progress";
             ticket.IsEscalated = false;
-            ticket.EscalationReason = null;
+            
 
             await _ticketRepository.UpdateAsync(ticket);
             await _ticketRepository.SaveChangesAsync();
@@ -149,6 +179,16 @@ namespace IThelpdesk.Services
                 ticket.UserId,
                 "Ticket Assigned",
                 $"Your ticket '{ticket.Subject}' has been assigned to {technicianName}.");
+
+            //-------------------------------------------------------
+            // Notify Assigned Technician
+            //-------------------------------------------------------
+
+            await _notificationService.CreateAsync(
+                assignedToUserId,
+                "Ticket Assigned",
+                $"Ticket #{ticket.TicketId} has been assigned to you.",
+                ticket.TicketId);
 
             //-------------------------------------------------------
             // Update Job Card technician if one exists
@@ -210,6 +250,15 @@ namespace IThelpdesk.Services
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
+            // Escalated tickets are controlled by Admin assignment.
+            // They must not be claimed from the Available/Recent Tickets workflow.
+            if (ticket.IsEscalated || ticket.Status == "Escalated")
+            {
+                throw new Exception(
+                    "Escalated tickets cannot be claimed. An administrator must assign the ticket."
+                );
+            }
+
             if (ticket.AssignedToUserId != null)
                 throw new Exception("Ticket already assigned.");
 
@@ -242,13 +291,35 @@ namespace IThelpdesk.Services
         //-------------------------------------------------------
 
         public async Task EscalateTicketAsync(
-            int ticketId,
-            string escalationReason)
+    int ticketId,
+    string escalationReason)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found.");
+
+            //-------------------------------------------------------
+            // Get Technician Before Removing Assignment
+            //-------------------------------------------------------
+
+            User? technician = null;
+
+            if (ticket.AssignedToUserId.HasValue)
+            {
+                technician =
+                    await _userRepository.GetUserEntityByIdAsync(
+                        ticket.AssignedToUserId.Value);
+            }
+
+            var technicianName =
+                technician != null
+                    ? $"{technician.FirstName} {technician.LastName}"
+                    : "a technician";
+
+            //-------------------------------------------------------
+            // Escalate Ticket
+            //-------------------------------------------------------
 
             ticket.Status = "Escalated";
             ticket.IsEscalated = true;
@@ -265,7 +336,24 @@ namespace IThelpdesk.Services
             await _notificationService.CreateAsync(
                 ticket.UserId,
                 "Ticket Escalated",
-                $"Your ticket '{ticket.Subject}' has been escalated for further attention.");
+                $"Your ticket '{ticket.Subject}' has been escalated for further attention.",
+                ticket.TicketId);
+
+            //-------------------------------------------------------
+            // Notify All Admins
+            //-------------------------------------------------------
+
+            var admins =
+                await _userRepository.GetAdminsAsync();
+
+            foreach (var admin in admins)
+            {
+                await _notificationService.CreateAsync(
+                    admin.UserId,
+                    "Ticket Escalated",
+                    $"Ticket #{ticket.TicketId} has been escalated by {technicianName}.",
+                    ticket.TicketId);
+            }
         }
 
         //-------------------------------------------------------

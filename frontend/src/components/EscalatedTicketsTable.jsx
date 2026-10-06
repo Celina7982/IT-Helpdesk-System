@@ -4,46 +4,59 @@ import userService from "../services/userService";
 
 function EscalatedTicketsTable() {
     const [tickets, setTickets] = useState([]);
-    const [technicians, setTechnicians] = useState([]);
-    const [selectedTechnicians, setSelectedTechnicians] = useState({});
+   const [assignableUsers, setAssignableUsers] = useState([]);
+const [selectedUsers, setSelectedUsers] = useState({});
     
     // Pagination states
     const [pageNumber, setPageNumber] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    const loadData = async () => {
-        try {
-            const escalated = await ticketService.getEscalatedTickets(pageNumber, pageSize);
-            const techs = await userService.getTechnicians();
+  const loadData = async () => {
+    try {
 
-            setTickets(escalated);
-            setTechnicians(techs);
-        } catch (error) {
-            console.error("Failed to load escalated tickets:", error);
-        }
-    };
+        const escalated =
+            await ticketService.getEscalatedTickets(
+                pageNumber,
+                pageSize
+            );
+
+        const users =
+            await userService.getAssignableUsers();
+
+        setTickets(escalated);
+        setAssignableUsers(users);
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load escalated tickets:",
+            error
+        );
+
+    }
+};
 
     useEffect(() => {
         loadData();
     }, [pageNumber, pageSize]);
 
-    const handleSelection = (ticketId, technicianId) => {
-        setSelectedTechnicians(prev => ({
-            ...prev,
-            [ticketId]: technicianId
-        }));
-    };
+  const handleSelection = (ticketId, userId) => {
+    setSelectedUsers(prev => ({
+        ...prev,
+        [ticketId]: userId
+    }));
+};;
 
     const assignTicket = async (ticketId) => {
-        const technicianId = selectedTechnicians[ticketId];
+       const userId = selectedUsers[ticketId];
 
-        if (!technicianId) {
-            alert("Please select a technician.");
-            return;
-        }
+if (!userId) {
+    alert("Please select an Admin or Technician.");
+    return;
+}
 
         try {
-            await ticketService.assignTicket(ticketId, technicianId);
+            await ticketService.assignTicket(ticketId, userId);
             alert("Ticket assigned successfully.");
             await loadData();
         } catch (error) {
@@ -107,28 +120,31 @@ function EscalatedTicketsTable() {
                                         </td>
                                         <td>{ticket.escalationReason}</td>
                                         <td>
-                                            <select
-                                                className="form-select"
-                                                value={selectedTechnicians[ticket.ticketId] || ""}
-                                                onChange={(e) =>
-                                                    handleSelection(
-                                                        ticket.ticketId,
-                                                        Number(e.target.value)
-                                                    )
-                                                }
-                                            >
-                                                <option value="">
-                                                    Select Technician
-                                                </option>
-                                                {technicians.map(tech => (
-                                                    <option
-                                                        key={tech.userId}
-                                                        value={tech.userId}
-                                                    >
-                                                        {tech.firstName} {tech.lastName}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                           <select
+    className="form-select"
+    value={selectedUsers[ticket.ticketId] || ""}
+    onChange={(e) =>
+        handleSelection(
+            ticket.ticketId,
+            Number(e.target.value)
+        )
+    }
+>
+    <option value="">
+        Select Admin or Technician
+    </option>
+
+    {assignableUsers.map(user => (
+        <option
+            key={user.userId}
+            value={user.userId}
+        >
+            {user.firstName} {user.lastName} ({user.role})
+        </option>
+    ))}
+</select>
+
+
                                         </td>
                                         <td>
                                             <button

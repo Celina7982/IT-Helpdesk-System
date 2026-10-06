@@ -106,5 +106,10 @@ namespace IThelpdesk.Services
         {
             return await _userRepository.GetTechniciansAsync();
         }
+
+        public async Task<IEnumerable<User>> GetAssignableUsersAsync()
+        {
+            return await _userRepository.GetAssignableUsersAsync();
+        }
     }
 }

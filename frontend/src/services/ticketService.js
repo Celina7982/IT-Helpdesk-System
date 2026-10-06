@@ -165,18 +165,23 @@ const ticketService = {
         return response.data;
     },
 
-    addComment: async (ticketId, commentText) => {
-        const response = await api.post(
-            `/tickets/${ticketId}/comments`,
-            { message: commentText },
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
-                }
+   addComment: async (ticketId, commentText, isInternal = false) => {
+    const response = await api.post(
+        `/tickets/${ticketId}/comments`,
+        {
+            message: commentText,
+            isInternal: isInternal
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
             }
-        );
-        return response.data;
-    },
+        }
+    );
+
+    return response.data;
+},
+
 
     updateComment: async (ticketId, commentId, message) => {
         const response = await api.put(

@@ -143,6 +143,17 @@ namespace IThelpdesk.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<User>> GetAssignableUsersAsync()
+        {
+            return await _context.Users
+                .Where(u =>
+                    u.IsActive &&
+                    (u.Role == "Technician" || u.Role == "Admin"))
+                .OrderBy(u => u.Role)
+                .ThenBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<User>> GetAdminsAsync()
         {
             return await _context.Users

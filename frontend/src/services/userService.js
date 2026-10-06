@@ -34,6 +34,22 @@ const userService = {
         return response.data;
     },
 
+
+    //----------------------------------------------------
+// Get Assignable Users
+// Active Admins + Technicians
+//----------------------------------------------------
+
+getAssignableUsers: async () => {
+
+    const response = await api.get("/User/assignable", {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+    });
+
+    return response.data;
+},
     //----------------------------------------------------
     // Create User
     //----------------------------------------------------

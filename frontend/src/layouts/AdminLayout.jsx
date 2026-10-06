@@ -1,4 +1,7 @@
 import { Outlet, Link } from "react-router-dom";
+import NotificationPanel from "../components/notifications/NotificationPanel";
+
+
 
 function AdminLayout() {
     const handleLogout = () => {
@@ -90,13 +93,22 @@ function AdminLayout() {
                         </button>
                     </div>
                 </div>
+{/* Main Content */}
+<div className="col-md-10 bg-light">
 
-                {/* Main Content */}
-                <div className="col-md-10 bg-light">
-                    <div className="p-4">
-                        <Outlet />
-                    </div>
-                </div>
+    {/* Notification Bar */}
+    <div className="d-flex justify-content-end p-3 pb-0">
+        <NotificationPanel />
+    </div>
+
+    {/* Page Content */}
+    <div className="p-4">
+        <Outlet />
+    </div>
+
+</div>
+               
+
             </div>
         </div>
     );

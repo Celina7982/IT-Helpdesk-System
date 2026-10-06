@@ -1,10 +1,7 @@
-﻿using IThelpdesk.Data;
-using IThelpdesk.DTOs;
+﻿using IThelpdesk.DTOs;
 using IThelpdesk.Interfaces.Services;
-using IThelpdesk.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace IThelpdesk.Controllers
@@ -14,49 +11,48 @@ namespace IThelpdesk.Controllers
     [Authorize]
     public class TicketCommentsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        private readonly INotificationService _notificationService;
+        private readonly ITicketCommentService _ticketCommentService;
 
         public TicketCommentsController(
-            ApplicationDbContext context,
-            INotificationService notificationService)
+            ITicketCommentService ticketCommentService)
         {
-            _context = context;
-            _notificationService = notificationService;
+            _ticketCommentService = ticketCommentService;
         }
 
         //-------------------------------------------------------
         // GET: api/tickets/{ticketId}/comments
         //-------------------------------------------------------
-
         [HttpGet]
         public async Task<IActionResult> GetComments(int ticketId)
         {
-            var ticketExists = await _context.Tickets
-                .AnyAsync(t => t.TicketId == ticketId);
+            //-------------------------------------------------------
+            // Get Logged-In User's Role
+            //-------------------------------------------------------
 
-            if (!ticketExists)
+            var userRole =
+                User.FindFirstValue(ClaimTypes.Role)
+                ?? "";
+
+            //-------------------------------------------------------
+            // Get Comments
+            //-------------------------------------------------------
+
+            try
+            {
+                var comments =
+                    await _ticketCommentService.GetCommentsAsync(
+                        ticketId,
+                        userRole);
+
+                return Ok(comments);
+            }
+            catch (KeyNotFoundException ex)
             {
                 return NotFound(new
                 {
-                    message = "Ticket not found."
+                    message = ex.Message
                 });
             }
-
-            var comments = await _context.TicketComments
-                .Where(c => c.TicketId == ticketId)
-                .OrderBy(c => c.CreatedDate)
-                .Select(c => new CommentResponseDto
-                {
-                    CommentId = c.CommentId,
-                    TicketId = c.TicketId,
-                    AuthorName = c.AuthorName,
-                    Message = c.Message,
-                    CreatedDate = c.CreatedDate
-                })
-                .ToListAsync();
-
-            return Ok(comments);
         }
 
         //-------------------------------------------------------
@@ -69,63 +65,21 @@ namespace IThelpdesk.Controllers
             [FromBody] CreateCommentDto dto)
         {
             //---------------------------------------------------
-            // Validate comment
-            //---------------------------------------------------
-
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Message))
-            {
-                return BadRequest(new
-                {
-                    message = "Comment message cannot be empty."
-                });
-            }
-
-            //---------------------------------------------------
-            // Find ticket
-            //---------------------------------------------------
-
-            var ticket = await _context.Tickets
-                .FindAsync(ticketId);
-
-            if (ticket == null)
-            {
-                return NotFound(new
-                {
-                    message = "Ticket not found."
-                });
-            }
-
-            //---------------------------------------------------
-            // Prevent comments on resolved/closed tickets
-            //---------------------------------------------------
-
-            if (string.Equals(
-                    ticket.Status,
-                    "Resolved",
-                    StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(
-                    ticket.Status,
-                    "Closed",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return BadRequest(new
-                {
-                    message = "Comments are disabled for resolved or closed tickets."
-                });
-            }
-
-            //---------------------------------------------------
-            // Get logged-in user's ID from JWT
+            // Get logged-in user's ID
             //---------------------------------------------------
 
             var userIdClaim =
-                User.FindFirstValue(ClaimTypes.NameIdentifier);
+                User.FindFirstValue(
+                    ClaimTypes.NameIdentifier);
 
-            if (!int.TryParse(userIdClaim, out int loggedInUserId))
+            if (!int.TryParse(
+                    userIdClaim,
+                    out int loggedInUserId))
             {
                 return Unauthorized(new
                 {
-                    message = "Unable to identify logged-in user."
+                    message =
+                        "Unable to identify logged-in user."
                 });
             }
 
@@ -139,53 +93,50 @@ namespace IThelpdesk.Controllers
                 ?? "User";
 
             //---------------------------------------------------
-            // Create comment
+            // Get logged-in user's role
             //---------------------------------------------------
 
-            var comment = new TicketComment
+            var authorRole =
+                User.FindFirstValue(ClaimTypes.Role)
+                ?? "";
+
+            //---------------------------------------------------
+            // Add Comment
+            //---------------------------------------------------
+
+            try
             {
-                TicketId = ticketId,
-                AuthorName = authorName,
-                Message = dto.Message.Trim(),
-                CreatedDate = DateTime.UtcNow
-            };
+                var comment =
+                    await _ticketCommentService.AddCommentAsync(
+                        ticketId,
+                        dto,
+                        loggedInUserId,
+                        authorName,
+                        authorRole);
 
-            _context.TicketComments.Add(comment);
-
-            await _context.SaveChangesAsync();
-
-            //---------------------------------------------------
-            // Notify Customer
-            //---------------------------------------------------
-            //
-            // If the person adding the comment is NOT the
-            // customer who owns the ticket, notify the customer.
-            //
-            //---------------------------------------------------
-
-            if (ticket.UserId != loggedInUserId)
-            {
-                await _notificationService.CreateAsync(
-                ticket.UserId,
-                "New Ticket Update",
-                $"There is a new update on your ticket '{ticket.Subject}'.",
-                ticket.TicketId);
+                return Ok(comment);
             }
-
-            //---------------------------------------------------
-            // Return Created Comment
-            //---------------------------------------------------
-
-            var response = new CommentResponseDto
+            catch (ArgumentException ex)
             {
-                CommentId = comment.CommentId,
-                TicketId = comment.TicketId,
-                AuthorName = comment.AuthorName,
-                Message = comment.Message,
-                CreatedDate = comment.CreatedDate
-            };
-
-            return Ok(response);
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
         //-------------------------------------------------------
@@ -200,90 +151,76 @@ namespace IThelpdesk.Controllers
             [FromBody] UpdateCommentDto dto)
         {
             //---------------------------------------------------
-            // Validate comment
+            // Get logged-in user's ID
             //---------------------------------------------------
 
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Message))
+            var userIdClaim =
+                User.FindFirstValue(
+                    ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(
+                    userIdClaim,
+                    out int loggedInUserId))
+            {
+                return Unauthorized(new
+                {
+                    message =
+                        "Unable to identify logged-in user."
+                });
+            }
+
+            //---------------------------------------------------
+            // Get logged-in user's role
+            //---------------------------------------------------
+
+            var userRole =
+                User.FindFirstValue(ClaimTypes.Role)
+                ?? "";
+
+            //---------------------------------------------------
+            // Update Comment
+            //---------------------------------------------------
+
+            try
+            {
+                var comment =
+                    await _ticketCommentService.UpdateCommentAsync(
+                        ticketId,
+                        commentId,
+                        dto,
+                        loggedInUserId,
+                        userRole);
+
+                return Ok(comment);
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(new
                 {
-                    message = "Comment message cannot be empty."
+                    message = ex.Message
                 });
             }
-
-            //---------------------------------------------------
-            // Find comment
-            //---------------------------------------------------
-
-            var comment = await _context.TicketComments
-                .FirstOrDefaultAsync(c =>
-                    c.CommentId == commentId &&
-                    c.TicketId == ticketId);
-
-            if (comment == null)
+            catch (KeyNotFoundException ex)
             {
                 return NotFound(new
                 {
-                    message = "Comment not found."
+                    message = ex.Message
                 });
             }
-
-            //---------------------------------------------------
-            // Find ticket
-            //---------------------------------------------------
-
-            var ticket = await _context.Tickets
-                .FindAsync(ticketId);
-
-            if (ticket == null)
+            catch (UnauthorizedAccessException ex)
             {
-                return NotFound(new
+                return StatusCode(403, new
                 {
-                    message = "Ticket not found."
+                    message = ex.Message
                 });
             }
-
-            //---------------------------------------------------
-            // Prevent editing comments on resolved/closed tickets
-            //---------------------------------------------------
-
-            if (string.Equals(
-                    ticket.Status,
-                    "Resolved",
-                    StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(
-                    ticket.Status,
-                    "Closed",
-                    StringComparison.OrdinalIgnoreCase))
+            catch (InvalidOperationException ex)
             {
                 return BadRequest(new
                 {
-                    message = "Comments cannot be edited on resolved or closed tickets."
+                    message = ex.Message
                 });
             }
-
-            //---------------------------------------------------
-            // Update comment
-            //---------------------------------------------------
-
-            comment.Message = dto.Message.Trim();
-
-            await _context.SaveChangesAsync();
-
-            //---------------------------------------------------
-            // Return updated comment
-            //---------------------------------------------------
-
-            var response = new CommentResponseDto
-            {
-                CommentId = comment.CommentId,
-                TicketId = comment.TicketId,
-                AuthorName = comment.AuthorName,
-                Message = comment.Message,
-                CreatedDate = comment.CreatedDate
-            };
-
-            return Ok(response);
         }
     }
 }

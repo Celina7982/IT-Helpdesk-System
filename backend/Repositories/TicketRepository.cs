@@ -123,7 +123,7 @@ namespace IThelpdesk.Repositories
         }
 
         //-------------------------------------------------------
-        // Available Tickets
+        // Available Tickets (looks at all tickets in DB)
         //-------------------------------------------------------
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
@@ -131,9 +131,11 @@ namespace IThelpdesk.Repositories
             return await _context.Tickets
                 .Where(t =>
                     t.AssignedToUserId == null &&
-                    !t.IsArchived)
+                    !t.IsArchived &&
+                    !t.IsEscalated &&
+                    t.Status != "Escalated")
                 .OrderByDescending(t => t.CreatedDate)
-                .ToListAsync();
+                .ToListAsync(); // turns results into list 
         }
 
         //-------------------------------------------------------

@@ -57,9 +57,7 @@ const loadNotifications = async () => {
     }
 };
     
-
-
-   //--------------------------------------------------
+//--------------------------------------------------
 // Load unread notification count
 //--------------------------------------------------
 
@@ -72,7 +70,7 @@ const loadUnreadCount = async () => {
                 .getUnreadNotificationCount();
 
         setUnreadCount(
-            data.count || 0
+            data?.count ?? 0
         );
 
     }
@@ -85,6 +83,8 @@ const loadUnreadCount = async () => {
 
     }
 };
+
+   
 
 
     //--------------------------------------------------

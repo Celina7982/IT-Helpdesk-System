@@ -211,5 +211,16 @@ namespace IThelpdesk.Controllers
 
             return Ok(technicians);
         }
+
+        // GET: api/User/assignable
+        // Returns active Technicians and Admins who can be assigned tickets.
+        [Authorize(Roles = "Admin")]
+        [HttpGet("assignable")]
+        public async Task<IActionResult> GetAssignableUsers()
+        {
+            var users = await _userService.GetAssignableUsersAsync();
+
+            return Ok(users);
+        }
     }
 }

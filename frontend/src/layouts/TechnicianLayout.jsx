@@ -1,4 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
+import NotificationPanel from "../components/notifications/NotificationPanel";
+
 
 function TechnicianLayout() {
                    const handleLogout = () => {
@@ -53,17 +55,24 @@ function TechnicianLayout() {
                 </div>
         
 
-                {/* Main Content */}
+              {/* Main Content */}
 
-                <div className="col-md-10">
+<div className="col-md-10">
 
-                    <div className="p-4">
+    {/* Technician Top Bar */}
+    <div className="d-flex justify-content-end align-items-center p-3 border-bottom">
 
-                        <Outlet />
+        <NotificationPanel />
 
-                    </div>
+    </div>
 
-                </div>
+    <div className="p-4">
+
+        <Outlet />
+
+    </div>
+
+</div>
 
             </div>
 

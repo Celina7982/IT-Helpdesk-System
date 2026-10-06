@@ -311,21 +311,9 @@ namespace IThelpdesk.Services
                 $"Job Card {jobCard.JobNumber} completed.",
                 oldStatus,
                 "Completed");
-
-            //--------------------------------------------------
-            // Notify Admins that the Job Card was completed
-            //--------------------------------------------------
-
-            var admins = await _userRepository.GetAdminsAsync();
-
-            foreach (var admin in admins)
-            {
-                await _notificationService.CreateAsync(
-                    admin.UserId,
-                    "Job Card Completed",
-                    $"Job Card {jobCard.JobNumber} has been completed.");
-            }
         }
+           
+        
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
@@ -542,21 +530,8 @@ namespace IThelpdesk.Services
       performedByUserId,
       JobCardAuditAction.PartAdded,
       $"Added part '{part.PartName}' x{part.Quantity}");
-
-            //--------------------------------------------------
-            // Notify Admins that a part was added
-            //--------------------------------------------------
-
-            var admins = await _userRepository.GetAdminsAsync();
-
-            foreach (var admin in admins)
-            {
-                await _notificationService.CreateAsync(
-                    admin.UserId,
-                    "Part Added",
-                    $"Part '{part.PartName}' x{part.Quantity} was added to Job Card {jobCard.JobNumber}.");
-            }
         }
+
 
         public async Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId)
         {

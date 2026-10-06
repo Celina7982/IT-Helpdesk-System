@@ -96,7 +96,7 @@ namespace IThelpdesk.Controllers
                 return Unauthorized(new
                 {
                     message = "Invalid user identity."
-                });
+                }); 
             }
             
             var unreadCount =

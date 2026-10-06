@@ -2,9 +2,39 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ticketService from "../../services/ticketService";
 import jobCardService from "../../services/jobCardService";
+import { jwtDecode } from "jwt-decode";
 
 
 function TicketDetailsModal({ show, onClose, ticketId }) {
+
+// -------------------------------------------------------
+// Logged-in User
+// -------------------------------------------------------
+
+const token = localStorage.getItem("token");
+
+let loggedInUserId = null;
+let loggedInUserRole = "";
+
+if (token) {
+    try {
+        const decoded = jwtDecode(token);
+
+        loggedInUserId = Number(
+            decoded.nameid ||
+            decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+            decoded.sub
+        );
+
+        loggedInUserRole =
+            decoded.role ||
+            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+            "";
+    } catch (error) {
+        console.error("Unable to decode login token:", error);
+    }
+}
+
 
     const navigate = useNavigate();
 
@@ -12,6 +42,8 @@ function TicketDetailsModal({ show, onClose, ticketId }) {
     const [jobCard, setJobCard] = useState(null);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
+    const [isInternalNote, setIsInternalNote] = useState(false);
+
 
     const [loading, setLoading] = useState(false);
     const [submittingComment, setSubmittingComment] = useState(false);
@@ -140,61 +172,62 @@ const loadTicketAndComments = async () => {
     // Add Comment
     //-------------------------------------------------------
 
-    const handleAddComment = async (e) => {
+   const handleAddComment = async (e) => {
 
-        e.preventDefault();
+    e.preventDefault();
 
-        if (!newComment.trim()) {
-            return;
-        }
+    if (!newComment.trim()) {
+        return;
+    }
 
-        try {
+    try {
 
-            setSubmittingComment(true);
+        setSubmittingComment(true);
 
-            const createdComment = await ticketService.addComment(
-                ticketId,
-                newComment.trim()
-            );
+        const createdComment = await ticketService.addComment(
+            ticketId,
+            newComment.trim(),
+            isInternalNote
+        );
 
-            if (createdComment && typeof createdComment === "object") {
+        if (createdComment && typeof createdComment === "object") {
 
-                setComments(prev => [
-                    ...prev,
-                    createdComment
-                ]);
-
-            }
-            else {
-
-                const refreshedComments =
-                    await ticketService.getComments(ticketId);
-
-                setComments(refreshedComments || []);
-
-            }
-
-            setNewComment("");
+            setComments(prev => [
+                ...prev,
+                createdComment
+            ]);
 
         }
-        catch (error) {
+        else {
 
-            console.error("Failed to submit comment:", error);
+            const refreshedComments =
+                await ticketService.getComments(ticketId);
 
-            alert(
-                error.response?.data?.message ||
-                "Failed to submit comment."
-            );
-
-        }
-        finally {
-
-            setSubmittingComment(false);
+            setComments(refreshedComments || []);
 
         }
 
-    };
+        setNewComment("");
+        setIsInternalNote(false);
 
+    }
+    catch (error) {
+
+        console.error("Failed to submit comment:", error);
+
+        alert(
+            error.response?.data?.message ||
+            "Failed to submit comment."
+        );
+
+    }
+    finally {
+
+        setSubmittingComment(false);
+
+    }
+
+};
 
     //-------------------------------------------------------
     // Start Editing Comment
@@ -578,9 +611,17 @@ const loadTicketAndComments = async () => {
 
                                                         <div className="d-flex justify-content-between align-items-center">
 
-                                                            <strong className="small">
-                                                                {item.authorName}
-                                                            </strong>
+                                                            <div className="d-flex align-items-center gap-2">
+    <strong className="small">
+        {item.authorName}
+    </strong>
+
+    {item.isInternal && (
+        <span className="badge bg-warning text-dark">
+            Internal Note
+        </span>
+    )}
+</div>
 
                                                             <small className="text-muted">
 
@@ -659,17 +700,20 @@ const loadTicketAndComments = async () => {
                                                                     {message}
                                                                 </p>
 
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-outline-primary btn-sm"
-                                                                    onClick={() =>
-                                                                        handleStartEdit(
-                                                                            item
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Edit
-                                                                </button>
+                                                                {(
+                                                                    loggedInUserRole === "Admin" ||
+                                                                    item.authorUserId === loggedInUserId
+                                                                ) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-outline-primary btn-sm"
+                                                                        onClick={() =>
+                                                                            handleStartEdit(item)
+                                                                        }
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                )}
 
                                                             </>
 
@@ -697,7 +741,11 @@ const loadTicketAndComments = async () => {
                                         <textarea
                                             className="form-control"
                                             rows="3"
-                                            placeholder="Write a comment..."
+                                            placeholder={
+                                                isInternalNote
+                                                    ? "Write an internal note..."
+                                                    : "Write a comment..."
+                                            }
                                             value={newComment}
                                             onChange={(e) =>
                                                 setNewComment(
@@ -708,6 +756,30 @@ const loadTicketAndComments = async () => {
                                         >
                                         </textarea>
 
+{(
+    loggedInUserRole === "Admin" ||
+    loggedInUserRole === "Technician"
+) && (
+    <div className="form-check mt-2">
+        <input  
+            className="form-check-input"
+            type="checkbox"
+            id="internalNote"
+            checked={isInternalNote}
+            onChange={(e) =>
+                setIsInternalNote(e.target.checked)
+            }
+        />
+
+        <label
+            className="form-check-label"
+            htmlFor="internalNote"
+        >
+            Internal Note
+        </label>
+    </div>
+)}
+
                                     </div>
 
                                     <button
@@ -715,9 +787,10 @@ const loadTicketAndComments = async () => {
                                         className="btn btn-primary btn-sm"
                                         disabled={submittingComment}
                                     >
-
-                                        {submittingComment
-                                            ? "Posting..."
+                                    {submittingComment
+                                        ? "Posting..."
+                                        : isInternalNote
+                                            ? "Post Internal Note"
                                             : "Post Comment"}
 
                                     </button>

@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using IThelpdesk.DTOs;
+using IThelpdesk.DTOs.Ticket;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using IThelpdesk.DTOs.Ticket;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace IThelpdesk.Controllers
@@ -154,8 +155,10 @@ namespace IThelpdesk.Controllers
             return NoContent();
         }
 
+
         // ======================================================
         // ASSIGN TICKET
+        // Admin assigns or changes the primary assignee
         // ======================================================
 
         // PUT: api/Ticket/5/assign
@@ -165,11 +168,130 @@ namespace IThelpdesk.Controllers
             int id,
             [FromBody] AssignTicketRequest request)
         {
+            // Get the actual logged-in Admin ID
+            // from the authenticated JWT token.
+
+            var adminId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+
+            // Assign the selected user as primary assignee.
+            // Also record which Admin performed the assignment.
+
             await _ticketService.AssignTicketAsync(
                 id,
-                request.AssignedToUserId);
+                request.AssignedToUserId,
+                adminId
+            );
 
             return NoContent();
+        }
+
+        // ----------------------------------------------------
+        // Get Ticket Assignees
+        // Admin and Technician can view assigned users
+        // ----------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpGet("{id}/assignees")]
+        public async Task<IActionResult> GetTicketAssignees(int id)
+        {
+            try
+            {
+                var assignees =
+                    await _ticketService.GetTicketAssigneesAsync(id);
+
+                return Ok(assignees);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // Add Ticket Assignee
+        // Admin only
+        // ----------------------------------------------------
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("{id}/assignees")]
+        public async Task<IActionResult> AddTicketAssignee(
+            int id,
+            [FromBody] AddTicketAssigneeRequest request)
+        {
+            try
+            {
+                var adminId = int.Parse(
+                    User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+                );
+
+                await _ticketService.AddTicketAssigneeAsync(
+                    id,
+                    request.UserId,
+                    adminId);
+
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        // ----------------------------------------------------
+        // Remove Ticket Assignee
+        // Admin only
+        // ----------------------------------------------------
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}/assignees/{userId}")]
+        public async Task<IActionResult> RemoveTicketAssignee(
+            int id,
+            int userId)
+        {
+            try
+            {
+                var adminId = int.Parse(
+                    User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+                );
+
+                await _ticketService.RemoveTicketAssigneeAsync(
+                    id,
+                    userId,
+                    adminId);
+
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
         // ======================================================

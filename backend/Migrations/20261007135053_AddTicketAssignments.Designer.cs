@@ -4,6 +4,7 @@ using IThelpdesk.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261007135053_AddTicketAssignments")]
+    partial class AddTicketAssignments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -553,7 +556,7 @@ namespace IThelpdesk.Migrations
                         .IsRequired();
 
                     b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
-                        .WithMany("Assignments")
+                        .WithMany()
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -706,11 +709,6 @@ namespace IThelpdesk.Migrations
                     b.Navigation("LabourEntries");
 
                     b.Navigation("PartsUsed");
-                });
-
-            modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
-                {
-                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>

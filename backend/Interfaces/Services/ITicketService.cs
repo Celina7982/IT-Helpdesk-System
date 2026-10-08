@@ -1,4 +1,5 @@
-﻿using IThelpdesk.DTOs.Ticket;
+﻿using IThelpdesk.DTOs;
+using IThelpdesk.DTOs.Ticket;
 using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Services
@@ -49,7 +50,10 @@ namespace IThelpdesk.Interfaces.Services
         // Ticket Actions
         //-------------------------------------------------------
 
-        Task AssignTicketAsync(int ticketId, int assignedToUserId);
+        Task AssignTicketAsync(
+     int ticketId,
+     int assignedToUserId,
+     int assignedByUserId);
 
         Task ClaimTicketAsync(int ticketId, int technicianId);
 
@@ -60,6 +64,22 @@ namespace IThelpdesk.Interfaces.Services
         Task ResolveTicketAsync(
             int id,
             int resolvedByUserId);
+
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        Task<List<TicketAssigneeDto>> GetTicketAssigneesAsync(int ticketId);
+
+        Task AddTicketAssigneeAsync(
+            int ticketId,
+            int userId,
+            int assignedByUserId);
+
+        Task RemoveTicketAssigneeAsync(
+            int ticketId,
+            int userId,
+            int removedByUserId);
 
         //-------------------------------------------------------
         // Archive

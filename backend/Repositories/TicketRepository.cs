@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using IThelpdesk.Data;
+﻿using IThelpdesk.Data;
 using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Entities;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace IThelpdesk.Repositories
 {
@@ -122,21 +123,92 @@ namespace IThelpdesk.Repositories
                 .FirstOrDefaultAsync(u => u.UserId == id);
         }
 
+
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        public async Task<List<TicketAssignment>> GetTicketAssignmentsAsync(
+            int ticketId)
+        {
+            return await _context.TicketAssignments
+                .AsNoTracking()
+                .Include(a => a.User)
+                .Include(a => a.AssignedByUser)
+                .Where(a => a.TicketId == ticketId)
+                .OrderBy(a => a.AssignedDate)
+                .ToListAsync();
+        }
+
+
+        public async Task<TicketAssignment?> GetTicketAssignmentAsync(
+            int ticketId,
+            int userId)
+        {
+            return await _context.TicketAssignments
+                .FirstOrDefaultAsync(a =>
+                    a.TicketId == ticketId &&
+                    a.UserId == userId);
+        }
+
+
+        public async Task AddTicketAssignmentAsync(
+            TicketAssignment assignment)
+        {
+            await _context.TicketAssignments.AddAsync(assignment);
+        }
+
+
+        public Task RemoveTicketAssignmentAsync(
+            TicketAssignment assignment)
+        {
+            _context.TicketAssignments.Remove(assignment);
+
+            return Task.CompletedTask;
+        }
+
+
+        public async Task<bool> HasTicketAssignmentAsync(
+            int ticketId,
+            int userId)
+        {
+            return await _context.TicketAssignments
+                .AnyAsync(a =>
+                    a.TicketId == ticketId &&
+                    a.UserId == userId);
+        }
+
+
         //-------------------------------------------------------
-        // Available Tickets (looks at all tickets in DB)
+        // Available Tickets
+        // Only tickets with NO assigned users
         //-------------------------------------------------------
 
         public async Task<IEnumerable<Ticket>> GetAvailableTicketsAsync()
         {
             return await _context.Tickets
+                .AsNoTracking()
                 .Where(t =>
+
+                    // No primary assignee
                     t.AssignedToUserId == null &&
+
+                    // No additional assignees
+                    !t.Assignments.Any() &&
+
+                    // Ticket must be Open
+                    t.Status == "Open" &&
+
+                    // Exclude archived tickets
                     !t.IsArchived &&
-                    !t.IsEscalated &&
-                    t.Status != "Escalated")
+
+                    // Exclude escalated tickets
+                    !t.IsEscalated
+                )
                 .OrderByDescending(t => t.CreatedDate)
-                .ToListAsync(); // turns results into list 
+                .ToListAsync();
         }
+
 
         //-------------------------------------------------------
         // Technician / Admin My Tickets
@@ -147,9 +219,12 @@ namespace IThelpdesk.Repositories
         {
             return await _context.Tickets
                 .Include(t => t.AssignedToUser)
-                .Where(t =>
-                    t.AssignedToUserId == technicianId &&
-                    !t.IsArchived)
+
+            .Where(t =>
+                !t.IsArchived &&
+                t.Assignments.Any(a =>
+                    a.UserId == technicianId))
+
                 .OrderByDescending(t => t.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -174,12 +249,25 @@ namespace IThelpdesk.Repositories
                     //---------------------------------------------------
 
                     HasJobCard = _context.JobCards
-                        .Any(j => j.TicketId == t.TicketId),
+    .Any(j => j.TicketId == t.TicketId),
 
                     JobCardId = _context.JobCards
-                        .Where(j => j.TicketId == t.TicketId)
-                        .Select(j => (int?)j.JobCardId)
-                        .FirstOrDefault()
+    .Where(j => j.TicketId == t.TicketId)
+    .Select(j => (int?)j.JobCardId)
+    .FirstOrDefault(),
+
+
+                    //---------------------------------------------------
+                    // SLA Report information
+                    //---------------------------------------------------
+
+                    HasSlaTicket = _context.SlaTickets
+    .Any(s => s.TicketId == t.TicketId),
+
+                    SlaTicketId = _context.SlaTickets
+    .Where(s => s.TicketId == t.TicketId)
+    .Select(s => (int?)s.SlaTicketId)
+    .FirstOrDefault()
                 })
                 .ToListAsync();
         }

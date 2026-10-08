@@ -4,6 +4,7 @@ using IThelpdesk.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IThelpdesk.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006143034_AddSlaTickets")]
+    partial class AddSlaTickets
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,38 +24,6 @@ namespace IThelpdesk.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("IThelpdesk.Entities.TicketAssignment", b =>
-                {
-                    b.Property<int>("TicketAssignmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TicketAssignmentId"));
-
-                    b.Property<int>("AssignedByUserId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("AssignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("TicketAssignmentId");
-
-                    b.HasIndex("AssignedByUserId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("TicketId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("TicketAssignments");
-                });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
                 {
@@ -544,33 +515,6 @@ namespace IThelpdesk.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("IThelpdesk.Entities.TicketAssignment", b =>
-                {
-                    b.HasOne("IThelpdesk.Models.User", "AssignedByUser")
-                        .WithMany()
-                        .HasForeignKey("AssignedByUserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
-                        .WithMany("Assignments")
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("IThelpdesk.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.Navigation("AssignedByUser");
-
-                    b.Navigation("Ticket");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
                 {
                     b.HasOne("IThelpdesk.Models.User", "AssignedTechnician")
@@ -706,11 +650,6 @@ namespace IThelpdesk.Migrations
                     b.Navigation("LabourEntries");
 
                     b.Navigation("PartsUsed");
-                });
-
-            modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
-                {
-                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>

@@ -142,6 +142,60 @@ const ticketService = {
         );
     },
 
+    
+    //-------------------------------------------------------
+    // Get All Ticket Assignees (Admin / Technician)
+    //-------------------------------------------------------
+
+    getTicketAssignees: async (ticketId) => {
+        const response = await api.get(
+            `/Ticket/${ticketId}/assignees`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+
+        return response.data;
+    },
+
+    //-------------------------------------------------------
+    // Add Ticket Assignee (Admin Only)
+    //-------------------------------------------------------
+
+    addTicketAssignee: async (ticketId, userId) => {
+        const response = await api.post(
+            `/Ticket/${ticketId}/assignees`,
+            { userId },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+
+        return response.data;
+    },
+
+    //-------------------------------------------------------
+    // Remove Ticket Assignee (Admin Only)
+    //-------------------------------------------------------
+
+    removeTicketAssignee: async (ticketId, userId) => {
+        const response = await api.delete(
+            `/Ticket/${ticketId}/assignees/${userId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            }
+        );
+
+        return response.data;
+    },
+
+
     deleteTicket: async (ticketId) => {
         await api.delete(
             `/Ticket/${ticketId}`,

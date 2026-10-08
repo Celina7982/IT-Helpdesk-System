@@ -3,6 +3,8 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using IThelpdesk.DTOs;
+
 
 namespace IThelpdesk.Controllers
 {
@@ -212,15 +214,29 @@ namespace IThelpdesk.Controllers
             return Ok(technicians);
         }
 
+
+        //--------------------------------------------------
+        // Assignable Users (Active Admins + Technicians)
+        //--------------------------------------------------
+
         // GET: api/User/assignable
-        // Returns active Technicians and Admins who can be assigned tickets.
         [Authorize(Roles = "Admin")]
         [HttpGet("assignable")]
         public async Task<IActionResult> GetAssignableUsers()
         {
             var users = await _userService.GetAssignableUsersAsync();
 
-            return Ok(users);
+            var assignableUsers = users
+                .Select(user => new AssignableUserDto
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Role = user.Role
+                })
+                .ToList();
+
+            return Ok(assignableUsers);
         }
+
     }
 }

@@ -1,5 +1,6 @@
-﻿using IThelpdesk.Models;
-using IThelpdesk.DTOs.Ticket;
+﻿using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Entities;
+using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
@@ -33,6 +34,24 @@ namespace IThelpdesk.Interfaces.Repositories
         Task<TicketDetailsDto?> GetTicketDetailsAsync(int id);
 
         Task<User?> GetUserByIdAsync(int id);
+
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        Task<List<TicketAssignment>> GetTicketAssignmentsAsync(int ticketId);
+
+        Task<TicketAssignment?> GetTicketAssignmentAsync(
+            int ticketId,
+            int userId);
+
+        Task AddTicketAssignmentAsync(TicketAssignment assignment);
+
+        Task RemoveTicketAssignmentAsync(TicketAssignment assignment);
+
+        Task<bool> HasTicketAssignmentAsync(
+            int ticketId,
+            int userId);
 
 
         //-------------------------------------------------------

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IThelpdesk.Entities;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -55,6 +56,13 @@ namespace IThelpdesk.Models
 
         [ForeignKey(nameof(AssignedToUserId))]
         public User? AssignedToUser { get; set; }
+
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        public ICollection<TicketAssignment> Assignments { get; set; }
+            = new List<TicketAssignment>();
 
         // Indicates whether the ticket has been archived
         public bool IsArchived { get; set; } = false;

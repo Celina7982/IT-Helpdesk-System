@@ -216,16 +216,16 @@ const claimTicket = async (ticketId) => {
                                             View
                                         </button>
 
-                                        {!ticket.isClaimed && ticket.status !== "Resolved" && (
-
-                                        <button
-                                            className="btn btn-warning btn-sm me-2"
-                                            onClick={() => claimTicket(ticket.ticketId)}
-                                        >
-                                            Claim
-                                        </button>
-
-                                    )}
+                                     {!ticket.isClaimed &&
+    ticket.status !== "Resolved" &&
+    ticket.status !== "Escalated" && (
+        <button
+            className="btn btn-sm btn-primary"
+            onClick={() => claimTicket(ticket.ticketId)}
+        >
+            Claim
+        </button>
+)}
 
                                         {ticket.isClaimed && ticket.status !== "Resolved" && (
                                             <button

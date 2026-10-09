@@ -2,6 +2,7 @@
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+using IThelpdesk.DTOs.Common;
 
 namespace IThelpdesk.Repositories
 {
@@ -24,29 +25,59 @@ namespace IThelpdesk.Repositories
         }
 
         //--------------------------------------------------
-        // Get Notifications For User
+        // Get Paginated Notifications For User
         //--------------------------------------------------
-
-        public async Task<List<Notification>> GetByUserIdAsync(int userId)
+        public async Task<PagedResultDto<NotificationDto>> GetPagedByUserIdAsync(
+            int userId,
+            int pageNumber,
+            int pageSize)
         {
-            return await _context.Notifications
+            var query = _context.Notifications
+                .AsNoTracking()
                 .Where(n => n.UserId == userId)
-                .OrderByDescending(n => n.DateCreated)
+                .OrderByDescending(n => n.DateCreated);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(n => new NotificationDto
+                {
+                    NotificationId = n.NotificationId,
+                    TicketId = n.TicketId,
+                    Title = n.Title,
+                    Message = n.Message,
+                    IsRead = n.IsRead,
+                    DateCreated = n.DateCreated
+                })
                 .ToListAsync();
+
+            return new PagedResultDto<NotificationDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
+
+
 
         //--------------------------------------------------
         // Get Unread Notifications For User
         //--------------------------------------------------
 
-        public async Task<List<Notification>> GetUnreadByUserIdAsync(int userId)
+        public async Task<int> GetUnreadCountByUserIdAsync(
+     int userId
+ )
         {
             return await _context.Notifications
-                .Where(n => n.UserId == userId && !n.IsRead)
-                .OrderByDescending(n => n.DateCreated)
-                .ToListAsync();
+                .CountAsync(n =>
+                    n.UserId == userId &&
+                    !n.IsRead
+                );
         }
-
         //--------------------------------------------------
         // Get Notification By ID
         //--------------------------------------------------

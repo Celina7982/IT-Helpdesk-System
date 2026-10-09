@@ -8,7 +8,7 @@ import TechnicianLayout from "./layouts/TechnicianLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
-
+import SlaTicketDetails from "./pages/SlaTicketDetails";
 import JobCards from "./pages/JobCards";
 import JobCardDetails from "./pages/JobCardDetails";
 import Users from "./pages/Users";
@@ -63,6 +63,11 @@ function App() {
     />
 
     <Route
+    path="sla/:id"
+    element={<SlaTicketDetails />}
+/>
+
+    <Route
         path="tickets"
         element={<Tickets />}
     />
@@ -95,6 +100,11 @@ function App() {
                     path="jobcards/:id"
                     element={<JobCardDetails />}
                 />
+
+                <Route
+    path="sla/:id"
+    element={<SlaTicketDetails />}
+/>
             </Route>
 
             {/*=========================

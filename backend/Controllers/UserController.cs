@@ -3,6 +3,8 @@ using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using IThelpdesk.DTOs;
+
 
 namespace IThelpdesk.Controllers
 {
@@ -18,19 +20,40 @@ namespace IThelpdesk.Controllers
             _userService = userService;
         }
 
+        //--------------------------------------------------
+        // User Lists
+        //--------------------------------------------------
+
         // GET: api/User
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
         {
-            var users = await _userService.GetAllUsersAsync();
+            // Keep pagination values within safe limits
+            if (pageNumber < 1)
+                pageNumber = 1;
+
+            if (pageSize < 1)
+                pageSize = 10;
+
+            if (pageSize > 100)
+                pageSize = 100;
+
+            var users = await _userService.GetAllUsersAsync(
+                pageNumber,
+                pageSize,
+                search);
+
             return Ok(users);
         }
 
         // GET: api/User/5
         [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(int id)
+        public async Task<ActionResult<UserDetailsDto>> GetUserById(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
 
@@ -39,6 +62,10 @@ namespace IThelpdesk.Controllers
 
             return Ok(user);
         }
+
+        //--------------------------------------------------
+        // Create User
+        //--------------------------------------------------
 
         // POST: api/User
         [Authorize(Roles = "Admin")]
@@ -76,10 +103,17 @@ namespace IThelpdesk.Controllers
                 });
             }
         }
+
+        //--------------------------------------------------
+        // Update User
+        //--------------------------------------------------
+
         // PUT: api/User/{id}
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDto dto)
+        public async Task<IActionResult> UpdateUser(
+            int id,
+            [FromBody] UpdateUserDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -121,14 +155,16 @@ namespace IThelpdesk.Controllers
         [HttpPut("reset-password/{id}")]
         public async Task<IActionResult> ResetPassword(
             int id,
-            [FromBody] ResetPasswordDto dto)  
+            [FromBody] ResetPasswordDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                await _userService.ResetPasswordAsync(id, dto.NewPassword);
+                await _userService.ResetPasswordAsync(
+                    id,
+                    dto.NewPassword);
 
                 return NoContent();
             }
@@ -141,6 +177,9 @@ namespace IThelpdesk.Controllers
             }
         }
 
+        //--------------------------------------------------
+        // Delete User
+        //--------------------------------------------------
 
         // DELETE: api/User/{id}
         [Authorize(Roles = "Admin")]
@@ -162,6 +201,10 @@ namespace IThelpdesk.Controllers
             }
         }
 
+        //--------------------------------------------------
+        // Technicians
+        //--------------------------------------------------
+
         [Authorize(Roles = "Admin")]
         [HttpGet("technicians")]
         public async Task<IActionResult> GetTechnicians()
@@ -170,5 +213,30 @@ namespace IThelpdesk.Controllers
 
             return Ok(technicians);
         }
+
+
+        //--------------------------------------------------
+        // Assignable Users (Active Admins + Technicians)
+        //--------------------------------------------------
+
+        // GET: api/User/assignable
+        [Authorize(Roles = "Admin")]
+        [HttpGet("assignable")]
+        public async Task<IActionResult> GetAssignableUsers()
+        {
+            var users = await _userService.GetAssignableUsersAsync();
+
+            var assignableUsers = users
+                .Select(user => new AssignableUserDto
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Role = user.Role
+                })
+                .ToList();
+
+            return Ok(assignableUsers);
+        }
+
     }
 }

@@ -12,7 +12,7 @@ namespace IThelpdesk.Models
         // User who receives the notification
         //--------------------------------------------------
 
-        public int UserId { get; set; }
+        public int UserId { get; set; } 
 
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;

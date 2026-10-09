@@ -15,20 +15,23 @@ namespace IThelpdesk.Services
         private readonly IJobCardAuditService _auditService;
         private readonly IUserRepository _userRepository;    
         private readonly INotificationService _notificationService;
-
+        private readonly ISlaTicketRepository _slaTicketRepository;
         public JobCardService(
     IJobCardRepository jobCardRepository,
     ITicketRepository ticketRepository,
     IJobCardAuditService auditService,
     IUserRepository userRepository,
-    INotificationService notificationService)
+    INotificationService notificationService,
+    ISlaTicketRepository slaTicketRepository)
         {
             _jobCardRepository = jobCardRepository;
             _ticketRepository = ticketRepository;
             _auditService = auditService;
             _userRepository = userRepository;
             _notificationService = notificationService;
+            _slaTicketRepository = slaTicketRepository;
         }
+
 
         //---------------------------------------------------
         // Get All Job Cards
@@ -101,42 +104,91 @@ namespace IThelpdesk.Services
         //---------------------------------------------------
         // Create From Ticket
         //---------------------------------------------------
+
         public async Task<JobCard> CreateFromTicketAsync(
-    int ticketId,
-    int performedByUserId)
+            int ticketId,
+            int performedByUserId)
         {
+            //--------------------------------------------------
+            // Get Ticket
+            //--------------------------------------------------
+
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found.");
 
-            if (!string.Equals(ticket.Status, "Resolved", StringComparison.OrdinalIgnoreCase))
+
+            //--------------------------------------------------
+            // Ticket must be Resolved
+            //--------------------------------------------------
+
+            if (!string.Equals(
+                    ticket.Status,
+                    "Resolved",
+                    StringComparison.OrdinalIgnoreCase))
             {
-                throw new Exception("A Job Card can only be created after the ticket has been resolved.");
+                throw new Exception(
+                    "A Job Card can only be created after the ticket has been resolved.");
             }
 
-            var existing = await _jobCardRepository.GetByTicketIdAsync(ticketId);
+
+            //--------------------------------------------------
+            // Check if Job Card already exists
+            //--------------------------------------------------
+
+            var existing =
+                await _jobCardRepository.GetByTicketIdAsync(ticketId);
 
             if (existing != null)
             {
                 return existing;
             }
 
-            var latest = await _jobCardRepository.GetLatestJobCardAsync();
+
+            //--------------------------------------------------
+            // Prevent Job Card if SLA Report already exists
+            //--------------------------------------------------
+
+            var existingSla =
+                await _slaTicketRepository.GetByTicketIdAsync(ticketId);
+
+            if (existingSla != null)
+            {
+                throw new Exception(
+                    $"Ticket #{ticketId} already has SLA Report {existingSla.SlaNumber}. " +
+                    "A Job Card cannot also be created for this ticket.");
+            }
+
+
+            //--------------------------------------------------
+            // Generate Job Card Number
+            //--------------------------------------------------
+
+            var latest =
+                await _jobCardRepository.GetLatestJobCardAsync();
 
             int nextNumber = 1;
 
-            if (latest != null && !string.IsNullOrWhiteSpace(latest.JobNumber))
+            if (latest != null &&
+                !string.IsNullOrWhiteSpace(latest.JobNumber))
             {
                 var parts = latest.JobNumber.Split('-');
 
-                if (parts.Length == 3 && int.TryParse(parts[2], out int lastNumber))
+                if (parts.Length == 3 &&
+                    int.TryParse(parts[2], out int lastNumber))
                 {
                     nextNumber = lastNumber + 1;
                 }
             }
 
-            string jobNumber = $"JC-{DateTime.Now.Year}-{nextNumber:D6}";
+            string jobNumber =
+                $"JC-{DateTime.Now.Year}-{nextNumber:D6}";
+
+
+            //--------------------------------------------------
+            // Create Job Card
+            //--------------------------------------------------
 
             var jobCard = new JobCard
             {
@@ -154,8 +206,18 @@ namespace IThelpdesk.Services
                 SignedDate = null
             };
 
+
+            //--------------------------------------------------
+            // Save Job Card
+            //--------------------------------------------------
+
             await _jobCardRepository.AddAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
+
+
+            //--------------------------------------------------
+            // Audit Log
+            //--------------------------------------------------
 
             try
             {
@@ -175,9 +237,9 @@ namespace IThelpdesk.Services
                 Console.WriteLine(auditException);
             }
 
+
             //--------------------------------------------------
-            // Notify the assigned technician that the Job Card
-            // was created.
+            // Notify Assigned Technician
             //--------------------------------------------------
 
             if (jobCard.AssignedTechnicianId.HasValue)
@@ -187,6 +249,11 @@ namespace IThelpdesk.Services
                     "New Job Card Assigned",
                     $"Job Card {jobCard.JobNumber} has been created and assigned to you.");
             }
+
+
+            //--------------------------------------------------
+            // Return Job Card
+            //--------------------------------------------------
 
             return jobCard;
         }
@@ -311,21 +378,9 @@ namespace IThelpdesk.Services
                 $"Job Card {jobCard.JobNumber} completed.",
                 oldStatus,
                 "Completed");
-
-            //--------------------------------------------------
-            // Notify Admins that the Job Card was completed
-            //--------------------------------------------------
-
-            var admins = await _userRepository.GetAdminsAsync();
-
-            foreach (var admin in admins)
-            {
-                await _notificationService.CreateAsync(
-                    admin.UserId,
-                    "Job Card Completed",
-                    $"Job Card {jobCard.JobNumber} has been completed.");
-            }
         }
+           
+        
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
@@ -542,21 +597,8 @@ namespace IThelpdesk.Services
       performedByUserId,
       JobCardAuditAction.PartAdded,
       $"Added part '{part.PartName}' x{part.Quantity}");
-
-            //--------------------------------------------------
-            // Notify Admins that a part was added
-            //--------------------------------------------------
-
-            var admins = await _userRepository.GetAdminsAsync();
-
-            foreach (var admin in admins)
-            {
-                await _notificationService.CreateAsync(
-                    admin.UserId,
-                    "Part Added",
-                    $"Part '{part.PartName}' x{part.Quantity} was added to Job Card {jobCard.JobNumber}.");
-            }
         }
+
 
         public async Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId)
         {

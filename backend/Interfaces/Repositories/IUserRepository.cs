@@ -1,4 +1,5 @@
-﻿using IThelpdesk.DTOs.User;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.DTOs.User;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,13 +11,19 @@ namespace IThelpdesk.Interfaces.Repositories
         // User Lists
         //--------------------------------------------------
 
-        Task<IEnumerable<UserListDto>> GetAllUsersAsync();
+        Task<PagedResultDto<UserListDto>> GetAllUsersAsync(
+    int pageNumber,
+    int pageSize,
+    string? search
+);
         Task<UserDetailsDto?> GetUserByIdAsync(int id);
 
         Task<User?> GetUserEntityByIdAsync(int id);
         Task<User?> GetUserByEmailAsync(string email);
 
         Task<IEnumerable<User>> GetTechniciansAsync();
+
+        Task<IEnumerable<User>> GetAssignableUsersAsync();
         Task<IEnumerable<User>> GetAdminsAsync();
 
         //--------------------------------------------------

@@ -22,6 +22,38 @@ namespace IThelpdesk.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("IThelpdesk.Entities.TicketAssignment", b =>
+                {
+                    b.Property<int>("TicketAssignmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TicketAssignmentId"));
+
+                    b.Property<int>("AssignedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TicketAssignmentId");
+
+                    b.HasIndex("AssignedByUserId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TicketId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("TicketAssignments");
+                });
+
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
                 {
                     b.Property<int>("JobCardId")
@@ -87,11 +119,13 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("JobCardId");
 
-                    b.HasIndex("AssignedTechnicianId");
+                    b.HasIndex("AssignedTechnicianId")
+                        .HasDatabaseName("IX_JobCards_AssignedTechnicianId");
 
-                    b.HasIndex("TicketId");
+                    b.HasIndex("TicketId")
+                        .HasDatabaseName("IX_JobCards_TicketId");
 
-                    b.ToTable("JobCards", (string)null);
+                    b.ToTable("JobCards");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardAudit", b =>
@@ -137,7 +171,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("JobCardId", "DateCreated");
 
-                    b.ToTable("JobCardAudits", (string)null);
+                    b.ToTable("JobCardAudits");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
@@ -167,11 +201,13 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("LabourId");
 
-                    b.HasIndex("JobCardId");
+                    b.HasIndex("JobCardId")
+                        .HasDatabaseName("IX_JobCardLabours_JobCardId");
 
-                    b.HasIndex("TechnicianId");
+                    b.HasIndex("TechnicianId")
+                        .HasDatabaseName("IX_JobCardLabours_TechnicianId");
 
-                    b.ToTable("JobCardLabours", (string)null);
+                    b.ToTable("JobCardLabours");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
@@ -201,9 +237,10 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("PartId");
 
-                    b.HasIndex("JobCardId");
+                    b.HasIndex("JobCardId")
+                        .HasDatabaseName("IX_JobCardParts_JobCardId");
 
-                    b.ToTable("JobCardParts", (string)null);
+                    b.ToTable("JobCardParts");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
@@ -238,11 +275,107 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.HasIndex("TicketId");
+                    b.HasIndex("TicketId")
+                        .HasDatabaseName("IX_Notifications_TicketId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_Notifications_UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.SlaTicket", b =>
+                {
+                    b.Property<int>("SlaTicketId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SlaTicketId"));
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CustomerEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("DateCompleted")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("EmailedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EmailedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Issue")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ResolutionNotes")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("SlaNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WorkPerformed")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.HasKey("SlaTicketId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("EmailedByUserId");
+
+                    b.HasIndex("SlaNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SlaTickets_SlaNumber");
+
+                    b.HasIndex("TechnicianId")
+                        .HasDatabaseName("IX_SlaTickets_TechnicianId");
+
+                    b.HasIndex("TicketId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SlaTickets_TicketId");
+
+                    b.ToTable("SlaTickets");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
@@ -295,6 +428,12 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -310,11 +449,22 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("TicketId");
 
-                    b.HasIndex("AssignedToUserId");
+                    b.HasIndex("IsArchived", "ArchivedDate")
+                        .HasDatabaseName("IX_Tickets_IsArchived_ArchivedDate");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("IsArchived", "CreatedDate")
+                        .HasDatabaseName("IX_Tickets_IsArchived_CreatedDate");
 
-                    b.ToTable("Tickets", (string)null);
+                    b.HasIndex("AssignedToUserId", "IsArchived", "CreatedDate")
+                        .HasDatabaseName("IX_Tickets_AssignedToUserId_IsArchived_CreatedDate");
+
+                    b.HasIndex("UserId", "IsArchived", "CreatedDate")
+                        .HasDatabaseName("IX_Tickets_UserId_IsArchived_CreatedDate");
+
+                    b.HasIndex("IsEscalated", "Status", "IsArchived", "CreatedDate")
+                        .HasDatabaseName("IX_Tickets_Escalation_Status_IsArchived_CreatedDate");
+
+                    b.ToTable("Tickets");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.TicketComment", b =>
@@ -329,8 +479,14 @@ namespace IThelpdesk.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("AuthorUserId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsInternal")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Message")
                         .IsRequired()
@@ -341,7 +497,7 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("CommentId");
 
-                    b.ToTable("TicketComments", (string)null);
+                    b.ToTable("TicketComments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>
@@ -387,7 +543,38 @@ namespace IThelpdesk.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users", (string)null);
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Users_Email");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Entities.TicketAssignment", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.User", "AssignedByUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
+                        .WithMany("Assignments")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("AssignedByUser");
+
+                    b.Navigation("Ticket");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
@@ -458,19 +645,46 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
                 {
-                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
-                        .WithMany()
-                        .HasForeignKey("TicketId");
-
                     b.HasOne("IThelpdesk.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Ticket");
-
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.SlaTicket", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.User", "EmailedByUser")
+                        .WithMany()
+                        .HasForeignKey("EmailedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IThelpdesk.Models.User", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("EmailedByUser");
+
+                    b.Navigation("Technician");
+
+                    b.Navigation("Ticket");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
@@ -498,6 +712,11 @@ namespace IThelpdesk.Migrations
                     b.Navigation("LabourEntries");
 
                     b.Navigation("PartsUsed");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.Ticket", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.User", b =>

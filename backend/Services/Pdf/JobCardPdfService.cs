@@ -208,6 +208,7 @@ namespace IThelpdesk.Services.Pdf
             });
         }
 
+
         private void ComposeLogo(IContainer container)
         {
             string logoPath = @"C:\Users\Celina\Documents\Celina code\IT-Helpdesk-System\backend\Assets\Lbc-Logo.png";
@@ -217,7 +218,8 @@ namespace IThelpdesk.Services.Pdf
                 container
                     .Width(135)
                     .Height(55)
-                    .Image(logoPath, ImageScaling.FitArea);
+                    .Image(logoPath)
+                    .FitArea();
             }
             else
             {
@@ -236,8 +238,6 @@ namespace IThelpdesk.Services.Pdf
                     .FontColor(LabelBlue);
             }
         }
-        
-
         private void ComposeStatusBadge(IContainer container)
         {
             string status = _jobCard.Status?.ToUpperInvariant() ?? string.Empty;

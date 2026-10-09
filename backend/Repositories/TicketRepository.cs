@@ -340,6 +340,33 @@ namespace IThelpdesk.Repositories
             await Task.CompletedTask;
         }
 
+
+        //-------------------------------------------------------
+        // Force Ticket Concurrency Check
+        //-------------------------------------------------------
+
+        public Task MarkTicketForConcurrencyCheckAsync(Ticket ticket)
+        {
+            // The ticket must already be tracked by this DbContext.
+            var entry = _context.Entry(ticket);
+
+            if (entry.State == EntityState.Detached)
+            {
+                throw new InvalidOperationException(
+                    "Ticket must be tracked for concurrency checking.");
+            }
+
+            // Force a SQL UPDATE even when the ticket's
+            // existing values have not changed.
+            //
+            // EF Core will include the original RowVersion
+            // in the UPDATE's WHERE condition.
+
+            entry.Property(t => t.Status).IsModified = true;
+
+            return Task.CompletedTask;
+        }
+
         public async Task DeleteAsync(Ticket ticket)
         {
             _context.Tickets.Remove(ticket);

@@ -199,14 +199,10 @@ namespace IThelpdesk.Services
                     assignment);
             }
 
-            //-------------------------------------------------------
-            // Update primary assignee
-            //-------------------------------------------------------
 
-            
-            // Doesnt remove existing TicketAssignments here.
-            // B/c other Admins/Technicians may still be working
-            // on this ticket.
+            // -------------------------------------------------------
+            // Update Primary Technician And Ticket Status
+            // -------------------------------------------------------
 
             ticket.AssignedToUserId = assignedToUserId;
             ticket.Status = "In Progress";
@@ -214,13 +210,18 @@ namespace IThelpdesk.Services
 
             // Preserve EscalationReason for history.
 
-            await _ticketRepository.UpdateAsync(ticket);
+            // -------------------------------------------------------
+            // Optimistic Concurrency Protection
+            // -------------------------------------------------------
 
-            // Save the primary assignment and new assignment
-            // record together.
+            await _ticketRepository.MarkTicketForConcurrencyCheckAsync(ticket);
 
+            // -------------------------------------------------------
+            // Save Primary Assignment And TicketAssignment
+            // -------------------------------------------------------
+
+       
             await _ticketRepository.SaveChangesAsync();
-
 
             //-------------------------------------------------------
             // Notify Customer
@@ -442,10 +443,22 @@ namespace IThelpdesk.Services
 
             // ----------------------------------------------------
             // Save assignment and ticket changes
+            // with optimistic concurrency protection
             // ----------------------------------------------------
 
-            await _ticketRepository.UpdateAsync(ticket);
+            // Force EF Core to perform a concurrency-checked
+            // UPDATE on the parent Ticket record.
+            //
+            // This is important even when the ticket is already
+            // "In Progress" and the primary Technician is unchanged.
+
+            await _ticketRepository.MarkTicketForConcurrencyCheckAsync(ticket);
+
+            // Save the Ticket and TicketAssignment changes together.
+            // EF Core will check the original RowVersion during UPDATE.
+
             await _ticketRepository.SaveChangesAsync();
+
         }
 
 
@@ -567,9 +580,13 @@ namespace IThelpdesk.Services
 
             // ----------------------------------------------------
             // Save Ticket And Assignment Changes
+            // With Optimistic Concurrency Protection
             // ----------------------------------------------------
 
-            await _ticketRepository.UpdateAsync(ticket);
+
+            await _ticketRepository.MarkTicketForConcurrencyCheckAsync(ticket);
+
+            
 
             await _ticketRepository.SaveChangesAsync();
 
@@ -668,17 +685,24 @@ namespace IThelpdesk.Services
             await _ticketRepository.AddTicketAssignmentAsync(assignment);
 
             // -------------------------------------------------------
-            // Keep the existing assignment field synchronized
+            // Update Primary Technician And Ticket Status
             // -------------------------------------------------------
 
             ticket.AssignedToUserId = technicianId;
             ticket.Status = "In Progress";
 
-            await _ticketRepository.UpdateAsync(ticket);
+            // -------------------------------------------------------
+            // Optimistic Concurrency Protection
+            // -------------------------------------------------------
 
-            // Save both changes together through the
-            // existing repository DbContext.
 
+            await _ticketRepository.MarkTicketForConcurrencyCheckAsync(ticket);
+
+            // -------------------------------------------------------
+            // Save Ticket And Assignment Together
+            // -------------------------------------------------------
+
+          
             await _ticketRepository.SaveChangesAsync();
 
             // -------------------------------------------------------
@@ -766,13 +790,17 @@ namespace IThelpdesk.Services
             // Clear the primary assignee.
             ticket.AssignedToUserId = null;
 
+
             //-------------------------------------------------------
-            // Save All Changes Together
+            // Save Escalation With Concurrency Protection
             //-------------------------------------------------------
 
-            await _ticketRepository.UpdateAsync(ticket);
+            
+
+            await _ticketRepository.MarkTicketForConcurrencyCheckAsync(ticket);
+
+
             await _ticketRepository.SaveChangesAsync();
-
 
             //-------------------------------------------------------
             // Notify Customer

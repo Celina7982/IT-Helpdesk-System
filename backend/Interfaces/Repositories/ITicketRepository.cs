@@ -62,6 +62,7 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task UpdateAsync(Ticket ticket);
 
+        Task MarkTicketForConcurrencyCheckAsync(Ticket ticket);
         Task DeleteAsync(Ticket ticket);
 
 

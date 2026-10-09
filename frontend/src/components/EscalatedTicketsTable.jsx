@@ -134,14 +134,14 @@ if (!userId) {
         Select Admin or Technician
     </option>
 
-    {assignableUsers.map(user => (
-        <option
-            key={user.userId}
-            value={user.userId}
-        >
-            {user.firstName} {user.lastName} ({user.role})
-        </option>
-    ))}
+   {assignableUsers.map(user => (
+    <option
+        key={user.userId}
+        value={user.userId}
+    >
+        {user.fullName} ({user.role})
+    </option>
+))} 
 </select>
 
 

@@ -69,6 +69,14 @@ namespace IThelpdesk.Models
 
         // Date the ticket was archived
         public DateTime? ArchivedDate { get; set; }
+        // ----------------------------------------------------
+        // SQL Server Optimistic Concurrency Protection
+        // ----------------------------------------------------
+
+      
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!;  //configures Row version as a concurrency token for optimistic concurrency control in SQL Server
 
 
     }

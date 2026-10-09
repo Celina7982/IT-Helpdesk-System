@@ -6,6 +6,8 @@ import TechnicianStats from "../components/TechnicianStats";
 import AvailableTicketsTable from "../components/tickets/AvailableTicketsTable";
 import MyTicketsTable from "../components/tickets/MyTicketsTable";
 import TicketDetailsModal from "../components/tickets/TicketDetailsModal";
+import CreateTicketModal from "../components/tickets/CreateTicketModal";
+
 
 function TechnicianDashboard() {
 
@@ -16,6 +18,7 @@ function TechnicianDashboard() {
 
     const [selectedTicketId, setSelectedTicketId] = useState(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showCreateTicketModal, setShowCreateTicketModal] = useState(false);
 
     const loadDashboard = async () => {
 
@@ -86,11 +89,22 @@ function TechnicianDashboard() {
 
         <div className="container mt-4">
 
-            <h2 className="mb-4">
+            {/* Dashboard Header */}
+<div className="d-flex justify-content-between align-items-center mb-4">
 
-                Technician Dashboard
+    <h2 className="mb-0">
+        Technician Dashboard
+    </h2>
 
-            </h2>
+    <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => setShowCreateTicketModal(true)}
+    >
+        + Create Ticket
+    </button>
+
+</div>
 
             <TechnicianStats
                 availableTickets={availableTickets}
@@ -132,6 +146,20 @@ function TechnicianDashboard() {
 
                 }}
             />
+
+            {/* Create Ticket Modal */}
+<CreateTicketModal
+    show={showCreateTicketModal}
+
+    onClose={() => {
+        setShowCreateTicketModal(false);
+    }}
+
+    onTicketCreated={() => {
+        setShowCreateTicketModal(false);
+        loadDashboard();
+    }}
+/>
 
         </div>
 

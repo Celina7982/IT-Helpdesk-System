@@ -211,7 +211,13 @@ namespace IThelpdesk.Services.Pdf
 
         private void ComposeLogo(IContainer container)
         {
-            string logoPath = @"C:\Users\Celina\Documents\Celina code\IT-Helpdesk-System\backend\Assets\Lbc-Logo.png";
+
+            string logoPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Assets",
+                "Lbc-Logo.png"
+            );
+
 
             if (File.Exists(logoPath))
             {
@@ -318,7 +324,17 @@ namespace IThelpdesk.Services.Pdf
 
                     AddInfoCell(table, "Job Number", _jobCard.JobNumber);
                     AddInfoCell(table, "Status", _jobCard.Status, greenValue: _jobCard.Status == "Completed");
-                    AddInfoCell(table, "Ticket Number", $"#{_jobCard.TicketId}");
+
+                    AddInfoCell(
+                        table,
+                        "Ticket Number",
+                        _jobCard.TicketId.HasValue
+                            ? $"#{_jobCard.TicketId.Value}"
+                            : "Not Linked"
+                    );
+
+
+
                     AddInfoCell(table, "Date Created", FormatDateTime(_jobCard.DateCreated));
                     AddInfoCell(table, "Customer", !string.IsNullOrWhiteSpace(_jobCard.CustomerName) ? _jobCard.CustomerName : _jobCard.Ticket?.CustomerName ?? string.Empty);
                     AddInfoCell(table, "Date Completed", FormatDateTime(_jobCard.DateCompleted));

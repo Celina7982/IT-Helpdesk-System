@@ -65,6 +65,9 @@ namespace IThelpdesk.Migrations
                     b.Property<int?>("AssignedTechnicianId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CapturedByUserId")
+                        .HasColumnType("int");
+
                     b.Property<string>("CompletionNotes")
                         .IsRequired()
                         .HasMaxLength(2000)
@@ -79,6 +82,9 @@ namespace IThelpdesk.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("DateCaptured")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("DateCompleted")
                         .HasColumnType("datetime2");
@@ -96,10 +102,20 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<int>("JobCardType")
+                        .HasColumnType("int");
+
                     b.Property<string>("JobNumber")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("PaperJobCardDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaperJobCardNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("SignedDate")
                         .HasColumnType("datetime2");
@@ -109,7 +125,7 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<int>("TicketId")
+                    b.Property<int?>("TicketId")
                         .HasColumnType("int");
 
                     b.Property<string>("WorkPerformed")
@@ -121,6 +137,8 @@ namespace IThelpdesk.Migrations
 
                     b.HasIndex("AssignedTechnicianId")
                         .HasDatabaseName("IX_JobCards_AssignedTechnicianId");
+
+                    b.HasIndex("CapturedByUserId");
 
                     b.HasIndex("TicketId")
                         .HasDatabaseName("IX_JobCards_TicketId");
@@ -583,13 +601,19 @@ namespace IThelpdesk.Migrations
                         .WithMany()
                         .HasForeignKey("AssignedTechnicianId");
 
+                    b.HasOne("IThelpdesk.Models.User", "CapturedByUser")
+                        .WithMany()
+                        .HasForeignKey("CapturedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IThelpdesk.Models.Ticket", "Ticket")
                         .WithMany()
                         .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("AssignedTechnician");
+
+                    b.Navigation("CapturedByUser");
 
                     b.Navigation("Ticket");
                 });

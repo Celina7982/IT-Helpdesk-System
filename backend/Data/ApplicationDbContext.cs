@@ -27,6 +27,8 @@ namespace IThelpdesk.Data
         //--------------------------------------------------
 
         public DbSet<JobCard> JobCards { get; set; }
+
+        public DbSet<JobCardTechnician> JobCardTechnicians { get; set; }
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
 
         public DbSet<JobCardPart> JobCardParts { get; set; }
@@ -114,14 +116,33 @@ namespace IThelpdesk.Data
             modelBuilder.Entity<TicketAssignment>()
                 .HasIndex(a => a.UserId);
 
+
+
             //--------------------------------------------------
             // Job Card -> Ticket
+            // Optional for Paper Job Cards
             //--------------------------------------------------
 
             modelBuilder.Entity<JobCard>()
                 .HasOne(j => j.Ticket)
                 .WithMany()
-                .HasForeignKey(j => j.TicketId);
+                .HasForeignKey(j => j.TicketId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Captured By User
+            //--------------------------------------------------
+
+            modelBuilder.Entity<JobCard>()
+                .HasOne(j => j.CapturedByUser)
+                .WithMany()
+                .HasForeignKey(j => j.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
 
 
             //--------------------------------------------------
@@ -358,6 +379,47 @@ namespace IThelpdesk.Data
                 .HasIndex(u => u.Email)
                 .IsUnique()
                 .HasDatabaseName("IX_Users_Email");
+
+            //--------------------------------------------------
+            // Job Card Technician Assignments
+            //--------------------------------------------------
+
+            modelBuilder.Entity<JobCardTechnician>(entity =>
+            {
+                // Primary key
+                entity.HasKey(jt => jt.JobCardTechnicianId);
+
+                // Job Card -> Multiple Technicians
+                entity.HasOne(jt => jt.JobCard)
+                    .WithMany(j => j.JobCardTechnicians)
+                    .HasForeignKey(jt => jt.JobCardId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Assigned Technician -> User
+                entity.HasOne(jt => jt.Technician)
+                    .WithMany()
+                    .HasForeignKey(jt => jt.TechnicianId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Assigned By -> User
+                entity.HasOne(jt => jt.AssignedByUser)
+                    .WithMany()
+                    .HasForeignKey(jt => jt.AssignedByUserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Prevent duplicate technician assignments
+                entity.HasIndex(jt => new
+                {
+                    jt.JobCardId,
+                    jt.TechnicianId
+                })
+                .IsUnique();
+
+                // Only one lead technician per job card
+                entity.HasIndex(jt => jt.JobCardId)
+                    .IsUnique()
+                    .HasFilter("[IsLeadTechnician] = 1");
+            });
 
         }
 

@@ -32,6 +32,17 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<JobCard> CreateFromTicketAsync(int ticketId, int performedByUserId);
 
+
+        //--------------------------------------------------
+        // Create Paper Job Card
+        // Ticket is optional
+        //--------------------------------------------------
+
+        Task<JobCard> CreatePaperJobCardAsync(
+            CreatePaperJobCardDto dto,
+            int performedByUserId);
+
+
         Task UpdateAsync(JobCard jobCard);
 
         Task UpdateJobCardAsync(

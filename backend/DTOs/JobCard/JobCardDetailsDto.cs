@@ -1,4 +1,8 @@
-﻿namespace IThelpdesk.DTOs.JobCard
+﻿
+using IThelpdesk.Enums;
+
+
+namespace IThelpdesk.DTOs.JobCard
 {
     public class JobCardDetailsDto
     {
@@ -6,7 +10,31 @@
 
         public string JobNumber { get; set; } = string.Empty;
 
-        public int TicketId { get; set; }
+
+        public int? TicketId { get; set; } // Ticket ID == optional for Paper Job Cards
+
+
+        //--------------------------------------------------
+        // Job Card Type
+        //--------------------------------------------------
+
+        public JobCardType JobCardType { get; set; }
+
+        //--------------------------------------------------
+        // Paper Job Card Information
+        //--------------------------------------------------
+
+        public string? PaperJobCardNumber { get; set; }
+
+        public DateTime? PaperJobCardDate { get; set; }
+
+        public int? CapturedByUserId { get; set; }
+
+        public string? CapturedByUserName { get; set; }
+
+        public DateTime? DateCaptured { get; set; }
+
+
 
         public string Status { get; set; } = string.Empty;
 

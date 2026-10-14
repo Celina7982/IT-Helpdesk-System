@@ -50,6 +50,21 @@ const createFromTicket = async (ticketId) => {
   return response.data;
 };
 
+
+
+ //----------------------------------------------------
+ // Create Paper Job Card
+ //----------------------------------------------------
+ const createPaperJobCard = async (paperJobCardData) => {
+   const response = await api.post(
+     "/JobCard/create-paper",
+     paperJobCardData
+   );
+
+   return response.data;
+ };
+
+
 //----------------------------------------------------
 // Update Job Card
 //----------------------------------------------------
@@ -145,6 +160,7 @@ const jobCardService = {
   getDetails,
   getByTicketId,
   createFromTicket,
+  createPaperJobCard,
   update,
   completeJobCard,
   getLabourEntries,    // Exported

@@ -190,11 +190,21 @@ namespace IThelpdesk.Services
             // Create Job Card
             //--------------------------------------------------
 
+
             var jobCard = new JobCard
             {
+                //--------------------------------------------------
+                // Digital Job Card
+                //--------------------------------------------------
+
+                JobCardType = JobCardType.Digital,
+
                 TicketId = ticket.TicketId,
+
                 AssignedTechnicianId = ticket.AssignedToUserId,
+
                 JobNumber = jobNumber,
+
                 Status = "Open",
                 DateCreated = DateTime.UtcNow,
                 FaultReported = ticket.Description,
@@ -257,6 +267,181 @@ namespace IThelpdesk.Services
 
             return jobCard;
         }
+
+
+        //---------------------------------------------------
+        // Create Paper Job Card
+        //---------------------------------------------------
+
+        public async Task<JobCard> CreatePaperJobCardAsync(
+            CreatePaperJobCardDto dto,
+            int performedByUserId)
+        {
+            //--------------------------------------------------
+            // Validate Paper Job Card Information
+            //--------------------------------------------------
+
+            if (dto == null)
+                throw new ArgumentException("Job card information is required.");
+
+            if (string.IsNullOrWhiteSpace(dto.PaperJobCardNumber))
+                throw new ArgumentException("Paper job card number is required.");
+
+            if (!dto.PaperJobCardDate.HasValue)
+                throw new ArgumentException("Paper job card date is required.");
+
+            if (string.IsNullOrWhiteSpace(dto.CustomerName))
+                throw new ArgumentException("Customer name is required.");
+
+            if (string.IsNullOrWhiteSpace(dto.FaultReported))
+                throw new ArgumentException("Fault reported is required.");
+
+            //--------------------------------------------------
+            // Validate Optional Ticket
+            //--------------------------------------------------
+
+            if (dto.TicketId.HasValue)
+            {
+                var ticket = await _ticketRepository
+                    .GetByIdAsync(dto.TicketId.Value);
+
+                if (ticket == null)
+                    throw new ArgumentException("Ticket not found.");
+
+                var existingJobCard = await _jobCardRepository
+                    .GetByTicketIdAsync(dto.TicketId.Value);
+
+                if (existingJobCard != null)
+                    throw new ArgumentException(
+                        "This ticket already has a job card.");
+
+                var existingSla = await _slaTicketRepository
+                    .GetByTicketIdAsync(dto.TicketId.Value);
+
+                if (existingSla != null)
+                    throw new ArgumentException(
+                        "This ticket already has an SLA report.");
+            }
+
+            //--------------------------------------------------
+            // Validate Assigned Technician
+            //--------------------------------------------------
+
+            if (dto.AssignedTechnicianId.HasValue)
+            {
+                var technician = await _userRepository
+                    .GetUserEntityByIdAsync(
+                        dto.AssignedTechnicianId.Value);
+
+                if (technician == null)
+                    throw new ArgumentException(
+                        "Assigned technician was not found.");
+            }
+
+            //--------------------------------------------------
+            // Generate Internal Job Number
+            //--------------------------------------------------
+
+            var latest = await _jobCardRepository
+                .GetLatestJobCardAsync();
+
+            int nextNumber = 1;
+
+            if (latest != null &&
+                !string.IsNullOrWhiteSpace(latest.JobNumber))
+            {
+                var parts = latest.JobNumber.Split('-');
+
+                if (parts.Length == 3 &&
+                    int.TryParse(parts[2], out int lastNumber))
+                {
+                    nextNumber = lastNumber + 1;
+                }
+            }
+
+            string jobNumber =
+                $"JC-{DateTime.UtcNow.Year}-{nextNumber:D6}";
+
+            //--------------------------------------------------
+            // Create Paper Job Card
+            //--------------------------------------------------
+
+            var jobCard = new JobCard
+            {
+                JobCardType = JobCardType.Paper,
+
+                JobNumber = jobNumber,
+
+                PaperJobCardNumber =
+                    dto.PaperJobCardNumber.Trim(),
+
+                PaperJobCardDate =
+                    dto.PaperJobCardDate.Value,
+
+                TicketId = dto.TicketId,
+
+                AssignedTechnicianId =
+                    dto.AssignedTechnicianId,
+
+                CapturedByUserId = performedByUserId,
+
+                DateCaptured = DateTime.UtcNow,
+
+                DateCreated = DateTime.UtcNow,
+
+                Status = "Open",
+
+                CustomerName = dto.CustomerName.Trim(),
+
+                FaultReported = dto.FaultReported.Trim(),
+
+                FaultFound = dto.FaultFound ?? "",
+
+                WorkPerformed = dto.WorkPerformed ?? "",
+
+                CompletionNotes = dto.CompletionNotes ?? "",
+
+                CustomerSignature = "",
+
+                SignedDate = null
+            };
+
+            //--------------------------------------------------
+            // Save Paper Job Card
+            //--------------------------------------------------
+
+            await _jobCardRepository.AddAsync(jobCard);
+            await _jobCardRepository.SaveChangesAsync();
+
+            //--------------------------------------------------
+            // Record Existing Job Card Audit History
+            //--------------------------------------------------
+
+            await _auditService.LogAsync(
+                jobCard.JobCardId,
+                performedByUserId,
+                JobCardAuditAction.JobCardCreated,
+                $"Paper Job Card {jobCard.PaperJobCardNumber} " +
+                $"registered as {jobCard.JobNumber}."
+            );
+
+            //--------------------------------------------------
+            // Notify Assigned Technician
+            //--------------------------------------------------
+
+            if (jobCard.AssignedTechnicianId.HasValue)
+            {
+                await _notificationService.CreateAsync(
+                    jobCard.AssignedTechnicianId.Value,
+                    "Paper Job Card Assigned",
+                    $"Paper Job Card {jobCard.JobNumber} " +
+                    "has been assigned to you."
+                );
+            }
+
+            return jobCard;
+        }
+
 
         //---------------------------------------------------
         // Update Job Card

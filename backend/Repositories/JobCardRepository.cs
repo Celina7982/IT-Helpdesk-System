@@ -6,6 +6,8 @@ using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
+
+
 namespace IThelpdesk.Repositories
 {
     public class JobCardRepository : IJobCardRepository
@@ -87,11 +89,22 @@ namespace IThelpdesk.Repositories
 
                 query = query.Where(j =>
 
-                    j.JobNumber.Contains(search)
 
-                    ||
+                j.JobNumber.Contains(search)
 
-                    (j.Ticket != null &&
+                ||
+
+                (j.PaperJobCardNumber != null &&
+                 j.PaperJobCardNumber.Contains(search))
+
+                ||
+
+                j.CustomerName.Contains(search)
+
+                ||
+
+                (j.Ticket != null &&
+
 
                     (
                         j.Ticket.CustomerName.Contains(search)
@@ -159,11 +172,22 @@ namespace IThelpdesk.Repositories
                 .Take(pageSize)
                 .Select(j => new JobCardListDto
                 {
+
                     JobCardId = j.JobCardId,
 
                     JobNumber = j.JobNumber,
 
+                    // Digital or Paper
+                    JobCardType = j.JobCardType,
+
+                    // Optional ticket
                     TicketId = j.TicketId,
+
+                    // Original physical job card information
+                    PaperJobCardNumber = j.PaperJobCardNumber,
+
+                    PaperJobCardDate = j.PaperJobCardDate,
+
 
                     CustomerName =
                         j.Ticket != null
@@ -240,17 +264,55 @@ namespace IThelpdesk.Repositories
 
                 .Where(j => j.JobCardId == id)
 
-                .Select(j => new JobCardDetailsDto
-                {
-                    JobCardId = j.JobCardId,
 
-                    JobNumber = j.JobNumber,
+.Select(j => new JobCardDetailsDto
+{
+    //--------------------------------------------------
+    // Identification
+    //--------------------------------------------------
 
-                    TicketId = j.TicketId,
+    JobCardId = j.JobCardId,
 
-                    Status = j.Status,
+    JobNumber = j.JobNumber,
 
-                    DateCreated = j.DateCreated,
+    //--------------------------------------------------
+    // Job Card Type
+    //--------------------------------------------------
+
+    JobCardType = j.JobCardType,
+
+    //--------------------------------------------------
+    // Optional Ticket
+    //--------------------------------------------------
+
+    TicketId = j.TicketId,
+
+    //--------------------------------------------------
+    // Paper Job Card Information
+    //--------------------------------------------------
+
+    PaperJobCardNumber = j.PaperJobCardNumber,
+
+    PaperJobCardDate = j.PaperJobCardDate,
+
+    CapturedByUserId = j.CapturedByUserId,
+
+    CapturedByUserName =
+        j.CapturedByUser != null
+            ? j.CapturedByUser.FirstName + " " +
+              j.CapturedByUser.LastName
+            : null,
+
+    DateCaptured = j.DateCaptured,
+
+    //--------------------------------------------------
+    // Status
+    //--------------------------------------------------
+
+    Status = j.Status,
+
+
+    DateCreated = j.DateCreated,
 
                     DateCompleted = j.DateCompleted,
 

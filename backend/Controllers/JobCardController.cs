@@ -216,7 +216,99 @@ await _auditService.LogAsync(
                     message = ex.Message
                 });
             }
-        }   
+        }
+
+
+
+        //---------------------------------------------------------
+        // CREATE PAPER JOB CARD
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPost("create-paper")]
+        public async Task<IActionResult> CreatePaperJobCard(
+            [FromBody] CreatePaperJobCardDto request)
+        {
+            //--------------------------------------------------
+            // Validate Request
+            //--------------------------------------------------
+
+            if (request == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Paper job card information is required."
+                });
+            }
+
+            //--------------------------------------------------
+            // Get Logged-In User
+            //--------------------------------------------------
+
+            var userIdClaim = User.FindFirst(
+                ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Invalid user authentication."
+                });
+            }
+
+            //--------------------------------------------------
+            // Create Paper Job Card
+            //--------------------------------------------------
+
+            try
+            {
+                var jobCard =
+                    await _jobCardService.CreatePaperJobCardAsync(
+                        request,
+                        userId
+                    );
+
+                //--------------------------------------------------
+                // Return Response
+                //--------------------------------------------------
+
+                return Ok(new
+                {
+                    jobCardId = jobCard.JobCardId,
+
+                    jobNumber = jobCard.JobNumber,
+
+                    jobCardType = jobCard.JobCardType,
+
+                    paperJobCardNumber =
+                        jobCard.PaperJobCardNumber,
+
+                    paperJobCardDate =
+                        jobCard.PaperJobCardDate,
+
+                    ticketId = jobCard.TicketId,
+
+                    assignedTechnicianId =
+                        jobCard.AssignedTechnicianId,
+
+                    capturedByUserId =
+                        jobCard.CapturedByUserId,
+
+                    dateCaptured =
+                        jobCard.DateCaptured,
+
+                    status = jobCard.Status
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
 
         //---------------------------------------------------------
         // ADD LABOUR

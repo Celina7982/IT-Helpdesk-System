@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IThelpdesk.Entities;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -56,11 +57,26 @@ namespace IThelpdesk.Models
         [ForeignKey(nameof(AssignedToUserId))]
         public User? AssignedToUser { get; set; }
 
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        public ICollection<TicketAssignment> Assignments { get; set; }
+            = new List<TicketAssignment>();
+
         // Indicates whether the ticket has been archived
         public bool IsArchived { get; set; } = false;
 
         // Date the ticket was archived
         public DateTime? ArchivedDate { get; set; }
+        // ----------------------------------------------------
+        // SQL Server Optimistic Concurrency Protection
+        // ----------------------------------------------------
+
+      
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!;  //configures Row version as a concurrency token for optimistic concurrency control in SQL Server
 
 
     }

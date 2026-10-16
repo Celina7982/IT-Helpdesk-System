@@ -216,7 +216,99 @@ await _auditService.LogAsync(
                     message = ex.Message
                 });
             }
-        }   
+        }
+
+
+
+        //---------------------------------------------------------
+        // CREATE PAPER JOB CARD
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPost("create-paper")]
+        public async Task<IActionResult> CreatePaperJobCard(
+            [FromBody] CreatePaperJobCardDto request)
+        {
+            //--------------------------------------------------
+            // Validate Request
+            //--------------------------------------------------
+
+            if (request == null)
+            {
+                return BadRequest(new
+                {
+                    message = "Paper job card information is required."
+                });
+            }
+
+            //--------------------------------------------------
+            // Get Logged-In User
+            //--------------------------------------------------
+
+            var userIdClaim = User.FindFirst(
+                ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new
+                {
+                    message = "Invalid user authentication."
+                });
+            }
+
+            //--------------------------------------------------
+            // Create Paper Job Card
+            //--------------------------------------------------
+
+            try
+            {
+                var jobCard =
+                    await _jobCardService.CreatePaperJobCardAsync(
+                        request,
+                        userId
+                    );
+
+                //--------------------------------------------------
+                // Return Response
+                //--------------------------------------------------
+
+                return Ok(new
+                {
+                    jobCardId = jobCard.JobCardId,
+
+                    jobNumber = jobCard.JobNumber,
+
+                    jobCardType = jobCard.JobCardType,
+
+                    paperJobCardNumber =
+                        jobCard.PaperJobCardNumber,
+
+                    paperJobCardDate =
+                        jobCard.PaperJobCardDate,
+
+                    ticketId = jobCard.TicketId,
+
+                    assignedTechnicianId =
+                        jobCard.AssignedTechnicianId,
+
+                    capturedByUserId =
+                        jobCard.CapturedByUserId,
+
+                    dateCaptured =
+                        jobCard.DateCaptured,
+
+                    status = jobCard.Status
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
 
         //---------------------------------------------------------
         // ADD LABOUR
@@ -240,6 +332,57 @@ await _auditService.LogAsync(
             await _jobCardService.AddLabourEntryAsync(id, dto, userId);
 
             return Ok();
+        }
+
+        //--------------------------------------------------
+        // Paper Job Card - Add Work Completed
+        //--------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPost("{id}/paper-work")]
+        public async Task<IActionResult> AddPaperWorkEntry(
+            int id,
+            [FromBody] AddPaperWorkEntryDto dto)
+        {
+            // Get logged-in user's ID from JWT
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            try
+            {
+                // Save Paper Job Card Work Completed entry
+                await _jobCardService.AddPaperWorkEntryAsync(
+                    id,
+                    dto,
+                    userId);
+
+                return Ok(new
+                {
+                    message = "Paper Job Card work entry added successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                // Temporary handling for expected validation errors.
+                // We'll refine exception handling separately.
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
 
@@ -337,6 +480,58 @@ await _auditService.LogAsync(
 
             return Ok();
         }
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Add Parts Used
+        //--------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPost("{id}/paper-parts")]
+        public async Task<IActionResult> AddPaperPart(
+            int id,
+            [FromBody] AddPaperPartDto dto)
+        {
+            // Get the logged-in user's ID from JWT
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            try
+            {
+                await _jobCardService.AddPaperPartAsync(
+                    id,
+                    dto,
+                    userId);
+
+                return Ok(new
+                {
+                    message = "Paper Job Card part added successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                // Temporary error handling.
+                // We'll refine validation and server errors later.
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
 
         //---------------------------------------------------------
         // UPDATE PART
@@ -443,11 +638,82 @@ await _auditService.LogAsync(
             return NoContent();
         }
 
-        //---------------------------------------------------------
-// COMPLETE JOB CARD
-//---------------------------------------------------------
 
-[Authorize(Roles = "Admin,Technician")]
+        //---------------------------------------------------------
+        // PAPER JOB CARD - UPDATE OVERALL TIME
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
+        [HttpPut("{id}/paper-time")]
+        public async Task<IActionResult> UpdatePaperJobTime(
+            int id,
+            [FromBody] UpdatePaperJobTimeDto dto)
+        {
+            //--------------------------------------------------
+            // Get logged-in user ID from JWT
+            //--------------------------------------------------
+
+            var userIdClaim =
+                User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
+
+            //--------------------------------------------------
+            // Update Paper Job Card time
+            //--------------------------------------------------
+
+            try
+            {
+                await _jobCardService.UpdatePaperJobTimeAsync(
+                    id,
+                    dto,
+                    userId);
+
+                return Ok(new
+                {
+                    message = "Paper Job Card time updated successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
+        //---------------------------------------------------------
+        // COMPLETE JOB CARD
+        //---------------------------------------------------------
+
+        [Authorize(Roles = "Admin,Technician")]
 [HttpPut("{id}/complete")]
 public async Task<IActionResult> Complete(int id)
 {
@@ -492,6 +758,52 @@ public async Task<IActionResult> Complete(int id)
             var history = await _auditService.GetAuditHistoryDtoAsync(id);
 
             return Ok(history);
+        }
+
+        //--------------------------------------------------
+        // Paper Job Card - Assign Technician
+        //--------------------------------------------------
+
+        [HttpPost("{jobCardId:int}/technicians")]
+        [Authorize(Roles = "Admin,Technician")]
+        public async Task<IActionResult> AssignPaperJobCardTechnician(
+            int jobCardId,
+            [FromBody] AssignPaperJobCardTechnicianDto dto)
+        {
+            var userIdClaim = User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null ||
+                !int.TryParse(userIdClaim.Value, out int performedByUserId))
+            {
+                return Unauthorized("Invalid user authentication.");
+            }
+
+            try
+            {
+                await _jobCardService.AssignPaperJobCardTechnicianAsync(
+                    jobCardId,
+                    dto.TechnicianId,
+                    dto.IsLeadTechnician,
+                    performedByUserId);
+
+                return Ok(new
+                {
+                    message = "Technician assigned successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

@@ -6,6 +6,8 @@ using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
+
+
 namespace IThelpdesk.Repositories
 {
     public class JobCardRepository : IJobCardRepository
@@ -87,11 +89,22 @@ namespace IThelpdesk.Repositories
 
                 query = query.Where(j =>
 
-                    j.JobNumber.Contains(search)
 
-                    ||
+                j.JobNumber.Contains(search)
 
-                    (j.Ticket != null &&
+                ||
+
+                (j.PaperJobCardNumber != null &&
+                 j.PaperJobCardNumber.Contains(search))
+
+                ||
+
+                j.CustomerName.Contains(search)
+
+                ||
+
+                (j.Ticket != null &&
+
 
                     (
                         j.Ticket.CustomerName.Contains(search)
@@ -159,11 +172,22 @@ namespace IThelpdesk.Repositories
                 .Take(pageSize)
                 .Select(j => new JobCardListDto
                 {
+
                     JobCardId = j.JobCardId,
 
                     JobNumber = j.JobNumber,
 
+                    // Digital or Paper
+                    JobCardType = j.JobCardType,
+
+                    // Optional ticket
                     TicketId = j.TicketId,
+
+                    // Original physical job card information
+                    PaperJobCardNumber = j.PaperJobCardNumber,
+
+                    PaperJobCardDate = j.PaperJobCardDate,
+
 
                     CustomerName =
                         j.Ticket != null
@@ -240,17 +264,80 @@ namespace IThelpdesk.Repositories
 
                 .Where(j => j.JobCardId == id)
 
-                .Select(j => new JobCardDetailsDto
-                {
-                    JobCardId = j.JobCardId,
 
-                    JobNumber = j.JobNumber,
+.Select(j => new JobCardDetailsDto
+{
+    //--------------------------------------------------
+    // Identification
+    //--------------------------------------------------
 
-                    TicketId = j.TicketId,
+    JobCardId = j.JobCardId,
 
-                    Status = j.Status,
+    JobNumber = j.JobNumber,
 
-                    DateCreated = j.DateCreated,
+    //--------------------------------------------------
+    // Job Card Type
+    //--------------------------------------------------
+
+    JobCardType = j.JobCardType,
+
+    //--------------------------------------------------
+    // Optional Ticket
+    //--------------------------------------------------
+
+    TicketId = j.TicketId,
+
+    //--------------------------------------------------
+    // Paper Job Card Information
+    //--------------------------------------------------
+
+    PaperJobCardNumber = j.PaperJobCardNumber,
+
+    PaperJobCardDate = j.PaperJobCardDate,
+
+    CapturedByUserId = j.CapturedByUserId,
+
+    CapturedByUserName =
+        j.CapturedByUser != null
+            ? j.CapturedByUser.FirstName + " " +
+              j.CapturedByUser.LastName
+            : null,
+
+    DateCaptured = j.DateCaptured,
+
+
+
+    //--------------------------------------------------
+    // Paper Job Card - Service Type
+    //--------------------------------------------------
+
+    ServiceType = j.ServiceType,
+
+    //--------------------------------------------------
+    // Paper Job Card - Overall Time
+    //--------------------------------------------------
+
+    TimeIn = j.TimeIn,
+
+    TimeOut = j.TimeOut,
+
+    //--------------------------------------------------
+    // Paper Job Card - Travel / On Site
+    //--------------------------------------------------
+
+    IsTravel = j.IsTravel,
+
+    IsOnSite = j.IsOnSite,
+
+
+    //--------------------------------------------------
+    // Status
+    //--------------------------------------------------
+
+    Status = j.Status,
+
+
+    DateCreated = j.DateCreated,
 
                     DateCompleted = j.DateCompleted,
 
@@ -277,37 +364,125 @@ namespace IThelpdesk.Repositories
                               j.AssignedTechnician.LastName
                             : "Not Assigned",
 
-                    // Map labour entries for PDF
-                    LabourEntries = j.LabourEntries
-                        .Select(l => new JobCardLabourEntryDto
+
+    //--------------------------------------------------
+    // Paper Job Card - Assigned Technicians
+    //--------------------------------------------------
+
+    AssignedTechnicians = j.JobCardTechnicians
+                        .OrderByDescending(t => t.IsLeadTechnician)
+                        .ThenBy(t => t.DateAssigned)
+                        .Select(t => new JobCardTechnicianDto
                         {
-                            LabourId = l.LabourId,
-                            JobCardId = l.JobCardId,
-                            TechnicianId = l.TechnicianId,
-                            TechnicianName = l.Technician != null
-                                ? l.Technician.FirstName + " " + l.Technician.LastName
-                                : string.Empty,
-                            HoursWorked = l.HoursWorked,
-                            WorkPerformed = l.WorkPerformed,
-                            DateWorked = l.DateWorked
+                            TechnicianId = t.TechnicianId,
+
+                            TechnicianName =
+                                t.Technician.FirstName + " " +
+                                t.Technician.LastName,
+
+                            IsLeadTechnician = t.IsLeadTechnician,
+
+                            DateAssigned = t.DateAssigned
                         })
                         .ToList(),
 
-                    // Map parts used for PDF (only name/quantity/date needed for PDF view)
-                    Parts = j.PartsUsed
+    //=============================
+    // MAPING LABOUR ENTRIES AND PARTS USED FOR PDF VIEW
+    //==============================
+
+    //--------------------------------------------------
+    // Labour Entries - Digital and Paper Job Cards
+    //--------------------------------------------------
+
+    LabourEntries = j.LabourEntries
+                        .Select(l => new JobCardLabourEntryDto
+                        {
+                            LabourId = l.LabourId,
+
+                            JobCardId = l.JobCardId,
+
+                            TechnicianId = l.TechnicianId,
+
+                            TechnicianName = l.Technician != null
+                                ? l.Technician.FirstName + " " +
+                                  l.Technician.LastName
+                                : string.Empty,
+
+                            // Existing Digital Job Card fields
+                            HoursWorked = l.HoursWorked,
+
+                            WorkPerformed = l.WorkPerformed,
+
+                            DateWorked = l.DateWorked,
+
+                            // Paper Job Card metadata
+                            IsPaperWorkEntry = l.IsPaperWorkEntry,
+
+                            CapturedByUserId = l.CapturedByUserId,
+
+
+                            CapturedByUserName = _context.Users
+    .Where(u => u.UserId == l.CapturedByUserId)
+    .Select(u => u.FirstName + " " + u.LastName)
+    .FirstOrDefault()
+
+                        })
+                        .ToList(),
+
+    //--------------------------------------------------
+    // Parts Used - Digital and Paper Job Cards
+    //--------------------------------------------------
+
+    Parts = j.PartsUsed
                         .Select(p => new JobCardPartDto
                         {
+                            //--------------------------------------------------
+                            // Existing Parts Information
+                            //--------------------------------------------------
+
                             PartId = p.PartId,
+
                             JobCardId = p.JobCardId,
+
                             PartName = p.PartName,
+
                             Quantity = p.Quantity,
-                            // CreatedByUserId is stored as string in the model; PDF only needs name & qty
+
                             AddedByName = string.Empty,
+
                             AddedByUserId = 0,
-                            DateAdded = p.DateAdded
+
+                            DateAdded = p.DateAdded,
+
+                            //--------------------------------------------------
+                            // Paper Job Card Metadata
+                            //--------------------------------------------------
+
+                            IsPaperPartEntry = p.IsPaperPartEntry,
+
+                            ResponsibleTechnicianId =
+                                p.ResponsibleTechnicianId,
+
+                            ResponsibleTechnicianName = _context.Users
+                                .Where(u =>
+                                    u.UserId == p.ResponsibleTechnicianId)
+                                .Select(u =>
+                                    u.FirstName + " " + u.LastName)
+                                .FirstOrDefault(),
+
+                            CapturedByUserId = p.CapturedByUserId,
+
+                            CapturedByUserName = _context.Users
+                                .Where(u =>
+                                    u.UserId == p.CapturedByUserId)
+                                .Select(u =>
+                                    u.FirstName + " " + u.LastName)
+                                .FirstOrDefault()
                         })
                         .ToList()
-                })
+
+
+})
 
                 .FirstOrDefaultAsync();
         }
@@ -486,6 +661,50 @@ namespace IThelpdesk.Repositories
         {
             _context.JobCardParts.Remove(part);
             // Do not call SaveChanges here; service will call SaveChangesAsync
+            return Task.CompletedTask;
+        }
+
+        //--------------------------------------------------
+        // Paper Job Card - Technician Assignments
+        //--------------------------------------------------
+
+        // Get all technicians assigned to a Job Card
+        public async Task<List<JobCardTechnician>> GetAssignedTechniciansAsync(
+            int jobCardId)
+        {
+            return await _context.JobCardTechnicians
+                .AsNoTracking()
+                .Include(jt => jt.Technician)
+                .Where(jt => jt.JobCardId == jobCardId)
+                .OrderByDescending(jt => jt.IsLeadTechnician)
+                .ThenBy(jt => jt.DateAssigned)
+                .ToListAsync();
+        }
+
+        // Check whether a technician is assigned
+        public async Task<bool> IsTechnicianAssignedAsync(
+            int jobCardId,
+            int technicianId)
+        {
+            return await _context.JobCardTechnicians
+                .AnyAsync(jt =>
+                    jt.JobCardId == jobCardId &&
+                    jt.TechnicianId == technicianId);
+        }
+
+        // Add a technician assignment
+        public async Task AddTechnicianAssignmentAsync(
+            JobCardTechnician assignment)
+        {
+            await _context.JobCardTechnicians.AddAsync(assignment);
+        }
+
+        // Remove a technician assignment
+        public Task RemoveTechnicianAssignmentAsync(
+            JobCardTechnician assignment)
+        {
+            _context.JobCardTechnicians.Remove(assignment);
+
             return Task.CompletedTask;
         }
     }

@@ -1,4 +1,5 @@
-﻿using IThelpdesk.DTOs.User;
+﻿using IThelpdesk.DTOs.Common;
+using IThelpdesk.DTOs.User;
 using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Services
@@ -9,7 +10,7 @@ namespace IThelpdesk.Interfaces.Services
         // User Lists
         //--------------------------------------------------
 
-        Task<IEnumerable<UserListDto>> GetAllUsersAsync();
+        Task<PagedResultDto<UserListDto>> GetAllUsersAsync(int pageNumber, int pageSize, string? search);
 
         Task<UserDetailsDto?> GetUserByIdAsync(int id);
 
@@ -18,6 +19,8 @@ namespace IThelpdesk.Interfaces.Services
         Task<User?> GetUserByEmailAsync(string email);
 
         Task<IEnumerable<User>> GetTechniciansAsync();
+
+        Task<IEnumerable<User>> GetAssignableUsersAsync();
 
         //--------------------------------------------------
         // CRUD

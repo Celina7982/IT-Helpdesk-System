@@ -20,31 +20,12 @@ import { jwtDecode } from "jwt-decode";
 
 import ConfirmationModal from "../components/common/ConfirmationModal";
 
+import CreatePaperJobCardModal from "../components/jobcards/CreatePaperJobCardModal";
+
 //==================================================
 // Job Cards Page
 //==================================================
-//
-// Purpose
-// -------
-// Displays all Job Cards available to the currently
-// logged in user.
-//
-// Administrators
-//      Can view ALL Job Cards.
-//
-// Technicians
-//      Can only view Job Cards assigned to them.
-//
-// Features
-// --------
-// • Dashboard statistics
-// • Search
-// • Status filtering
-// • Clickable dashboard cards
-// • Responsive Bootstrap layout
-// • View Job Card button
-//
-//==================================================
+
 
 function JobCards() {
 
@@ -109,6 +90,12 @@ const [sortDirection, setSortDirection] = useState("desc");
 //--------------------------------------------------
 
 const [showCompleteModal, setShowCompleteModal] = useState(false);
+//--------------------------------------------------
+// Paper Job Card Registration Modal
+//--------------------------------------------------
+
+const [showPaperJobCardModal, setShowPaperJobCardModal] = useState(false);
+
 
 const [selectedJobCardId, setSelectedJobCardId] = useState(null);
     
@@ -472,17 +459,31 @@ const printJobCard = async (jobCardId) => {
                 Page Header
             ==================================================*/}
 
-            <div className="mb-4">
+            
+<div className="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
 
-                <h2 className="fw-bold mb-1">
-                    Job Cards
-                </h2>
+    <div>
+        <h2 className="fw-bold mb-1">
+            Job Cards
+        </h2>
 
-                <p className="text-muted">
-                    View and manage Job Cards.
-                </p>
+        <p className="text-muted mb-0">
+            View and manage Job Cards.
+        </p>
+    </div>
 
-            </div>
+    {(role === "Admin" || role === "Technician") && (
+        <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowPaperJobCardModal(true)}
+        >
+            + Register Paper Job Card
+        </button>
+    )}
+
+</div>
+
 
             {/*==================================================
                 Dashboard Statistics
@@ -1027,6 +1028,17 @@ const printJobCard = async (jobCardId) => {
 
                             }}
                         />
+
+<CreatePaperJobCardModal
+    show={showPaperJobCardModal}
+    onClose={() => setShowPaperJobCardModal(false)}
+    onJobCardCreated={async () => {
+        setShowPaperJobCardModal(false);
+        await loadJobCards();
+    }}
+/>
+
+
 
         </div>
 

@@ -1,5 +1,6 @@
-﻿using IThelpdesk.Models;
-using IThelpdesk.DTOs.Ticket;
+﻿using IThelpdesk.DTOs.Ticket;
+using IThelpdesk.Entities;
+using IThelpdesk.Models;
 
 namespace IThelpdesk.Interfaces.Repositories
 {
@@ -9,18 +10,19 @@ namespace IThelpdesk.Interfaces.Repositories
         // Ticket Lists
         //-------------------------------------------------------
 
-        Task<IEnumerable<TicketResponseDto>> GetAllAsync();
+        Task<IEnumerable<TicketResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
 
         Task<IEnumerable<Ticket>> GetAvailableTicketsAsync();
 
-        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId);
+        Task<IEnumerable<TicketResponseDto>> GetMyTicketsAsync(int technicianId, int pageNumber = 1, int pageSize = 10);
 
-        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync();
+       
 
 
         Task<IEnumerable<Ticket>> GetMyTicketsByUserAsync(int userId);
 
-        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync();
+        Task<IEnumerable<Ticket>> GetEscalatedTicketsAsync(int pageNumber = 1, int pageSize = 10);
+        Task<IEnumerable<TicketResponseDto>> GetArchivedTicketsAsync(int pageNumber = 1, int pageSize = 10);
 
 
         //-------------------------------------------------------
@@ -33,6 +35,24 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task<User?> GetUserByIdAsync(int id);
 
+        // ----------------------------------------------------
+        // Multiple Ticket Assignments
+        // ----------------------------------------------------
+
+        Task<List<TicketAssignment>> GetTicketAssignmentsAsync(int ticketId);
+
+        Task<TicketAssignment?> GetTicketAssignmentAsync(
+            int ticketId,
+            int userId);
+
+        Task AddTicketAssignmentAsync(TicketAssignment assignment);
+
+        Task RemoveTicketAssignmentAsync(TicketAssignment assignment);
+
+        Task<bool> HasTicketAssignmentAsync(
+            int ticketId,
+            int userId);
+
 
         //-------------------------------------------------------
         // CRUD
@@ -42,6 +62,7 @@ namespace IThelpdesk.Interfaces.Repositories
 
         Task UpdateAsync(Ticket ticket);
 
+        Task MarkTicketForConcurrencyCheckAsync(Ticket ticket);
         Task DeleteAsync(Ticket ticket);
 
 

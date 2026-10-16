@@ -1,5 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
+
+using IThelpdesk.Enums;
+
 
 namespace IThelpdesk.Models
 {
@@ -12,13 +16,70 @@ namespace IThelpdesk.Models
         [MaxLength(30)]
         public string JobNumber { get; set; } = string.Empty;
 
+
         //--------------------------------------------------
-        // Ticket
+        // Job Card Type
         //--------------------------------------------------
 
-        public int TicketId { get; set; }
+        public JobCardType JobCardType { get; set; } = JobCardType.Digital;
 
+
+
+        //--------------------------------------------------
+        // Service Type
+        //--------------------------------------------------
+
+        public JobCardServiceType? ServiceType { get; set; }
+
+
+
+        //--------------------------------------------------
+        // Overall Job Time Tracking
+        //--------------------------------------------------
+
+        public DateTimeOffset? TimeIn { get; set; }
+
+        public DateTimeOffset? TimeOut { get; set; }
+
+
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Travel and On Site
+        //--------------------------------------------------
+
+        public bool? IsTravel { get; set; }
+
+        public bool? IsOnSite { get; set; }
+
+
+        //--------------------------------------------------
+        // Paper Job Card Information
+        //--------------------------------------------------
+
+        [MaxLength(50)]
+        public string? PaperJobCardNumber { get; set; }
+
+        public DateTime? PaperJobCardDate { get; set; }
+
+        public int? CapturedByUserId { get; set; }
+
+        [ForeignKey(nameof(CapturedByUserId))]
+        public User? CapturedByUser { get; set; }
+
+        public DateTime? DateCaptured { get; set; }
+
+
+
+        //--------------------------------------------------
+        // Ticket (Optional for Paper Job Cards)
+        //--------------------------------------------------
+
+        public int? TicketId { get; set; }
+
+        [ForeignKey(nameof(TicketId))]
         public Ticket? Ticket { get; set; }
+
 
         //--------------------------------------------------
         // Technician
@@ -28,6 +89,16 @@ namespace IThelpdesk.Models
 
         [ForeignKey(nameof(AssignedTechnicianId))]
         public User? AssignedTechnician { get; set; }
+
+
+
+
+        //--------------------------------------------------
+        // Multiple Technicians - Paper Job Cards
+        //--------------------------------------------------
+
+        public ICollection<JobCardTechnician> JobCardTechnicians
+        { get; set; } = new List<JobCardTechnician>();
 
         //--------------------------------------------------
         // Status

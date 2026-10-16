@@ -1,4 +1,5 @@
-﻿using IThelpdesk.Models;
+﻿using IThelpdesk.Entities;
+using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
  
 
@@ -18,15 +19,22 @@ namespace IThelpdesk.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+
+        public DbSet<TicketAssignment> TicketAssignments { get; set; }
         public DbSet<TicketComment> TicketComments { get; set; }
         //--------------------------------------------------
         // Job Cards
         //--------------------------------------------------
 
         public DbSet<JobCard> JobCards { get; set; }
+
+        public DbSet<JobCardTechnician> JobCardTechnicians { get; set; }
         public DbSet<JobCardLabour> JobCardLabours { get; set; }
 
         public DbSet<JobCardPart> JobCardParts { get; set; }
+
+        //SLA Tickets
+        public DbSet<SlaTicket> SlaTickets { get; set; }
 
         //Notifications
         public DbSet<Notification> Notifications { get; set; }
@@ -65,14 +73,117 @@ namespace IThelpdesk.Data
                 .HasForeignKey(t => t.AssignedToUserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // ========================================================
+            // TICKET ASSIGNMENTS
+            // Allows multiple Admins / Technicians on one ticket
+            // ========================================================
+
+            modelBuilder.Entity<TicketAssignment>()
+                .HasOne(a => a.Ticket)
+                .WithMany(t => t.Assignments)
+                .HasForeignKey(a => a.TicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            // Assigned user
+            modelBuilder.Entity<TicketAssignment>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+            // Admin who performed the assignment
+            modelBuilder.Entity<TicketAssignment>()
+                .HasOne(a => a.AssignedByUser)
+                .WithMany()
+                .HasForeignKey(a => a.AssignedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+            // Prevent the same user from being assigned
+            // to the same ticket more than once
+            modelBuilder.Entity<TicketAssignment>()
+                .HasIndex(a => new
+                {
+                    a.TicketId,
+                    a.UserId
+                })
+                .IsUnique();
+
+
+            // Improves "My Tickets" lookup performance
+            modelBuilder.Entity<TicketAssignment>()
+                .HasIndex(a => a.UserId);
+
+
+
             //--------------------------------------------------
             // Job Card -> Ticket
+            // Optional for Paper Job Cards
             //--------------------------------------------------
 
             modelBuilder.Entity<JobCard>()
                 .HasOne(j => j.Ticket)
                 .WithMany()
-                .HasForeignKey(j => j.TicketId);
+                .HasForeignKey(j => j.TicketId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Captured By User
+            //--------------------------------------------------
+
+            modelBuilder.Entity<JobCard>()
+                .HasOne(j => j.CapturedByUser)
+                .WithMany()
+                .HasForeignKey(j => j.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+
+
+            //--------------------------------------------------
+            // SLA Ticket -> Ticket
+            //--------------------------------------------------
+
+            modelBuilder.Entity<SlaTicket>()
+                .HasOne(s => s.Ticket)
+                .WithMany()
+                .HasForeignKey(s => s.TicketId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            //--------------------------------------------------
+            // SLA Ticket -> Technician
+            //--------------------------------------------------
+
+            modelBuilder.Entity<SlaTicket>()
+                .HasOne(s => s.Technician)
+                .WithMany()
+                .HasForeignKey(s => s.TechnicianId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            //--------------------------------------------------
+            // SLA Ticket -> Created By User
+            //--------------------------------------------------
+
+            modelBuilder.Entity<SlaTicket>()
+                .HasOne(s => s.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(s => s.CreatedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            //--------------------------------------------------
+            // SLA Ticket -> Emailed By User
+            //--------------------------------------------------
+
+            modelBuilder.Entity<SlaTicket>()
+                .HasOne(s => s.EmailedByUser)
+                .WithMany()
+                .HasForeignKey(s => s.EmailedByUserId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             //--------------------------------------------------
             // Job Card -> Labour Entries
@@ -93,6 +204,50 @@ namespace IThelpdesk.Data
                 .HasForeignKey(l => l.TechnicianId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Work Entry Configuration
+            //--------------------------------------------------
+
+            // User who captured the Work Completed entry
+            modelBuilder.Entity<JobCardLabour>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(l => l.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Distinguish Paper work entries from Digital labour
+            modelBuilder.Entity<JobCardLabour>()
+                .Property(l => l.IsPaperWorkEntry)
+                .HasDefaultValue(false);
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Parts Used Configuration
+            //--------------------------------------------------
+
+            // Admin or Technician responsible for the part
+            modelBuilder.Entity<JobCardPart>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.ResponsibleTechnicianId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // User who captured the part entry
+            modelBuilder.Entity<JobCardPart>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Distinguish Paper parts from Digital parts
+            modelBuilder.Entity<JobCardPart>()
+                .Property(p => p.IsPaperPartEntry)
+                .HasDefaultValue(false);
             //--------------------------------------------------
             // Job Card -> Parts Used
             //--------------------------------------------------
@@ -139,7 +294,6 @@ namespace IThelpdesk.Data
                     a.DateCreated
                 });
 
-
             //---------------------------------------
             // Ticket Indexes
             //---------------------------------------
@@ -150,8 +304,168 @@ namespace IThelpdesk.Data
                     t.AssignedToUserId,
                     t.IsArchived,
                     t.CreatedDate
-                });
+                })
+                .HasDatabaseName("IX_Tickets_AssignedToUserId_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.UserId,
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_UserId_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsEscalated,
+                    t.Status,
+                    t.IsArchived,
+                    t.CreatedDate
+                })
+                .HasDatabaseName("IX_Tickets_Escalation_Status_IsArchived_CreatedDate");
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => new
+                {
+                    t.IsArchived,
+                    t.ArchivedDate
+                })
+                .HasDatabaseName("IX_Tickets_IsArchived_ArchivedDate");
+
+
+
+            //---------------------------------------
+            // Job Card Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCard>()
+                .HasIndex(j => j.TicketId)
+                .HasDatabaseName("IX_JobCards_TicketId");
+
+            modelBuilder.Entity<JobCard>()
+                .HasIndex(j => j.AssignedTechnicianId)
+                .HasDatabaseName("IX_JobCards_AssignedTechnicianId");
+
+
+            //---------------------------------------
+            // Job Card Labour Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCardLabour>()
+                .HasIndex(l => l.JobCardId)
+                .HasDatabaseName("IX_JobCardLabours_JobCardId");
+
+            modelBuilder.Entity<JobCardLabour>()
+                .HasIndex(l => l.TechnicianId)
+                .HasDatabaseName("IX_JobCardLabours_TechnicianId");
+
+
+
+            //---------------------------------------
+            // Job Card Part Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<JobCardPart>()
+                .HasIndex(p => p.JobCardId)
+                .HasDatabaseName("IX_JobCardParts_JobCardId");
+
+            //--------------------------------------------------
+            // SLA Ticket Indexes
+            //--------------------------------------------------
+
+            // A Ticket can only have ONE SLA Report
+            modelBuilder.Entity<SlaTicket>()
+                .HasIndex(s => s.TicketId)
+                .IsUnique()
+                .HasDatabaseName("IX_SlaTickets_TicketId");
+
+            // SLA numbers must be unique
+            modelBuilder.Entity<SlaTicket>()
+                .HasIndex(s => s.SlaNumber)
+                .IsUnique()
+                .HasDatabaseName("IX_SlaTickets_SlaNumber");
+
+            // Helps when finding SLA reports assigned to a technician
+            modelBuilder.Entity<SlaTicket>()
+                .HasIndex(s => s.TechnicianId)
+                .HasDatabaseName("IX_SlaTickets_TechnicianId");
+
+
+            //---------------------------------------
+            // Notification Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.TicketId)
+                .HasDatabaseName("IX_Notifications_TicketId");
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.UserId)
+                .HasDatabaseName("IX_Notifications_UserId");
+
+            
+
+            //---------------------------------------
+            // User Indexes
+            //---------------------------------------
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique()
+                .HasDatabaseName("IX_Users_Email");
+
+            //--------------------------------------------------
+            // Job Card Technician Assignments
+            //--------------------------------------------------
+
+            modelBuilder.Entity<JobCardTechnician>(entity =>
+            {
+                // Primary key
+                entity.HasKey(jt => jt.JobCardTechnicianId);
+
+                // Job Card -> Multiple Technicians
+                entity.HasOne(jt => jt.JobCard)
+                    .WithMany(j => j.JobCardTechnicians)
+                    .HasForeignKey(jt => jt.JobCardId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Assigned Technician -> User
+                entity.HasOne(jt => jt.Technician)
+                    .WithMany()
+                    .HasForeignKey(jt => jt.TechnicianId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Assigned By -> User
+                entity.HasOne(jt => jt.AssignedByUser)
+                    .WithMany()
+                    .HasForeignKey(jt => jt.AssignedByUserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                // Prevent duplicate technician assignments
+                entity.HasIndex(jt => new
+                {
+                    jt.JobCardId,
+                    jt.TechnicianId
+                })
+                .IsUnique();
+
+                // Only one lead technician per job card
+                entity.HasIndex(jt => jt.JobCardId)
+                    .IsUnique()
+                    .HasFilter("[IsLeadTechnician] = 1");
+            });
 
         }
+
     }
 }

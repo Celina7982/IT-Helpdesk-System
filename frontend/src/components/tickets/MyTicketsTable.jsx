@@ -1,5 +1,7 @@
 import { useState } from "react";
 import jobCardService from "../../services/jobCardService";
+import slaTicketService from "../../services/slaTicketService";
+
 import { useNavigate, useLocation } from "react-router-dom";
 import TicketDetailsModal from "./TicketDetailsModal";
 
@@ -53,6 +55,34 @@ function MyTicketsTable({
             );
         }
     };
+
+    //--------------------------------------------------
+// Create SLA Report
+//--------------------------------------------------
+
+const createSlaReport = async (ticketId) => {
+
+    try {
+
+        const slaReport =
+            await slaTicketService.createFromTicket(ticketId);
+
+        alert(
+            `SLA Report ${slaReport.slaNumber} created successfully.`
+        );
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        alert(
+            error.response?.data?.message ||
+            "Unable to create SLA Report."
+        );
+    }
+
+};
 
     return (
         <>
@@ -199,20 +229,32 @@ function MyTicketsTable({
 
                                                 )}
 
-                                                {/* Resolved but no Job Card */}
-                                                {ticket.status === "Resolved" &&
-                                                    !ticket.hasJobCard && (
+                                               {/* Resolved - choose Job Card or SLA Report */}
+{ticket.status === "Resolved" &&
+    !ticket.hasJobCard &&
+    !ticket.hasSlaTicket && (
 
-                                                        <button
-                                                            className="btn btn-primary btn-sm me-2"
-                                                            onClick={() =>
-                                                                createJobCard(ticket.ticketId)
-                                                            }
-                                                        >
-                                                            Create Job Card
-                                                        </button>
+        <>
+            <button
+                className="btn btn-primary btn-sm me-2"
+                onClick={() =>
+                    createJobCard(ticket.ticketId)
+                }
+            >
+                Create Job Card
+            </button>
 
-                                                    )}
+            <button
+                className="btn btn-info btn-sm me-2"
+                onClick={() =>
+                    createSlaReport(ticket.ticketId)
+                }
+            >
+                SLA
+            </button>
+        </>
+
+    )}
 
                                                 {/* Job Card already exists */}
                                                 {ticket.hasJobCard && (
@@ -229,6 +271,22 @@ function MyTicketsTable({
                                                     </button>
 
                                                 )}
+
+                                                {/* SLA Report already exists */}
+{ticket.hasSlaTicket && (
+
+    <button
+        className="btn btn-outline-info btn-sm"
+        onClick={() =>
+            navigate(
+                `${basePath}/sla/${ticket.slaTicketId}`
+            )
+        }
+    >
+        Open SLA
+    </button>
+
+)}
 
                                             </td>
 

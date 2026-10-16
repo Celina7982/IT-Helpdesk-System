@@ -78,18 +78,28 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IJobCardService, JobCardService>();
+builder.Services.AddScoped<ISlaTicketService, SlaTicketService>();
+
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ITicketCommentService, TicketCommentService>();
 
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<IJobCardRepository, JobCardRepository>();
+
+// SLA Repository
+builder.Services.AddScoped<ISlaTicketRepository, SlaTicketRepository>();
+
 builder.Services.AddScoped<IJobCardAuditRepository, JobCardAuditRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<ITicketCommentRepository, TicketCommentRepository>();
+
 
 
 builder.Services.AddScoped<IJobCardAuditService, JobCardAuditService>();
 builder.Services.AddScoped<IJobCardPdfService, JobCardPdfService>();
+builder.Services.AddScoped<ISlaTicketPdfService, SlaTicketPdfService>();
 
 
 /*
@@ -171,34 +181,34 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
+//using (var scope = app.Services.CreateScope())
+//{
+//    try
+//    {
+//        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//        context.Database.Migrate();
 
-        if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
-        {
-            context.Users.Add(new User
-            {
-                FirstName = "Admin",
-                LastName = "User",
-                Email = "admin@ithelpdesk.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
-                Role = "Admin",
-                IsActive = true,
-                CreatedDate = DateTime.UtcNow
-            });
+//        if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
+//        {
+//            context.Users.Add(new User
+//            {
+//                FirstName = "Admin",
+//                LastName = "User",
+//                Email = "admin@ithelpdesk.com",
+//                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+//                Role = "Admin",
+//                IsActive = true,
+//                CreatedDate = DateTime.UtcNow
+//            });
 
-            context.SaveChanges();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Database Migration Warning]: {ex.Message}");
-    }
-}
+//            context.SaveChanges();
+//        }
+//    }
+//    catch (Exception ex)
+//    {
+//        Console.WriteLine($"[Database Migration Warning]: {ex.Message}");
+//    }
+//}
 
 
 // 2. Configure HTTP Pipeline
@@ -208,7 +218,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); // Serves the Swagger GUI
 }
 
-// app.UseHttpsRedirection(); // Commented out to prevent redirecting to port 7112
+/* app.UseHttpsRedirection();*/ // Commented out to prevent redirecting to port 7112
 
 app.UseCors("AllowReact");
 

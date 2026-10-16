@@ -33,6 +33,9 @@
         PartQuantityUpdated,
         PartNameUpdated,
 
-        PdfGenerated
+        PdfGenerated,
+
+              // Paper Job Card - Overall Time Tracking
+        PaperJobTimeUpdated
     }
 }

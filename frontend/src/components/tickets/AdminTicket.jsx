@@ -13,8 +13,11 @@ function AdminTicket({
     onResolve,
     onEscalate,
     onAssign,
-    onTicketDeleted
-    
+    onTicketDeleted,
+    pageNumber,
+    setPageNumber,
+    pageSize,
+    setPageSize
 }) {
     const navigate = useNavigate();
 
@@ -24,8 +27,7 @@ function AdminTicket({
 
     const createJobCard = async (ticketId) => {
         try {
-            const jobCard =
-                await jobCardService.createFromTicket(ticketId);
+            const jobCard = await jobCardService.createFromTicket(ticketId);
 
             if (!jobCard || !jobCard.jobCardId) {
                 alert("Job Card was created but its ID was not returned.");
@@ -35,7 +37,6 @@ function AdminTicket({
             navigate(`/admin/jobcards/${jobCard.jobCardId}`);
 
         } catch (error) {
-
             console.error(
                 "Failed to create Job Card:",
                 error
@@ -54,7 +55,6 @@ function AdminTicket({
     //--------------------------------------------------
 
     const viewJobCard = (jobCardId) => {
-
         if (!jobCardId) {
             alert("Job Card ID was not found.");
             return;
@@ -68,7 +68,6 @@ function AdminTicket({
     //--------------------------------------------------
 
     const deleteTicket = async (ticketId) => {
-
         const confirmed = window.confirm(
             "Are you sure you want to delete this ticket?\n\n" +
             "This action cannot be undone."
@@ -78,7 +77,6 @@ function AdminTicket({
             return;
 
         try {
-
             await ticketService.deleteTicket(ticketId);
 
             alert("Ticket deleted successfully.");
@@ -88,7 +86,6 @@ function AdminTicket({
             }
 
         } catch (error) {
-
             console.error(
                 "Failed to delete ticket:",
                 error
@@ -103,52 +100,47 @@ function AdminTicket({
     };
 
     //--------------------------------------------------
-// Archive Ticket
-//--------------------------------------------------
+    // Archive Ticket
+    //--------------------------------------------------
 
-const archiveTicket = async (ticketId) => {
+    const archiveTicket = async (ticketId) => {
+        const confirmed = window.confirm(
+            "Are you sure you want to archive this ticket?"
+        );
 
-    const confirmed = window.confirm(
-        "Are you sure you want to archive this ticket?"
-    );
+        if (!confirmed)
+            return;
 
-    if (!confirmed)
-        return;
+        try {
+            await ticketService.archiveTicket(ticketId);
 
-    try {
+            alert("Ticket archived successfully.");
 
-        await ticketService.archiveTicket(ticketId);
+            // Refresh the ticket list
+            if (onTicketDeleted) {
+                await onTicketDeleted();
+            }
 
-        alert("Ticket archived successfully.");
+        } catch (error) {
+            console.error(
+                "Failed to archive ticket:",
+                error
+            );
 
-        // Refresh the ticket list
-        if (onTicketDeleted) {
-            await onTicketDeleted();
+            alert(
+                error.response?.data?.message ||
+                error.response?.data ||
+                "Unable to archive ticket."
+            );
         }
-
-    } catch (error) {
-
-        console.error(
-            "Failed to archive ticket:",
-            error
-        );
-
-        alert(
-            error.response?.data?.message ||
-            error.response?.data ||
-            "Unable to archive ticket."
-        );
-    }
-};
+    };
 
     //--------------------------------------------------
     // Status Badge
     //--------------------------------------------------
 
     const getStatusClass = (status) => {
-
         switch (status) {
-
             case "Resolved":
                 return "badge bg-success";
 
@@ -171,9 +163,7 @@ const archiveTicket = async (ticketId) => {
     //--------------------------------------------------
 
     const getPriorityClass = (priority) => {
-
         switch (priority) {
-
             case "High":
                 return "badge bg-danger";
 
@@ -193,318 +183,194 @@ const archiveTicket = async (ticketId) => {
     //--------------------------------------------------
 
     return (
-
         <div className="card shadow mt-4">
-
             {/* Header */}
-
             <div className="card-header bg-primary text-white">
                 My Tickets
             </div>
 
-
             <div className="card-body">
-
                 {/* Loading */}
-
                 {loading ? (
-
                     <div className="text-center">
-
                         <div className="spinner-border text-primary"></div>
-
                         <p className="mt-2">
                             Loading your tickets...
                         </p>
-
                     </div>
-
                 ) : (
-
                     <>
-
                         {/* No tickets */}
-
                         {tickets.length === 0 ? (
-
                             <div className="text-center py-4">
-
                                 <p className="mb-0">
                                     You have no assigned tickets.
                                 </p>
-
                             </div>
-
                         ) : (
+                            <>
+                                <div className="table-responsive">
+                                    <table className="table table-striped table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                                <th>Priority</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
 
-                            <div className="table-responsive">
+                                        <tbody>
+                                            {tickets.map(ticket => (
+                                                <tr key={ticket.ticketId}>
+                                                    {/* ID */}
+                                                    <td>
+                                                        {ticket.ticketId}
+                                                    </td>
 
-                                <table className="table table-striped table-hover">
+                                                    {/* Subject */}
+                                                    <td>
+                                                        {ticket.subject}
+                                                    </td>
 
-                                    <thead>
+                                                    {/* Status */}
+                                                    <td>
+                                                        <span className={getStatusClass(ticket.status)}>
+                                                            {ticket.status}
+                                                        </span>
+                                                    </td>
 
-                                        <tr>
+                                                    {/* Priority */}
+                                                    <td>
+                                                        <span className={getPriorityClass(ticket.priority)}>
+                                                            {ticket.priority}
+                                                        </span>
+                                                    </td>
 
-                                            <th>ID</th>
-
-                                            <th>Subject</th>
-
-                                            <th>Status</th>
-
-                                            <th>Priority</th>
-
-                                            <th>Actions</th>
-
-                                        </tr>
-
-                                    </thead>
-
-
-                                    <tbody>
-
-                                        {tickets.map(ticket => (
-
-                                            <tr
-                                                key={ticket.ticketId}
-                                            >
-
-                                                {/* ID */}
-
-                                                <td>
-                                                    {ticket.ticketId}
-                                                </td>
-
-
-                                                {/* Subject */}
-
-                                                <td>
-                                                    {ticket.subject}
-                                                </td>
-
-
-                                                {/* Status */}
-
-                                                <td>
-
-                                                    <span
-                                                        className={getStatusClass(
-                                                            ticket.status
-                                                        )}
-                                                    >
-                                                        {ticket.status}
-                                                    </span>
-
-                                                </td>
-
-
-                                                {/* Priority */}
-
-                                                <td>
-
-                                                    <span
-                                                        className={getPriorityClass(
-                                                            ticket.priority
-                                                        )}
-                                                    >
-                                                        {ticket.priority}
-                                                    </span>
-
-                                                </td>
-
-
-                                                {/* Actions */}
-
-                                                <td>
-
-                                                    {/* -------------------------------- */}
-                                                    {/* VIEW TICKET */}
-                                                    {/* -------------------------------- */}
-
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-outline-primary btn-sm me-2"
-                                                        onClick={() =>
-                                                            onView(
-                                                                ticket.ticketId
-                                                            )
-                                                        }
-                                                    >
-                                                        View
-                                                    </button>
-
-
-                                                    {/* -------------------------------- */}
-                                                    {/* OPEN / IN PROGRESS */}
-                                                    {/* -------------------------------- */}
-
-                                                    {(ticket.status === "Open" ||
-                                                        ticket.status === "In Progress") && (
-
-                                                        <>
-
-                                                            {/* Resolve */}
-
+                                                    {/* Actions */}
+                                                    <td>
+                                                        <div className="d-flex flex-wrap gap-1">
+                                                            {/* VIEW TICKET */}
                                                             <button
                                                                 type="button"
-                                                                className="btn btn-success btn-sm me-2"
-                                                                onClick={() =>
-                                                                    onResolve(
-                                                                        ticket.ticketId
-                                                                    )
-                                                                }
+                                                                className="btn btn-outline-primary btn-sm"
+                                                                onClick={() => onView(ticket.ticketId)}
                                                             >
-                                                                Resolve
+                                                                View
                                                             </button>
 
+                                                            {/* OPEN / IN PROGRESS ACTIONS */}
+                                                            {(ticket.status === "Open" || ticket.status === "In Progress") && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-success btn-sm"
+                                                                        onClick={() => onResolve(ticket.ticketId)}
+                                                                    >
+                                                                        Resolve
+                                                                    </button>
 
-                                                            {/* Assign */}
+                                                                    {onAssign && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="btn btn-primary btn-sm"
+                                                                            onClick={() => onAssign(ticket.ticketId)}
+                                                                        >
+                                                                            Assign
+                                                                        </button>
+                                                                    )}
 
-                                                            {onAssign && (
-
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-primary btn-sm me-2"
-                                                                    onClick={() =>
-                                                                        onAssign(
-                                                                            ticket.ticketId
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Assign
-                                                                </button>
-
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-warning btn-sm"
+                                                                        onClick={() => onEscalate(ticket.ticketId)}
+                                                                    >
+                                                                        Escalate
+                                                                    </button>
+                                                                </>
                                                             )}
 
+                                                            {/* RESOLVED + NO JOB CARD */}
+                                                            {ticket.status === "Resolved" &&
+                                                                !ticket.hasJobCard &&
+                                                                !ticket.jobCardId && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-primary btn-sm"
+                                                                        onClick={() => createJobCard(ticket.ticketId)}
+                                                                    >
+                                                                        Create Job Card
+                                                                    </button>
+                                                                )}
 
-                                                            {/* Escalate */}
+                                                            {/* RESOLVED + JOB CARD EXISTS */}
+                                                            {ticket.status === "Resolved" &&
+                                                                (ticket.hasJobCard || ticket.jobCardId) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn btn-outline-secondary btn-sm"
+                                                                        onClick={() => viewJobCard(ticket.jobCardId)}
+                                                                    >
+                                                                        View Job Card
+                                                                    </button>
+                                                                )}
 
+                                                            {/* DELETE TICKET */}
                                                             <button
                                                                 type="button"
-                                                                className="btn btn-warning btn-sm me-2"
-                                                                onClick={() =>
-                                                                    onEscalate(
-                                                                        ticket.ticketId
-                                                                    )
-                                                                }
+                                                                className="btn btn-outline-danger btn-sm"
+                                                                onClick={() => deleteTicket(ticket.ticketId)}
                                                             >
-                                                                Escalate
+                                                                Delete
                                                             </button>
 
-                                                        </>
-
-                                                    )}
-
-
-                                                    {/* -------------------------------- */}
-                                                    {/* ESCALATED */}
-                                                    {/* -------------------------------- */}
-
-                                                    {ticket.status === "Escalated" && (
-
-                                                        <span className="badge bg-danger me-2">
-                                                            Escalated
-                                                        </span>
-
-                                                    )}
-
-
-                                                    {/* -------------------------------- */}
-                                                    {/* RESOLVED + NO JOB CARD */}
-                                                    {/* -------------------------------- */}
-
-                                                    {ticket.status === "Resolved" &&
-                                                        !ticket.hasJobCard &&
-                                                        !ticket.jobCardId && (
-
+                                                            {/* ARCHIVE */}
                                                             <button
                                                                 type="button"
-                                                                className="btn btn-primary btn-sm me-2"
-                                                                onClick={() =>
-                                                                    createJobCard(
-                                                                        ticket.ticketId
-                                                                    )
-                                                                }
+                                                                className="btn btn-outline-secondary btn-sm"
+                                                                onClick={() => archiveTicket(ticket.ticketId)}
                                                             >
-                                                                Create Job Card
+                                                                Archive
                                                             </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                                        )}
-
-
-                                                    {/* -------------------------------- */}
-                                                    {/* RESOLVED + JOB CARD EXISTS */}
-                                                    {/* -------------------------------- */}
-
-                                                    {ticket.status === "Resolved" &&
-                                                        (ticket.hasJobCard ||
-                                                            ticket.jobCardId) && (
-
-                                                            <button
-                                                                type="button"
-                                                                className="btn btn-outline-secondary btn-sm me-2"
-                                                                onClick={() =>
-                                                                    viewJobCard(
-                                                                        ticket.jobCardId
-                                                                    )
-                                                                }
-                                                            >
-                                                                View Job Card
-                                                            </button>
-
-                                                        )}
-
- {/* -------------------------------- */}
-{/* DELETE TICKET */}
-{/* -------------------------------- */}
-
-<button
-    type="button"
-    className="btn btn-outline-danger btn-sm me-2"
-    onClick={() =>
-        deleteTicket(ticket.ticketId)
-    }
->
-    Delete
-</button>
-
-
-
-
-                                                    {/* -------------------------------- */}
-                                                    {/* ARCHIVE */}
-                                                    {/* -------------------------------- */}
-<button
-    type="button"
-    className="btn btn-outline-secondary btn-sm"
-    onClick={() =>
-        archiveTicket(ticket.ticketId)
-    }
->
-    Archive
-</button>
-                                                    
-                                                </td>
-
-                                            </tr>
-
-                                        ))}
-
-                                    </tbody>
-
-                                </table>
-
-                            </div>
-
+                                {/* Pagination Controls */}
+                                {setPageNumber && pageSize && (
+                                    <div className="d-flex justify-content-between align-items-center mt-3">
+                                        <div>
+                                            <span>Page <strong>{pageNumber || 1}</strong></span>
+                                        </div>
+                                        <div className="btn-group">
+                                            <button
+                                                className="btn btn-outline-primary btn-sm"
+                                                disabled={(pageNumber || 1) === 1}
+                                                onClick={() => setPageNumber((prev) => Math.max((prev || 1) - 1, 1))}
+                                            >
+                                                Previous
+                                            </button>
+                                            <button
+                                                className="btn btn-outline-primary btn-sm"
+                                                disabled={tickets.length < pageSize}
+                                                onClick={() => setPageNumber((prev) => (prev || 1) + 1)}
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
-
                     </>
-
                 )}
-
             </div>
-
         </div>
-
     );
 }
 

@@ -3,26 +3,40 @@ import api from "./api";
 const notificationService = {
 
     //--------------------------------------------------
-    // Get all notifications for logged-in user
+    // Get paginated notifications
     //--------------------------------------------------
 
-    getMyNotifications: async () => {
+    getMyNotifications: async (
+        pageNumber = 1,
+        pageSize = 10
+    ) => {
 
-        const response = await api.get("/notifications");
+        const response = await api.get(
+            "/notifications",
+            {
+                params: {
+                    pageNumber,
+                    pageSize
+                }
+            }
+        );
 
         return response.data;
     },
+
 
     //--------------------------------------------------
     // Get unread notifications
     //--------------------------------------------------
 
-    getUnreadNotifications: async () => {
+   getUnreadNotificationCount: async () => {
 
-        const response = await api.get("/notifications/unread");
+    const response =
+        await api.get("/notifications/unread/count");
 
-        return response.data;
-    },
+    return response.data;
+},
+
 
     //--------------------------------------------------
     // Mark notification as read
@@ -30,12 +44,14 @@ const notificationService = {
 
     markAsRead: async (notificationId) => {
 
-        const response = await api.put(
-            `/notifications/${notificationId}/read`
-        );
+        const response =
+            await api.put(
+                `/notifications/${notificationId}/read`
+            );
 
         return response.data;
     },
+
 
     //--------------------------------------------------
     // Delete notification
@@ -43,9 +59,10 @@ const notificationService = {
 
     deleteNotification: async (notificationId) => {
 
-        const response = await api.delete(
-            `/notifications/${notificationId}`
-        );
+        const response =
+            await api.delete(
+                `/notifications/${notificationId}`
+            );
 
         return response.data;
     }

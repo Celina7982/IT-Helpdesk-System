@@ -1,0 +1,155 @@
+@baseUrl = https://localhost:7112
+@token= eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiQWRtaW4gVXNlciIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2dpdmVubmFtZSI6IkFkbWluIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvc3VybmFtZSI6IlVzZXIiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJhZG1pbkBpdGhlbHBkZXNrLmNvbSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiZXhwIjoxNzkyMTM4NDQyLCJpc3MiOiJJVGhlbHBkZXNrIiwiYXVkIjoiSVRoZWxwZGVza1VzZXJzIn0.gbigAZUFpKGf0TTjgQs7XaNZ7S__dUI_PoG1sTCSQAo
+### Test 1 - Check Job Card API
+GET {{baseUrl}}/api/JobCard
+Accept: application/json
+
+### Test 2 - Admin Login
+POST https://localhost:7112/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@ithelpdesk.com",
+  "password": "Password123!"
+}
+
+### Test 3 - Get Job Cards (Authenticated)
+GET {{baseUrl}}/api/JobCard
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Test 4 - Create Paper Job Card
+POST {{baseUrl}}/api/JobCard/create-paper
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paperJobCardNumber": "PAPER-TEST-001",
+  "paperJobCardDate": "2026-10-15T09:00:00",
+  "ticketId": null,
+  "customerName": "Test Customer",
+  "assignedTechnicianId":4 ,
+  "faultReported": "Test computer is not connecting to the network.",
+  "faultFound": "Network cable disconnected.",
+  "workPerformed": "Reconnected network cable and tested connectivity.",
+  "completionNotes": "Test Paper Job Card for technician assignment."
+}
+
+### Test 4 - Create Paper Job Card
+POST {{baseUrl}}/api/JobCard/create-paper
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paperJobCardNumber": "19565",
+  "paperJobCardDate": "2026-10-15T09:00:00",
+  "ticketId": null,
+  "customerName": "Test Customer",
+  "assignedTechnicianId": 4,
+  "faultReported": "Computer not connecting to the network.",
+  "faultFound": "Network cable disconnected.",
+  "workPerformed": "Reconnected network cable and tested connectivity.",
+  "completionNotes": "Test Paper Job Card."
+}
+
+### Test 5 - Assign Second Technician to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "isLeadTechnician": false
+}
+
+  ### Test 5 - Assign Second Technician to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "isLeadTechnician": false
+}
+
+  ### Test 6 - Add Paper Job Card Work Completed
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "workPerformed": "Replaced faulty network cable and tested connectivity successfully."
+}
+
+  ### Test 7 - Get Paper Job Card Work Completed
+GET {{baseUrl}}/api/JobCard/14/labour
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+
+### Test 8 - Add Parts Used to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/paper-parts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "partName": "CAT6 Network Cable",
+  "quantity": 2,
+  "responsibleTechnicianId": 8
+}
+
+
+  
+### Test 9 - Get Paper Job Card Parts Used
+GET {{baseUrl}}/api/JobCard/14/parts
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+
+### Test 10 - Update Paper Job Card Overall Time
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-15T08:30:00+02:00",
+  "timeOut": "2026-10-15T10:45:00+02:00",
+  "isTravel": true,
+  "isOnSite": true
+}
+
+
+### Test 11 - Update Paper Job Card Time and Audit History
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-15T08:30:00+02:00",
+  "timeOut": "2026-10-15T11:00:00+02:00",
+  "isTravel": true,
+  "isOnSite": true
+}
+
+
+
+### Get Paper Job Card Details - 19565
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### Get Paper Job Card Details - 19565
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### Get Paper Job Card 19565 — Work Completed Verification
+
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json

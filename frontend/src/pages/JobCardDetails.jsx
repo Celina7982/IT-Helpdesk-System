@@ -5,7 +5,9 @@ import jobCardService from "../services/jobCardService";
 
 import JobCardHeader from "../components/jobcards/JobCardHeader";
 import JobCardInformation from "../components/jobcards/JobCardInformation";
+import PaperJobCardTime from "../components/jobcards/PaperJobCardTime";
 import JobCardWorkDetails from "../components/jobcards/JobCardWorkDetails";
+import PaperJobCardWork from "../components/jobcards/PaperJobCardWork";
 import LabourEntries from "../components/jobcards/LabourEntries";
 import JobCardParts from "../components/jobcards/JobCardParts";
 import { jwtDecode } from "jwt-decode";
@@ -203,19 +205,48 @@ function JobCardDetails() {
             </ul>
 
             <div className="mt-4">
-                {activeTab === "information" && (
-                    <JobCardInformation jobCard={jobCard} />
-                )}
+               
+{activeTab === "information" && (
 
-                {activeTab === "work" && (
-                    <JobCardWorkDetails
-                        jobCard={jobCard}
-                        setJobCard={setJobCard}
-                        onSave={saveJobCard}
-                        onComplete={completeJobCard}
-                        role={role}
-                    />
-                )}
+    <>
+        <JobCardInformation jobCard={jobCard} />
+
+        {jobCard.jobCardType === 1 && (
+            <PaperJobCardTime
+                jobCard={jobCard}
+                onSaved={loadJobCard}
+            />
+        )}
+    </>
+
+)}
+
+
+                
+{activeTab === "work" && (
+
+    jobCard.jobCardType === 1 ? (
+
+        <PaperJobCardWork
+            jobCard={jobCard}
+            onSaved={loadJobCard}
+            role={role}
+        />
+
+    ) : (
+
+        <JobCardWorkDetails
+            jobCard={jobCard}
+            setJobCard={setJobCard}
+            onSave={saveJobCard}
+            onComplete={completeJobCard}
+            role={role}
+        />
+
+    )
+
+)}
+
 
                 {activeTab === "labour" && (
     <LabourEntries

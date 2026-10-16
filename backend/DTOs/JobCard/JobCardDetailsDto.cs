@@ -35,6 +35,28 @@ namespace IThelpdesk.DTOs.JobCard
         public DateTime? DateCaptured { get; set; }
 
 
+        //--------------------------------------------------
+        // Paper Job Card - Service Type
+        //--------------------------------------------------
+
+        public JobCardServiceType? ServiceType { get; set; }
+
+        //--------------------------------------------------
+        // Paper Job Card - Overall Time Tracking
+        //--------------------------------------------------
+
+        public DateTimeOffset? TimeIn { get; set; }
+
+        public DateTimeOffset? TimeOut { get; set; }
+
+        //--------------------------------------------------
+        // Paper Job Card - Travel and On Site
+        //--------------------------------------------------
+
+        public bool? IsTravel { get; set; }
+
+        public bool? IsOnSite { get; set; }
+
 
         public string Status { get; set; } = string.Empty;
 
@@ -45,6 +67,15 @@ namespace IThelpdesk.DTOs.JobCard
         public int? AssignedTechnicianId { get; set; }
         // Technician assigned to this Job Card
         public string AssignedTechnician { get; set; } = "Not Assigned";
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Multiple Assigned Technicians
+        //--------------------------------------------------
+
+        public List<JobCardTechnicianDto> AssignedTechnicians
+        { get; set; } = new();
+
 
         // Work Information
         public string FaultReported { get; set; } = string.Empty;

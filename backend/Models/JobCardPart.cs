@@ -25,5 +25,17 @@ namespace IThelpdesk.Models
         public string? CreatedByUserId { get; set; }
 
         public DateTime DateAdded { get; set; }
+
+        // Identifies a part entry recorded for a Paper Job Card
+        // Digital Job Cards continue using existing parts functionality
+        public bool IsPaperPartEntry { get; set; } = false;
+
+        // Admin or Technician responsible for using this part
+        // Nullable to preserve existing Digital Job Card parts
+        public int? ResponsibleTechnicianId { get; set; }
+
+        // User who captured this part entry
+        // May be different from the responsible technician
+        public int? CapturedByUserId { get; set; }
     }
 }

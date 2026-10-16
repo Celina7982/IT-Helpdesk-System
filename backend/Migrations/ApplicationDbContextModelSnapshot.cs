@@ -17,7 +17,7 @@ namespace IThelpdesk.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -102,6 +102,12 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<bool?>("IsOnSite")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsTravel")
+                        .HasColumnType("bit");
+
                     b.Property<int>("JobCardType")
                         .HasColumnType("int");
 
@@ -117,6 +123,9 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("ServiceType")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("SignedDate")
                         .HasColumnType("datetime2");
 
@@ -127,6 +136,12 @@ namespace IThelpdesk.Migrations
 
                     b.Property<int?>("TicketId")
                         .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("TimeIn")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("TimeOut")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("WorkPerformed")
                         .IsRequired()
@@ -200,11 +215,19 @@ namespace IThelpdesk.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LabourId"));
 
+                    b.Property<int?>("CapturedByUserId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("DateWorked")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("HoursWorked")
                         .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("IsPaperWorkEntry")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("JobCardId")
                         .HasColumnType("int");
@@ -218,6 +241,8 @@ namespace IThelpdesk.Migrations
                         .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("LabourId");
+
+                    b.HasIndex("CapturedByUserId");
 
                     b.HasIndex("JobCardId")
                         .HasDatabaseName("IX_JobCardLabours_JobCardId");
@@ -236,11 +261,19 @@ namespace IThelpdesk.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PartId"));
 
+                    b.Property<int?>("CapturedByUserId")
+                        .HasColumnType("int");
+
                     b.Property<string>("CreatedByUserId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DateAdded")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPaperPartEntry")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("JobCardId")
                         .HasColumnType("int");
@@ -253,12 +286,58 @@ namespace IThelpdesk.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ResponsibleTechnicianId")
+                        .HasColumnType("int");
+
                     b.HasKey("PartId");
+
+                    b.HasIndex("CapturedByUserId");
 
                     b.HasIndex("JobCardId")
                         .HasDatabaseName("IX_JobCardParts_JobCardId");
 
+                    b.HasIndex("ResponsibleTechnicianId");
+
                     b.ToTable("JobCardParts");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardTechnician", b =>
+                {
+                    b.Property<int>("JobCardTechnicianId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JobCardTechnicianId"));
+
+                    b.Property<int>("AssignedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateAssigned")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsLeadTechnician")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("JobCardId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.HasKey("JobCardTechnicianId");
+
+                    b.HasIndex("AssignedByUserId");
+
+                    b.HasIndex("JobCardId")
+                        .IsUnique()
+                        .HasFilter("[IsLeadTechnician] = 1");
+
+                    b.HasIndex("TechnicianId");
+
+                    b.HasIndex("JobCardId", "TechnicianId")
+                        .IsUnique();
+
+                    b.ToTable("JobCardTechnicians");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
@@ -639,6 +718,11 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardLabour", b =>
                 {
+                    b.HasOne("IThelpdesk.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("CapturedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
                         .WithMany("LabourEntries")
                         .HasForeignKey("JobCardId")
@@ -658,13 +742,50 @@ namespace IThelpdesk.Migrations
 
             modelBuilder.Entity("IThelpdesk.Models.JobCardPart", b =>
                 {
+                    b.HasOne("IThelpdesk.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("CapturedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
                         .WithMany("PartsUsed")
                         .HasForeignKey("JobCardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("IThelpdesk.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsibleTechnicianId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("JobCard");
+                });
+
+            modelBuilder.Entity("IThelpdesk.Models.JobCardTechnician", b =>
+                {
+                    b.HasOne("IThelpdesk.Models.User", "AssignedByUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.JobCard", "JobCard")
+                        .WithMany("JobCardTechnicians")
+                        .HasForeignKey("JobCardId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("IThelpdesk.Models.User", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("AssignedByUser");
+
+                    b.Navigation("JobCard");
+
+                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("IThelpdesk.Models.Notification", b =>
@@ -732,6 +853,8 @@ namespace IThelpdesk.Migrations
             modelBuilder.Entity("IThelpdesk.Models.JobCard", b =>
                 {
                     b.Navigation("AuditHistory");
+
+                    b.Navigation("JobCardTechnicians");
 
                     b.Navigation("LabourEntries");
 

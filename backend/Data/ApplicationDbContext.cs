@@ -204,6 +204,50 @@ namespace IThelpdesk.Data
                 .HasForeignKey(l => l.TechnicianId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Work Entry Configuration
+            //--------------------------------------------------
+
+            // User who captured the Work Completed entry
+            modelBuilder.Entity<JobCardLabour>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(l => l.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Distinguish Paper work entries from Digital labour
+            modelBuilder.Entity<JobCardLabour>()
+                .Property(l => l.IsPaperWorkEntry)
+                .HasDefaultValue(false);
+
+
+            //--------------------------------------------------
+            // Paper Job Card -> Parts Used Configuration
+            //--------------------------------------------------
+
+            // Admin or Technician responsible for the part
+            modelBuilder.Entity<JobCardPart>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.ResponsibleTechnicianId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // User who captured the part entry
+            modelBuilder.Entity<JobCardPart>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(p => p.CapturedByUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Distinguish Paper parts from Digital parts
+            modelBuilder.Entity<JobCardPart>()
+                .Property(p => p.IsPaperPartEntry)
+                .HasDefaultValue(false);
             //--------------------------------------------------
             // Job Card -> Parts Used
             //--------------------------------------------------

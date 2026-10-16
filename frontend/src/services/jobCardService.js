@@ -72,6 +72,39 @@ const update = async (id, jobCard) => {
   await api.put(`/JobCard/${id}`, jobCard);
 };
 
+
+
+ //----------------------------------------------------
+ // Update Paper Job Card Time
+ //----------------------------------------------------
+ const updatePaperJobTime = async (jobCardId, timeData) => {
+
+   const response = await api.put(
+     `/JobCard/${jobCardId}/paper-time`,
+     timeData
+   );
+
+   return response.data;
+
+ };
+
+ 
+ //----------------------------------------------------
+ // Add Paper Job Card Work Completed
+ //----------------------------------------------------
+ const addPaperWorkEntry = async (jobCardId, workData) => {
+
+   const response = await api.post(
+     `/JobCard/${jobCardId}/paper-work`,
+     workData
+   );
+
+   return response.data;
+
+ };
+
+
+
 //----------------------------------------------------
 // Complete Job Card
 //----------------------------------------------------
@@ -162,7 +195,11 @@ const jobCardService = {
   createFromTicket,
   createPaperJobCard,
   update,
-  completeJobCard,
+  createPaperJobCard,
+  update,
+  updatePaperJobTime,
+  addPaperWorkEntry,
+ completeJobCard,
   getLabourEntries,    // Exported
   addLabourEntry,      // Exported
   updateLabourEntry,   // Exported

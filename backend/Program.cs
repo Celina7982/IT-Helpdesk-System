@@ -181,34 +181,34 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
+//using (var scope = app.Services.CreateScope())
+//{
+//    try
+//    {
+//        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+//        context.Database.Migrate();
 
-        if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
-        {
-            context.Users.Add(new User
-            {
-                FirstName = "Admin",
-                LastName = "User",
-                Email = "admin@ithelpdesk.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
-                Role = "Admin",
-                IsActive = true,
-                CreatedDate = DateTime.UtcNow
-            });
+//        if (!context.Users.Any(u => u.Email == "admin@ithelpdesk.com"))
+//        {
+//            context.Users.Add(new User
+//            {
+//                FirstName = "Admin",
+//                LastName = "User",
+//                Email = "admin@ithelpdesk.com",
+//                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+//                Role = "Admin",
+//                IsActive = true,
+//                CreatedDate = DateTime.UtcNow
+//            });
 
-            context.SaveChanges();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Database Migration Warning]: {ex.Message}");
-    }
-}
+//            context.SaveChanges();
+//        }
+//    }
+//    catch (Exception ex)
+//    {
+//        Console.WriteLine($"[Database Migration Warning]: {ex.Message}");
+//    }
+//}
 
 
 // 2. Configure HTTP Pipeline

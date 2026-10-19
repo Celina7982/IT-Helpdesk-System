@@ -1,9 +1,11 @@
-﻿using IThelpdesk.DTOs.Common;
+﻿using IThelpdesk.Data;
+using IThelpdesk.DTOs.Common;
 using IThelpdesk.DTOs.JobCard;
+using IThelpdesk.Enums;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
-using IThelpdesk.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace IThelpdesk.Services
@@ -16,13 +18,18 @@ namespace IThelpdesk.Services
         private readonly IUserRepository _userRepository;    
         private readonly INotificationService _notificationService;
         private readonly ISlaTicketRepository _slaTicketRepository;
+        private readonly ApplicationDbContext _context;
+
+
         public JobCardService(
-    IJobCardRepository jobCardRepository,
-    ITicketRepository ticketRepository,
-    IJobCardAuditService auditService,
-    IUserRepository userRepository,
-    INotificationService notificationService,
-    ISlaTicketRepository slaTicketRepository)
+            IJobCardRepository jobCardRepository,
+            ITicketRepository ticketRepository,
+            IJobCardAuditService auditService,
+            IUserRepository userRepository,
+            INotificationService notificationService,
+            ISlaTicketRepository slaTicketRepository,
+            ApplicationDbContext context)
+
         {
             _jobCardRepository = jobCardRepository;
             _ticketRepository = ticketRepository;
@@ -30,6 +37,7 @@ namespace IThelpdesk.Services
             _userRepository = userRepository;
             _notificationService = notificationService;
             _slaTicketRepository = slaTicketRepository;
+            _context = context;
         }
 
 
@@ -431,34 +439,84 @@ namespace IThelpdesk.Services
             };
 
 
+
+
             //--------------------------------------------------
-            // Save Paper Job Card and Initial Lead Technician
+            // Save Paper Job Card and Assigned Technicians
             //--------------------------------------------------
 
-            // Add the Paper Job Card
+            // Start with the selected technicians.
+            // Include the Lead Technician automatically.
+            var technicianIds = (dto.AssignedTechnicianIds ?? new List<int>())
+                .Append(dto.AssignedTechnicianId.Value)
+                .Distinct()
+                .ToList();
+
+            //--------------------------------------------------
+            // Validate all selected technicians before saving
+            //--------------------------------------------------
+
+            foreach (var technicianId in technicianIds)
+            {
+                var technician = await _userRepository
+                    .GetUserEntityByIdAsync(technicianId);
+
+                if (technician == null ||
+                    !(string.Equals(
+                        technician.Role,
+                        "Admin",
+                        StringComparison.OrdinalIgnoreCase)
+                      ||
+                      string.Equals(
+                        technician.Role,
+                        "Technician",
+                        StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new ArgumentException(
+                        $"User {technicianId} is not a valid Admin or Technician.");
+                }
+            }
+
+            //--------------------------------------------------
+            // Create Paper Job Card
+            //--------------------------------------------------
+
             await _jobCardRepository.AddAsync(jobCard);
 
-            // Create its initial Lead Technician assignment
-            var leadAssignment = new JobCardTechnician
+            //--------------------------------------------------
+            // Create all technician assignments
+            //--------------------------------------------------
+
+            foreach (var technicianId in technicianIds)
             {
-                JobCard = jobCard,
+                var assignment = new JobCardTechnician
+                {
+                    JobCard = jobCard,
 
-                TechnicianId = dto.AssignedTechnicianId.Value,
+                    TechnicianId = technicianId,
 
-                IsLeadTechnician = true,
+                    IsLeadTechnician =
+                        technicianId == dto.AssignedTechnicianId.Value,
 
-                AssignedByUserId = performedByUserId,
+                    AssignedByUserId = performedByUserId,
 
-                DateAssigned = DateTime.UtcNow
-            };
+                    DateAssigned = DateTime.UtcNow
+                };
 
-            // Add the Lead Technician assignment
-            await _jobCardRepository.AddTechnicianAssignmentAsync(
-                leadAssignment
-            );
+                await _jobCardRepository
+                    .AddTechnicianAssignmentAsync(assignment);
+            }
 
-            // Save both records together
+            //--------------------------------------------------
+            // Save Job Card and assignments together
+            //--------------------------------------------------
+
             await _jobCardRepository.SaveChangesAsync();
+
+
+
+
+            
 
 
             //--------------------------------------------------
@@ -495,141 +553,430 @@ namespace IThelpdesk.Services
         // Paper Job Card - Assign Technician
         //---------------------------------------------------
 
+
+
         public async Task AssignPaperJobCardTechnicianAsync(
             int jobCardId,
             int technicianId,
             bool isLeadTechnician,
             int performedByUserId)
         {
-            // Verify the user performing the assignment
-            // Admins and Lead Technicians can assign engineers
+            var executionStrategy =
+                _context.Database.CreateExecutionStrategy();
 
-            var assigningUser = await _userRepository
-                .GetUserEntityByIdAsync(performedByUserId);
-
-            if (assigningUser == null)
+            await executionStrategy.ExecuteAsync(async () =>
             {
-                throw new UnauthorizedAccessException(
-                    "The user performing this assignment was not found.");
-            }
+                // Start each attempt with fresh tracked entities.
+                _context.ChangeTracker.Clear();
 
-            
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
 
-            // Check that the Job Card exists
-            var jobCard = await _jobCardRepository.GetByIdAsync(jobCardId);
-
-            if (jobCard == null)
-                throw new ArgumentException("Job Card not found.");
-
-            //--------------------------------------------------
-            // Admin or Lead Technician can assign engineers
-            //--------------------------------------------------
-
-            bool isAdmin = string.Equals(
-                assigningUser.Role,
-                "Admin",
-                StringComparison.OrdinalIgnoreCase);
-
-            bool isLead = false;
-
-            if (!isAdmin)
-            {
-                var assignments = await _jobCardRepository
-                    .GetAssignedTechniciansAsync(jobCardId);
-
-                isLead = assignments.Any(t =>
-                    t.TechnicianId == performedByUserId &&
-                    t.IsLeadTechnician);
-            }
-
-            if (!isAdmin && !isLead)
-            {
-                throw new UnauthorizedAccessException(
-                    "Only Admins or the Lead Technician can assign engineers.");
-            }
-
-            // Only Admins can appoint a Lead Technician
-            if (isLeadTechnician && !isAdmin)
-            {
-                throw new UnauthorizedAccessException(
-                    "Only Admins can appoint a Lead Technician.");
-            }
-
-            // This method is only for Paper Job Cards
-            if (jobCard.JobCardType != JobCardType.Paper)
-                throw new InvalidOperationException(
-                    "Technician assignments through this method are only supported for Paper Job Cards.");
-
-            // Do not change assignments after completion
-            if (string.Equals(
-                jobCard.Status,
-                "Completed",
-                StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    "Cannot assign technicians to a completed Paper Job Card.");
-            }
-
-            // Verify that the user exists
-            var technician = await _userRepository
-                .GetUserEntityByIdAsync(technicianId);
-
-            if (technician == null)
-                throw new ArgumentException("Selected technician was not found.");
-
-            //--------------------------------------------------
-            // Only Admins and Technicians can be assigned
-            //--------------------------------------------------
-
-            if (!string.Equals(
-                    technician.Role,
-                    "Admin",
-                    StringComparison.OrdinalIgnoreCase)
-                &&
-                !string.Equals(
-                    technician.Role,
-                    "Technician",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    "Only Admins and Technicians can be assigned to a Paper Job Card.");
-            }
-
-            // Prevent duplicate assignments
-            var alreadyAssigned = await _jobCardRepository
-                .IsTechnicianAssignedAsync(jobCardId, technicianId);
-
-            if (alreadyAssigned)
-                throw new InvalidOperationException(
-                    "This technician is already assigned to the Paper Job Card.");
-
-            // Only one lead technician is allowed
-            if (isLeadTechnician)
-            {
-                var assignedTechnicians = await _jobCardRepository
-                    .GetAssignedTechniciansAsync(jobCardId);
-
-                if (assignedTechnicians.Any(t => t.IsLeadTechnician))
+                try
                 {
-                    throw new InvalidOperationException(
-                        "This Paper Job Card already has a lead technician.");
+                    // Verify the user performing the assignment.
+                    var assigningUser = await _userRepository
+                        .GetUserEntityByIdAsync(performedByUserId);
+
+                    if (assigningUser == null)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "The user performing this assignment was not found.");
+                    }
+
+                    // Find the Job Card.
+                    var jobCard = await _context.JobCards
+                        .SingleOrDefaultAsync(j =>
+                            j.JobCardId == jobCardId);
+
+                    if (jobCard == null)
+                        throw new ArgumentException("Job Card not found.");
+
+                    // Never modify Digital Job Cards.
+                    if (jobCard.JobCardType != JobCardType.Paper)
+                    {
+                        throw new InvalidOperationException(
+                            "Technician assignments through this method " +
+                            "are only supported for Paper Job Cards.");
+                    }
+
+                    bool isAdmin = string.Equals(
+                        assigningUser.Role,
+                        "Admin",
+                        StringComparison.OrdinalIgnoreCase);
+
+                    var assignments = await _jobCardRepository
+                        .GetTrackedTechnicianAssignmentsAsync(jobCardId);
+
+                    bool isLead = assignments.Any(a =>
+                        a.TechnicianId == performedByUserId &&
+                        a.IsLeadTechnician);
+
+                    // Only Admin or Lead can add technicians.
+                    if (!isAdmin && !isLead)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "Only Admins or the Lead Technician can assign engineers.");
+                    }
+
+                    // Only Admin can appoint a Lead.
+                    if (isLeadTechnician && !isAdmin)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "Only Admins can appoint a Lead Technician.");
+                    }
+
+                    bool isCompleted = string.Equals(
+                        jobCard.Status,
+                        "Completed",
+                        StringComparison.OrdinalIgnoreCase);
+
+                    // Only Admin can assign after completion.
+                    if (isCompleted && !isAdmin)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "Only Admin can assign technicians to a completed Paper Job Card.");
+                    }
+
+                    // Validate the selected technician.
+                    var technician = await _userRepository
+                        .GetUserEntityByIdAsync(technicianId);
+
+                    if (technician == null)
+                    {
+                        throw new ArgumentException(
+                            "Selected technician was not found.");
+                    }
+
+                    bool validRole =
+                        string.Equals(
+                            technician.Role,
+                            "Admin",
+                            StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(
+                            technician.Role,
+                            "Technician",
+                            StringComparison.OrdinalIgnoreCase);
+
+                    if (!validRole)
+                    {
+                        throw new InvalidOperationException(
+                            "Only Admins and Technicians can be assigned to a Paper Job Card.");
+                    }
+
+                    // Prevent duplicate assignments.
+                    if (assignments.Any(a =>
+                        a.TechnicianId == technicianId))
+                    {
+                        throw new InvalidOperationException(
+                            "This technician is already assigned to the Paper Job Card.");
+                    }
+
+                    // Every Paper Job Card already has one Lead.
+                    // Use ChangePaperLeadTechnicianAsync to replace that Lead.
+                    if (isLeadTechnician)
+                    {
+                        throw new InvalidOperationException(
+                            "To change the Lead Technician, first assign the " +
+                            "technician as Secondary, then use Change Lead Technician.");
+                    }
+
+                    // Create a Secondary Technician assignment.
+                    var assignment = new JobCardTechnician
+                    {
+                        JobCardId = jobCardId,
+                        TechnicianId = technicianId,
+                        IsLeadTechnician = false,
+                        AssignedByUserId = performedByUserId,
+                        DateAssigned = DateTime.UtcNow
+                    };
+
+                    await _jobCardRepository
+                        .AddTechnicianAssignmentAsync(assignment);
+
+                    await _jobCardRepository.SaveChangesAsync();
+
+                    // Record assignment in audit history.
+                    await _auditService.LogAsync(
+                        jobCardId,
+                        performedByUserId,
+                        JobCardAuditAction.PaperTechnicianAssigned,
+                        $"Technician {technician.FirstName} {technician.LastName} " +
+                        $"(User ID: {technicianId}) was assigned to " +
+                        $"Paper Job Card {jobCard.JobNumber}.");
+
+                    await transaction.CommitAsync();
                 }
-            }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
 
-            // Create the assignment
-            var assignment = new JobCardTechnician
+
+
+        public async Task ChangePaperLeadTechnicianAsync(
+            int jobCardId,
+            int newLeadTechnicianId,
+            int performedByUserId)
+        {
+            var executionStrategy =
+                _context.Database.CreateExecutionStrategy();
+
+            await executionStrategy.ExecuteAsync(async () =>
             {
-                JobCardId = jobCardId,
-                TechnicianId = technicianId,
-                IsLeadTechnician = isLeadTechnician,
-                AssignedByUserId = performedByUserId,
-                DateAssigned = DateTime.UtcNow
-            };
+                // Reload database entities on every attempt.
+                // This prevents retries from reusing changed entities.
+                _context.ChangeTracker.Clear();
 
-            await _jobCardRepository
-                .AddTechnicianAssignmentAsync(assignment);
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
 
-            await _jobCardRepository.SaveChangesAsync();
+                try
+                {
+                    // Only Admin can change the Lead Technician.
+                    var currentUser = await _userRepository
+                        .GetUserEntityByIdAsync(performedByUserId);
+
+                    if (currentUser == null ||
+                        !string.Equals(
+                            currentUser.Role,
+                            "Admin",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new UnauthorizedAccessException(
+                            "Only Admin can change the Lead Technician.");
+                    }
+
+                    // Retrieve the Paper Job Card as a tracked entity.
+                    var jobCard = await _context.JobCards
+                        .SingleOrDefaultAsync(j =>
+                            j.JobCardId == jobCardId);
+
+                    if (jobCard == null)
+                        throw new ArgumentException("Job Card not found.");
+
+                    if (jobCard.JobCardType != JobCardType.Paper)
+                    {
+                        throw new InvalidOperationException(
+                            "Lead Technician changes are only supported for Paper Job Cards.");
+                    }
+
+                    // Validate the selected new Lead.
+                    var newLeadUser = await _userRepository
+                        .GetUserEntityByIdAsync(newLeadTechnicianId);
+
+                    if (newLeadUser == null ||
+                        !(string.Equals(
+                            newLeadUser.Role,
+                            "Admin",
+                            StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(
+                            newLeadUser.Role,
+                            "Technician",
+                            StringComparison.OrdinalIgnoreCase)))
+                    {
+                        throw new ArgumentException(
+                            "The new Lead must be an Admin or Technician.");
+                    }
+
+                    // Retrieve tracked technician assignments.
+                    var assignments = await _jobCardRepository
+                        .GetTrackedTechnicianAssignmentsAsync(jobCardId);
+
+                    var leadAssignments = assignments
+                        .Where(a => a.IsLeadTechnician)
+                        .ToList();
+
+                    // Every Paper Job Card must have exactly one Lead.
+                    if (leadAssignments.Count != 1)
+                    {
+                        throw new InvalidOperationException(
+                            "This Paper Job Card must have exactly one Lead Technician.");
+                    }
+
+                    var currentLead = leadAssignments[0];
+
+                    // Ensure both Lead references agree.
+                    if (jobCard.AssignedTechnicianId !=
+                        currentLead.TechnicianId)
+                    {
+                        throw new InvalidOperationException(
+                            "The Paper Job Card Lead Technician does not match " +
+                            "the assigned Lead Technician.");
+                    }
+
+                    // A retry may occur after a successful commit.
+                    // In that case, no further changes are necessary.
+                    if (currentLead.TechnicianId == newLeadTechnicianId)
+                    {
+                        await transaction.CommitAsync();
+                        return;
+                    }
+
+                    // The new Lead must already be assigned.
+                    var newLeadAssignment = assignments
+                        .SingleOrDefault(a =>
+                            a.TechnicianId == newLeadTechnicianId);
+
+                    if (newLeadAssignment == null)
+                    {
+                        throw new InvalidOperationException(
+                            "Assign the new Lead Technician to this Job Card first.");
+                    }
+
+                    var oldLeadUser = await _userRepository
+                        .GetUserEntityByIdAsync(currentLead.TechnicianId);
+
+                    string oldLeadName = oldLeadUser != null
+                        ? $"{oldLeadUser.FirstName} {oldLeadUser.LastName}"
+                        : $"User {currentLead.TechnicianId}";
+
+                    // Demote the old Lead.
+                    currentLead.IsLeadTechnician = false;
+
+                    // Promote the new Lead.
+                    newLeadAssignment.IsLeadTechnician = true;
+
+                    // Keep the main Job Card Lead synchronized.
+                    jobCard.AssignedTechnicianId =
+                        newLeadTechnicianId;
+
+                    await _context.SaveChangesAsync();
+
+                    // Save audit history within the same transaction.
+                    await _auditService.LogAsync(
+                        jobCardId,
+                        performedByUserId,
+                        JobCardAuditAction.PaperLeadTechnicianChanged,
+                        $"Lead Technician changed from {oldLeadName} " +
+                        $"to {newLeadUser.FirstName} {newLeadUser.LastName}.",
+                        currentLead.TechnicianId.ToString(),
+                        newLeadTechnicianId.ToString());
+
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
+
+
+
+        public async Task RemovePaperJobCardTechnicianAsync(
+            int jobCardId,
+            int technicianId,
+            int performedByUserId)
+        {
+            var executionStrategy =
+                _context.Database.CreateExecutionStrategy();
+
+            await executionStrategy.ExecuteAsync(async () =>
+            {
+                // Start every attempt with fresh database entities.
+                _context.ChangeTracker.Clear();
+
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Only Admin can remove technicians.
+                    var performedByUser = await _userRepository
+                        .GetUserEntityByIdAsync(performedByUserId);
+
+                    bool isAdmin = performedByUser != null &&
+                        string.Equals(
+                            performedByUser.Role,
+                            "Admin",
+                            StringComparison.OrdinalIgnoreCase);
+
+                    if (!isAdmin)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "Only Admin can remove assigned technicians.");
+                    }
+
+                    // Retrieve the Job Card.
+                    var jobCard = await _context.JobCards
+                        .SingleOrDefaultAsync(j =>
+                            j.JobCardId == jobCardId);
+
+                    if (jobCard == null)
+                    {
+                        throw new ArgumentException(
+                            "Job Card not found.");
+                    }
+
+                    // Digital Job Cards must remain unchanged.
+                    if (jobCard.JobCardType != JobCardType.Paper)
+                    {
+                        throw new InvalidOperationException(
+                            "Technician removal is only supported for Paper Job Cards.");
+                    }
+
+                    // Retrieve the assigned technicians.
+                    var assignments = await _jobCardRepository
+                        .GetTrackedTechnicianAssignmentsAsync(jobCardId);
+
+                    var assignment = assignments
+                        .SingleOrDefault(a =>
+                            a.TechnicianId == technicianId);
+
+                    if (assignment == null)
+                    {
+                        throw new ArgumentException(
+                            "Technician is not assigned to this Job Card.");
+                    }
+
+                    // Never remove the current Lead Technician.
+                    if (assignment.IsLeadTechnician ||
+                        jobCard.AssignedTechnicianId == technicianId)
+                    {
+                        throw new InvalidOperationException(
+                            "The current Lead Technician cannot be removed. " +
+                            "Change the Lead Technician first, then remove " +
+                            "the previous Lead if required.");
+                    }
+
+                    // Get the technician's name for audit history.
+                    var removedTechnician = await _userRepository
+                        .GetUserEntityByIdAsync(technicianId);
+
+                    string technicianName = removedTechnician != null
+                        ? $"{removedTechnician.FirstName} {removedTechnician.LastName}"
+                        : $"User {technicianId}";
+
+                    // Remove only the assignment.
+                    // Existing Work Completed and Parts remain.
+                    await _jobCardRepository
+                        .RemoveTechnicianAssignmentAsync(assignment);
+
+                    await _jobCardRepository.SaveChangesAsync();
+
+                    // Record the removal in audit history.
+                    await _auditService.LogAsync(
+                        jobCardId,
+                        performedByUserId,
+                        JobCardAuditAction.PaperTechnicianRemoved,
+                        $"Technician {technicianName} " +
+                        $"(User ID: {technicianId}) was removed from " +
+                        $"Paper Job Card {jobCard.JobNumber}.");
+
+                    // Commit assignment removal and audit together.
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
         }
 
         //---------------------------------------------------
@@ -754,43 +1101,54 @@ namespace IThelpdesk.Services
                 throw new Exception(
                     "Time tracking through this endpoint is only available for Paper Job Cards.");
 
+
+
             //--------------------------------------------------
-            // 3. Check Job Card status
+            // 3. Check user permissions
             //--------------------------------------------------
 
-            if (string.Equals(
-                jobCard.Status,
-                "Completed",
-                StringComparison.OrdinalIgnoreCase))
+            var user = await _userRepository
+                .GetUserEntityByIdAsync(performedByUserId);
+
+            if (user == null)
             {
-                throw new InvalidOperationException(
-                    "Cannot update time tracking on a completed Paper Job Card.");
+                throw new UnauthorizedAccessException(
+                    "User not found.");
+            }
+
+            bool isAdmin = string.Equals(
+                user.Role,
+                "Admin",
+                StringComparison.OrdinalIgnoreCase);
+
+            // The Lead Technician is stored on the Job Card.
+            bool isLeadTechnician =
+                jobCard.AssignedTechnicianId == performedByUserId;
+
+            // Only Admin or Lead can update overall time.
+            if (!isAdmin && !isLeadTechnician)
+            {
+                throw new UnauthorizedAccessException(
+                    "Only Admin or the Lead Technician can update " +
+                    "Paper Job Card overall time.");
             }
 
             //--------------------------------------------------
-            // 4. Check user permissions
+            // 4. Check Job Card status
             //--------------------------------------------------
 
-            var user =
-                await _userRepository.GetUserEntityByIdAsync(
-                    performedByUserId);
+            bool isCompleted = string.Equals(
+                jobCard.Status,
+                "Completed",
+                StringComparison.OrdinalIgnoreCase);
 
-            if (user == null)
+            // Once completed, only Admin may update overall time.
+            if (isCompleted && !isAdmin)
+            {
                 throw new UnauthorizedAccessException(
-                    "User not found.");
-
-            bool isAdmin = user.Role == "Admin";
-
-            bool isAssignedTechnician =
-                await _jobCardRepository.IsTechnicianAssignedAsync(
-                    jobCardId,
-                    performedByUserId);
-
-            if (!isAdmin && !isAssignedTechnician)
-                throw new UnauthorizedAccessException(
-                    "Only an Admin or assigned Technician can update Paper Job Card time.");
-
-
+                    "Only Admin can update overall time on a " +
+                    "completed Paper Job Card.");
+            }
 
 
             //--------------------------------------------------
@@ -884,14 +1242,66 @@ namespace IThelpdesk.Services
         // Complete Job Card
         //---------------------------------------------------
 
+
         public async Task CompleteJobCardAsync(
-          int id,
-          int performedByUserId)
+            int id,
+            int performedByUserId)
         {
             var jobCard = await _jobCardRepository.GetByIdAsync(id);
 
             if (jobCard == null)
                 throw new Exception("Job Card not found.");
+
+            //--------------------------------------------------
+            // Paper Job Card Completion Permissions
+            //--------------------------------------------------
+
+            if (jobCard.JobCardType == JobCardType.Paper)
+            {
+                var currentUser = await _userRepository
+                    .GetUserEntityByIdAsync(performedByUserId);
+
+                if (currentUser == null)
+                    throw new UnauthorizedAccessException(
+                        "User not found.");
+
+                bool isAdmin = string.Equals(
+                    currentUser.Role,
+                    "Admin",
+                    StringComparison.OrdinalIgnoreCase);
+
+                bool isAssignedTechnician =
+                    jobCard.AssignedTechnicianId == performedByUserId;
+
+
+                if (!isAssignedTechnician)
+                {
+                    isAssignedTechnician = await _jobCardRepository
+                        .IsTechnicianAssignedAsync(
+                            id,
+                            performedByUserId);
+                }
+
+
+                if (!isAdmin && !isAssignedTechnician)
+                {
+                    throw new UnauthorizedAccessException(
+                        "Only Admin or an assigned technician can complete this Paper Job Card.");
+                }
+
+                if (string.Equals(
+                    jobCard.Status,
+                    "Completed",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "This Paper Job Card is already completed.");
+                }
+            }
+
+            //--------------------------------------------------
+            // Complete Job Card
+            //--------------------------------------------------
 
             var oldStatus = jobCard.Status;
 
@@ -901,7 +1311,10 @@ namespace IThelpdesk.Services
             await _jobCardRepository.UpdateAsync(jobCard);
             await _jobCardRepository.SaveChangesAsync();
 
-            // Record the actual user who performed the completion.
+            //--------------------------------------------------
+            // Audit Completion
+            //--------------------------------------------------
+
             await _auditService.LogAsync(
                 jobCard.JobCardId,
                 performedByUserId,
@@ -910,8 +1323,9 @@ namespace IThelpdesk.Services
                 oldStatus,
                 "Completed");
         }
-           
-        
+
+
+
         public async Task UpdateAsync(JobCard jobCard)
         {
             await _jobCardRepository.UpdateAsync(jobCard);
@@ -988,10 +1402,7 @@ namespace IThelpdesk.Services
                 throw new Exception(
                     "Work Completed entries can only be added using this method for Paper Job Cards.");
 
-            // 3. Prevent changes to completed Job Cards
-            if (jobCard.Status == "Completed")
-                throw new Exception(
-                    "Cannot add work to a completed Paper Job Card.");
+           
             //--------------------------------------------------
             // Check permission to capture work
             //--------------------------------------------------
@@ -1006,6 +1417,23 @@ namespace IThelpdesk.Services
                     "User not found.");
 
             bool isAdmin = capturingUser.Role == "Admin";
+
+
+            //--------------------------------------------------
+            // Company rule:
+            // Only Admin can add work after completion.
+            //--------------------------------------------------
+
+            if (string.Equals(
+                    jobCard.Status,
+                    "Completed",
+                    StringComparison.OrdinalIgnoreCase)
+                && !isAdmin)
+            {
+                throw new UnauthorizedAccessException(
+                    "Only Admin can add Work Completed to a completed Paper Job Card.");
+            }
+
 
             bool isCapturingTechnicianAssigned =
                 await _jobCardRepository.IsTechnicianAssignedAsync(
@@ -1026,6 +1454,26 @@ namespace IThelpdesk.Services
             if (!isAssigned)
                 throw new Exception(
                     "The responsible technician must be assigned to this Paper Job Card.");
+
+
+
+            //--------------------------------------------------
+            // Company permission rules:
+            // Admin and Lead Technician can capture for
+            // any assigned technician.
+            // Secondary Technician can capture for self only.
+            //--------------------------------------------------
+
+            bool isLeadTechnician =
+                jobCard.AssignedTechnicianId == performedByUserId;
+
+            if (!isAdmin &&
+                !isLeadTechnician &&
+                dto.TechnicianId != performedByUserId)
+            {
+                throw new UnauthorizedAccessException(
+                    "Secondary technicians can only capture Work Completed for themselves.");
+            }
 
             // 5. Create the work entry
             var workEntry = new JobCardLabour
@@ -1288,18 +1736,7 @@ namespace IThelpdesk.Services
                 throw new Exception(
                     "Parts can only be added using this method for Paper Job Cards.");
 
-            //--------------------------------------------------
-            // 3. Prevent changes to completed Paper Job Cards
-            //--------------------------------------------------
 
-            if (string.Equals(
-                jobCard.Status,
-                "Completed",
-                StringComparison.OrdinalIgnoreCase))
-            {
-                throw new Exception(
-                    "Cannot add parts to a completed Paper Job Card.");
-            }
 
             //--------------------------------------------------
             // 4. Validate the part details
@@ -1334,6 +1771,21 @@ namespace IThelpdesk.Services
                     "Admin",
                     StringComparison.OrdinalIgnoreCase);
 
+
+            bool isCompleted =
+                string.Equals(
+                    jobCard.Status,
+                    "Completed",
+                    StringComparison.OrdinalIgnoreCase);
+
+            // Only Admin can add Parts after completion.
+            if (isCompleted && !isAdmin)
+            {
+                throw new UnauthorizedAccessException(
+                    "Only Admin can add Parts to a completed Paper Job Card.");
+            }
+
+
             bool isAssigned =
                 await _jobCardRepository.IsTechnicianAssignedAsync(
                     jobCardId,
@@ -1355,6 +1807,31 @@ namespace IThelpdesk.Services
             if (!responsibleTechnicianAssigned)
                 throw new Exception(
                     "The responsible technician must be assigned to this Paper Job Card.");
+
+
+            //--------------------------------------------------
+            // 7. Enforce Lead / Secondary permissions
+            //--------------------------------------------------
+
+            if (!isAdmin &&
+                dto.ResponsibleTechnicianId != performedByUserId)
+            {
+                var assignments =
+                    await _jobCardRepository.GetAssignedTechniciansAsync(
+                        jobCardId);
+
+                bool isLeadTechnician = assignments.Any(
+                    assignment =>
+                        assignment.TechnicianId == performedByUserId &&
+                        assignment.IsLeadTechnician);
+
+                if (!isLeadTechnician)
+                {
+                    throw new UnauthorizedAccessException(
+                        "Secondary Technicians can only record Parts for themselves.");
+                }
+            }
+
 
             //--------------------------------------------------
             // 7. Create the Paper Part entry

@@ -35,7 +35,16 @@
 
         PdfGenerated,
 
-              // Paper Job Card - Overall Time Tracking
-        PaperJobTimeUpdated
+
+        // Paper Job Card - Overall Time Tracking
+        PaperJobTimeUpdated,
+
+        // Paper Job Card - Technician Assignment History
+        PaperTechnicianAssigned,
+        PaperTechnicianRemoved,
+
+        PaperLeadTechnicianChanged
+
+
     }
 }

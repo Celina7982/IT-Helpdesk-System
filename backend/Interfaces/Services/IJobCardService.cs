@@ -52,6 +52,28 @@ namespace IThelpdesk.Interfaces.Services
             bool isLeadTechnician,
             int performedByUserId);
 
+
+
+
+        // Admin-only: Remove a technician from a Paper Job Card
+        Task RemovePaperJobCardTechnicianAsync(
+            int jobCardId,
+            int technicianId,
+            int performedByUserId);
+
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Change Lead Technician
+        // Admin Only
+        //--------------------------------------------------
+
+        Task ChangePaperLeadTechnicianAsync(
+            int jobCardId,
+            int newLeadTechnicianId,
+            int performedByUserId);
+
+
         Task UpdateAsync(JobCard jobCard);
 
         Task UpdateJobCardAsync(

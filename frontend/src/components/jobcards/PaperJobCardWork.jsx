@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import jobCardService from "../../services/jobCardService";
 
 function PaperJobCardWork({ jobCard, onSaved, role }) {
@@ -16,11 +17,13 @@ function PaperJobCardWork({ jobCard, onSaved, role }) {
     // Permissions
     //--------------------------------------------------
 
-    const isCompleted = jobCard.status === "Completed";
+    
+const isCompleted =
+    jobCard.status?.toLowerCase() === "completed";
 
-    const canAddWork =
-        !isCompleted &&
-        (role === "Admin" || role === "Technician");
+const canAddWork =
+    role === "Admin" ||
+    (role === "Technician" && !isCompleted);
 
     //--------------------------------------------------
     // Assigned Technicians
@@ -28,6 +31,54 @@ function PaperJobCardWork({ jobCard, onSaved, role }) {
 
     const assignedTechnicians =
         jobCard.assignedTechnicians || [];
+
+
+        
+    //--------------------------------------------------
+    // Restrict responsible technician selection
+    //--------------------------------------------------
+
+    const token = localStorage.getItem("token");
+
+    let currentUserId = null;
+
+    try {
+        if (token) {
+            const decoded = jwtDecode(token);
+
+            const id =
+                decoded.nameid ||
+                decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+                decoded.sub;
+
+            if (
+                id != null &&
+                id !== "" &&
+                Number.isInteger(Number(id))
+            ) {
+                currentUserId = Number(id);
+            }
+        }
+    } catch (error) {
+        console.error("Unable to read current user ID:", error);
+    }
+
+    const currentAssignment = assignedTechnicians.find(
+        technician =>
+            Number(technician.technicianId) === currentUserId
+    );
+
+    const isLeadTechnician =
+        currentAssignment?.isLeadTechnician === true;
+
+    const selectableTechnicians =
+        role === "Admin" || isLeadTechnician
+            ? assignedTechnicians
+            : assignedTechnicians.filter(
+                technician =>
+                    Number(technician.technicianId) === currentUserId
+            );
+
 
     //--------------------------------------------------
     // Save Work Completed
@@ -140,7 +191,7 @@ function PaperJobCardWork({ jobCard, onSaved, role }) {
                                     Select Technician
                                 </option>
 
-                                {assignedTechnicians.map(
+                                {selectableTechnicians.map(
                                     (technician) => (
 
                                         <option

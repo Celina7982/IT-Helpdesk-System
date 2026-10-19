@@ -151,6 +151,38 @@ const addPart = async (jobCardId, part) => {
   return response.data;
 };
 
+
+const addPaperPart = async (jobCardId, part) => {
+
+    const response = await api.post(
+        `/JobCard/${jobCardId}/paper-parts`,
+        part
+    );
+
+    return response.data;
+
+};
+
+
+
+const assignPaperTechnician = async (
+    jobCardId,
+    technicianId,
+    isLeadTechnician = false
+) => {
+    const response = await api.post(
+        `/JobCard/${jobCardId}/technicians`,
+        {
+            technicianId: Number(technicianId),
+            isLeadTechnician
+        }
+    );
+
+    return response.data;
+};
+
+
+
 //----------------------------------------------------
 // Update Part
 //----------------------------------------------------
@@ -206,6 +238,8 @@ const jobCardService = {
   deleteLabourEntry,   // Exported
   getParts,
   addPart,
+  addPaperPart,
+  assignPaperTechnician,
   updatePart,
   deletePart,
   getAuditHistory,

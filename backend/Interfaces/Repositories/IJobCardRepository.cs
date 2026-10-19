@@ -106,6 +106,16 @@ namespace IThelpdesk.Interfaces.Repositories
             int jobCardId,
             int technicianId);
 
+
+        // Get a tracked technician assignment for removal
+        Task<JobCardTechnician?> GetTechnicianAssignmentAsync(
+            int jobCardId,
+            int technicianId);
+
+        Task<List<JobCardTechnician>> GetTrackedTechnicianAssignmentsAsync(
+    int jobCardId);
+
+
         // Add a technician assignment
         Task AddTechnicianAssignmentAsync(
             JobCardTechnician assignment);

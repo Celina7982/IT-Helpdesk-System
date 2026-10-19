@@ -709,30 +709,41 @@ await _auditService.LogAsync(
         }
 
 
-        //---------------------------------------------------------
-        // COMPLETE JOB CARD
-        //---------------------------------------------------------
 
         [Authorize(Roles = "Admin,Technician")]
-[HttpPut("{id}/complete")]
-public async Task<IActionResult> Complete(int id)
-{
-    // Get the logged-in user's ID from the JWT
-    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        [HttpPut("{id}/complete")]
+        public async Task<IActionResult> Complete(int id)
+        {
+            var userIdClaim = User.FindFirst(
+                ClaimTypes.NameIdentifier)?.Value;
 
-    if (string.IsNullOrEmpty(userIdClaim))
-        return Unauthorized();
+            if (!int.TryParse(userIdClaim, out int userId))
+                return Unauthorized();
 
-    if (!int.TryParse(userIdClaim, out int userId))
-        return Unauthorized();
+            try
+            {
+                await _jobCardService.CompleteJobCardAsync(
+                    id,
+                    userId);
 
-    // Pass the actual user performing the completion
-    await _jobCardService.CompleteJobCardAsync(
-        id,
-        userId);
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
 
-    return NoContent();
-}
 
         //---------------------------------------------------------
         // DELETE JOB CARD
@@ -805,5 +816,103 @@ public async Task<IActionResult> Complete(int id)
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Remove Assigned Technician
+        // Admin Only
+        //--------------------------------------------------
+
+        [HttpDelete("{jobCardId:int}/technicians/{technicianId:int}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RemovePaperJobCardTechnician(
+            int jobCardId,
+            int technicianId)
+        {
+            var userIdClaim = User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null ||
+                !int.TryParse(userIdClaim.Value, out int performedByUserId))
+            {
+                return Unauthorized("Invalid user authentication.");
+            }
+
+            try
+            {
+                await _jobCardService.RemovePaperJobCardTechnicianAsync(
+                    jobCardId,
+                    technicianId,
+                    performedByUserId);
+
+                return Ok(new
+                {
+                    message = "Technician removed successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        //--------------------------------------------------
+        // Paper Job Card - Change Lead Technician
+        // Admin Only
+        //--------------------------------------------------
+
+        [HttpPut("{jobCardId:int}/lead-technician/{technicianId:int}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ChangePaperLeadTechnician(
+            int jobCardId,
+            int technicianId)
+        {
+            try
+            {
+                // Get the logged-in Admin's User ID.
+                var userIdClaim = User.FindFirst(
+                    System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                if (userIdClaim == null ||
+                    !int.TryParse(userIdClaim.Value, out int performedByUserId))
+                {
+                    return Unauthorized(
+                        "Unable to identify the logged-in user.");
+                }
+
+                await _jobCardService.ChangePaperLeadTechnicianAsync(
+                    jobCardId,
+                    technicianId,
+                    performedByUserId);
+
+                return Ok(new
+                {
+                    message = "Lead Technician updated successfully."
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+        }
+
+
+
     }
 }

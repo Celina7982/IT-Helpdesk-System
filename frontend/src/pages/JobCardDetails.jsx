@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import jobCardService from "../services/jobCardService";
+import userService from "../services/userService";
 
 import JobCardHeader from "../components/jobcards/JobCardHeader";
 import JobCardInformation from "../components/jobcards/JobCardInformation";
@@ -10,6 +11,7 @@ import JobCardWorkDetails from "../components/jobcards/JobCardWorkDetails";
 import PaperJobCardWork from "../components/jobcards/PaperJobCardWork";
 import LabourEntries from "../components/jobcards/LabourEntries";
 import JobCardParts from "../components/jobcards/JobCardParts";
+import PaperJobCardParts from "../components/jobcards/PaperJobCardParts";
 import { jwtDecode } from "jwt-decode";
 import JobCardHistory from "../components/jobcards/JobCardHistory";
 
@@ -19,6 +21,26 @@ function JobCardDetails() {
     const [jobCard, setJobCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("information");
+
+
+    
+    //--------------------------------------------------
+    // Paper Job Card - Technician Assignment Editor
+    //--------------------------------------------------
+
+    const [showAssignmentEditor, setShowAssignmentEditor] =
+        useState(false);
+
+    const [selectedAssignmentTechnicianId, setSelectedAssignmentTechnicianId] =
+        useState("");
+
+    const [savingAssignment, setSavingAssignment] =
+        useState(false);
+        
+        const [assignableUsers, setAssignableUsers] = useState([]);
+const [loadingAssignableUsers, setLoadingAssignableUsers] =
+    useState(false);
+
 
     const token = localStorage.getItem("token");
 
@@ -52,9 +74,89 @@ function JobCardDetails() {
         }
     };
 
+    
+    //--------------------------------------------------
+    // Load Users Available for Paper Job Card Assignment
+    //--------------------------------------------------
+
+    const loadAssignableUsers = async () => {
+        try {
+            setLoadingAssignableUsers(true);
+
+            const users = await userService.getAssignableUsers();
+
+            setAssignableUsers(users);
+
+        } catch (error) {
+            console.error(
+                "Unable to load assignable users:",
+                error
+            );
+
+            alert("Unable to load available technicians.");
+
+        } finally {
+            setLoadingAssignableUsers(false);
+        }
+    };
+
+
+    
+    //--------------------------------------------------
+    // Add Technician to Paper Job Card
+    //--------------------------------------------------
+
+    const handleAddPaperTechnician = async () => {
+
+        if (!selectedAssignmentTechnicianId) {
+            alert("Please select a technician.");
+            return;
+        }
+
+        try {
+            setSavingAssignment(true);
+
+            await jobCardService.assignPaperTechnician(
+                Number(id),
+                Number(selectedAssignmentTechnicianId),
+                false
+            );
+
+            alert("Technician assigned successfully.");
+
+            setSelectedAssignmentTechnicianId("");
+
+            await loadJobCard();
+
+        } catch (error) {
+
+            console.error(
+                "Failed to assign technician:",
+                error
+            );
+
+            alert(
+                error.response?.data?.message ||
+                "Unable to assign technician."
+            );
+
+        } finally {
+            setSavingAssignment(false);
+        }
+    };
+
+
     useEffect(() => {
         loadJobCard();
     }, [id]);
+
+    
+    useEffect(() => {
+        if (showAssignmentEditor) {
+            loadAssignableUsers();
+        }
+    }, [showAssignmentEditor]);
+
 
     //--------------------------------------------------
     // Save Changes
@@ -157,7 +259,173 @@ function JobCardDetails() {
         <div className="container mt-4">
             <JobCardHeader jobCard={jobCard} />
 
+            
+{jobCard.jobCardType === 1 && role === "Admin" && (
+    <div className="mt-3">
+        
+<button
+    type="button"
+    className="btn btn-outline-primary"
+    onClick={() =>
+        setShowAssignmentEditor(!showAssignmentEditor)
+    }
+>
+    {showAssignmentEditor
+        ? "Close Assignment Editor"
+        : "Edit Assigned Technicians"}
+</button>
+
+    </div>
+)}
+
+
+{jobCard.jobCardType === 1 &&
+    role === "Admin" &&
+    showAssignmentEditor && (
+        <div className="card mt-3">
+            <div className="card-header">
+                <strong>Manage Assigned Technicians</strong>
+            </div>
+
+            <div className="card-body">
+               
+<div className="mb-3">
+    <h6 className="fw-bold">
+        Currently Assigned Technicians
+    </h6>
+
+    {(jobCard.assignedTechnicians || []).length === 0 ? (
+        <div className="alert alert-warning">
+            No technicians are currently assigned.
+        </div>
+    ) : (
+        <div className="list-group">
+            {(jobCard.assignedTechnicians || []).map(
+                (technician) => (
+                    <div
+                        key={technician.technicianId}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                        <span>
+                            {technician.technicianName}
+                        </span>
+
+                        {technician.isLeadTechnician ? (
+                            <span className="badge bg-primary">
+                                Lead Technician
+                            </span>
+                        ) : (
+                            <span className="badge bg-secondary">
+                                Assigned Technician
+                            </span>
+                        )}
+                    </div>
+                )
+            )}
+        </div>
+    )}
+</div>
+
+{/* Add Technician to Paper Job Card */}
+
+<div className="mt-4">
+    <h6 className="fw-bold">
+        Add Technician
+    </h6>
+
+    <label className="form-label">
+        Select Admin or Technician
+    </label>
+
+    <select
+        className="form-select"
+        value={selectedAssignmentTechnicianId}
+        onChange={(e) =>
+            setSelectedAssignmentTechnicianId(e.target.value)
+        }
+        disabled={loadingAssignableUsers || savingAssignment}
+    >
+        <option value="">
+            {loadingAssignableUsers
+                ? "Loading available technicians..."
+                : "Select Technician"}
+        </option>
+
+        {assignableUsers
+            .filter(
+                (user) =>
+                    !(jobCard.assignedTechnicians || []).some(
+                        (assigned) =>
+                            Number(assigned.technicianId) ===
+                            Number(user.userId)
+                    )
+            )
+            .map((user) => (
+                <option
+                    key={user.userId}
+                    value={user.userId}
+                >
+                    {user.fullName}
+                </option>
+            ))}
+    </select>
+
+
+<div className="mt-3">
+    <button
+        type="button"
+        className="btn btn-primary"
+        onClick={handleAddPaperTechnician}
+        disabled={
+            !selectedAssignmentTechnicianId ||
+            savingAssignment ||
+            loadingAssignableUsers
+        }
+    >
+        {savingAssignment
+            ? "Assigning..."
+            : "Add Technician"}
+    </button>
+</div>
+
+
+    <small className="text-muted">
+        Technicians already assigned to this Job Card
+        are excluded from the list.
+    </small>
+</div>
+
+
+            </div>
+        </div>
+    )}
+
+
+
+
+{/*----------------------------------------------
+    Complete Paper Job Card
+----------------------------------------------*/}
+
+{jobCard.jobCardType === 1 &&
+    jobCard.status?.toLowerCase() !== "completed" &&
+    (role === "Admin" || role === "Technician") && (
+
+        <div className="d-flex justify-content-end mt-3">
+            <button
+                type="button"
+                className="btn btn-success"
+                onClick={completeJobCard}
+            >
+                Complete Job Card
+            </button>
+        </div>
+
+)}
+
+
             <ul className="nav nav-tabs mt-4">
+        
                 <li className="nav-item">
                     <button
                         className={`nav-link ${activeTab === "information" ? "active" : ""}`}
@@ -256,16 +524,26 @@ function JobCardDetails() {
     />
 )}
 
-                {activeTab === "parts" && (
-                    <JobCardParts
-                        jobCardId={jobCard.jobCardId}
-                        parts={jobCard.parts || []}
-                        onAdd={addPart}
-                        onDelete={deletePart}
-                        role={role}
-                        status={jobCard.status}
-                    />
-                )}
+                
+{activeTab === "parts" && (
+    jobCard.jobCardType === 1 ? (
+        <PaperJobCardParts
+            jobCard={jobCard}
+            onSaved={loadJobCard}
+            role={role}
+        />
+    ) : (
+        <JobCardParts
+            jobCardId={jobCard.jobCardId}
+            parts={jobCard.parts || []}
+            onAdd={addPart}
+            onDelete={deletePart}
+            role={role}
+            status={jobCard.status}
+        />
+    )
+)}
+
 
                 {activeTab === "history" && (
                     <JobCardHistory jobCardId={jobCard.jobCardId} />

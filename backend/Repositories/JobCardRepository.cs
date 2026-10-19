@@ -4,6 +4,7 @@ using IThelpdesk.DTOs.JobCard;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+using IThelpdesk.Enums;
 using System.Linq;
 
 
@@ -56,9 +57,32 @@ namespace IThelpdesk.Repositories
 
             if (technicianId.HasValue)
             {
+                int currentTechnicianId = technicianId.Value;
+
                 query = query.Where(j =>
-                    j.AssignedTechnicianId == technicianId.Value);
+
+                    // Preserve existing Digital Job Card visibility
+                    (
+                        j.JobCardType == JobCardType.Digital &&
+                        j.AssignedTechnicianId == currentTechnicianId
+                    )
+
+                    ||
+
+                    // Paper Job Cards: lead or secondary technician
+                    (
+                        j.JobCardType == JobCardType.Paper &&
+                        (
+                            j.AssignedTechnicianId == currentTechnicianId
+                            ||
+                            _context.JobCardTechnicians.Any(t =>
+                                t.JobCardId == j.JobCardId &&
+                                t.TechnicianId == currentTechnicianId)
+                        )
+                    )
+                );
             }
+
 
             //--------------------------------------------------
             // Assigned Technician Filter
@@ -688,6 +712,33 @@ namespace IThelpdesk.Repositories
         {
             return await _context.JobCardTechnicians
                 .AnyAsync(jt =>
+                    jt.JobCardId == jobCardId &&
+                    jt.TechnicianId == technicianId);
+        }
+
+
+        //--------------------------------------------------
+        // Get Tracked Technician Assignments
+        // Used when changing the Lead Technician
+        //--------------------------------------------------
+
+        public async Task<List<JobCardTechnician>>
+            GetTrackedTechnicianAssignmentsAsync(int jobCardId)
+        {
+            return await _context.JobCardTechnicians
+                .Where(jt => jt.JobCardId == jobCardId)
+                .ToListAsync();
+        }
+
+
+
+        // Get a tracked technician assignment for removal
+        public async Task<JobCardTechnician?> GetTechnicianAssignmentAsync(
+            int jobCardId,
+            int technicianId)
+        {
+            return await _context.JobCardTechnicians
+                .FirstOrDefaultAsync(jt =>
                     jt.JobCardId == jobCardId &&
                     jt.TechnicianId == technicianId);
         }

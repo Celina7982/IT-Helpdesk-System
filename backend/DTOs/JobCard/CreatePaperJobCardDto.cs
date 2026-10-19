@@ -37,6 +37,15 @@ namespace IThelpdesk.DTOs.JobCard
 
         public int? AssignedTechnicianId { get; set; }
 
+
+        //--------------------------------------------------
+        // All technicians assigned during registration
+        // Includes the Lead Technician
+        //--------------------------------------------------
+
+        public List<int> AssignedTechnicianIds { get; set; } = new();
+
+
         //--------------------------------------------------
         // Work Information
         //--------------------------------------------------

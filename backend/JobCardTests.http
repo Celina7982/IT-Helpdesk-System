@@ -1,0 +1,286 @@
+@baseUrl = https://localhost:7112
+@token= eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjgiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiQWxsYW4gU21pdGgiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9naXZlbm5hbWUiOiJBbGxhbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL3N1cm5hbWUiOiJTbWl0aCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6ImFsbGFuQHRlc3QuY29tIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiVGVjaG5pY2lhbiIsImV4cCI6MTc5MjQxNjEyMSwiaXNzIjoiSVRoZWxwZGVzayIsImF1ZCI6IklUaGVscGRlc2tVc2VycyJ9.orixST_mtij1kWVkswi91tphHusgbtulc7LhcFKTQyA
+GET {{baseUrl}}/api/JobCard
+Accept: application/json
+
+### Test 2 - Admin Login
+POST https://localhost:7112/api/Auth/login
+Content-Type: application/json
+
+{
+  "email": "allan@test.com",
+  "password": "Password123!"
+}
+
+### Test 3 - Get Job Cards (Authenticated)
+GET {{baseUrl}}/api/JobCard
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Test 4 - Create Paper Job Card
+POST {{baseUrl}}/api/JobCard/create-paper
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paperJobCardNumber": "PAPER-TEST-001",
+  "paperJobCardDate": "2026-10-15T09:00:00",
+  "ticketId": null,
+  "customerName": "Test Customer",
+  "assignedTechnicianId":4 ,
+  "faultReported": "Test computer is not connecting to the network.",
+  "faultFound": "Network cable disconnected.",
+  "workPerformed": "Reconnected network cable and tested connectivity.",
+  "completionNotes": "Test Paper Job Card for technician assignment."
+}
+
+### Test 4 - Create Paper Job Card
+POST {{baseUrl}}/api/JobCard/create-paper
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paperJobCardNumber": "19565",
+  "paperJobCardDate": "2026-10-15T09:00:00",
+  "ticketId": null,
+  "customerName": "Test Customer",
+  "assignedTechnicianId": 4,
+  "faultReported": "Computer not connecting to the network.",
+  "faultFound": "Network cable disconnected.",
+  "workPerformed": "Reconnected network cable and tested connectivity.",
+  "completionNotes": "Test Paper Job Card."
+}
+
+### Test 5 - Assign Second Technician to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "isLeadTechnician": false
+}
+
+  ### Test 5 - Assign Second Technician to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "isLeadTechnician": false
+}
+
+  ### Test 6 - Add Paper Job Card Work Completed
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "workPerformed": "Replaced faulty network cable and tested connectivity successfully."
+}
+
+  ### Test 7 - Get Paper Job Card Work Completed
+GET {{baseUrl}}/api/JobCard/14/labour
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+
+### Test 8 - Add Parts Used to Paper Job Card
+POST {{baseUrl}}/api/JobCard/14/paper-parts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "partName": "CAT6 Network Cable",
+  "quantity": 2,
+  "responsibleTechnicianId": 8
+}
+
+
+  
+### Test 9 - Get Paper Job Card Parts Used
+GET {{baseUrl}}/api/JobCard/14/parts
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+
+### Test 10 - Update Paper Job Card Overall Time
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-15T08:30:00+02:00",
+  "timeOut": "2026-10-15T10:45:00+02:00",
+  "isTravel": true,
+  "isOnSite": true
+}
+
+
+### Test 11 - Update Paper Job Card Time and Audit History
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-15T08:30:00+02:00",
+  "timeOut": "2026-10-15T11:00:00+02:00",
+  "isTravel": true,
+  "isOnSite": true
+}
+
+
+
+### Get Paper Job Card Details - 19565
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### Get Paper Job Card Details - 19565
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### Get Paper Job Card 19565 — Work Completed Verification
+
+GET {{baseUrl}}/api/JobCard/14
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### Test: Secondary Technician cannot capture work for Lead Technician
+
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 4,
+  "workPerformed": "Permission test - Allan attempting to capture work for Victor."
+}
+
+
+### Test: Secondary Technician captures own work
+
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "workPerformed": "Permission test - Allan records his own work."
+}
+
+
+
+### Test: Lead Technician captures work for Secondary Technician
+
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "workPerformed": "Permission test - Victor records work on behalf of Allan."
+}
+
+
+### Test: Admin captures work for an assigned technician
+
+POST {{baseUrl}}/api/JobCard/14/paper-work
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 8,
+  "workPerformed": "Permission test - Admin records work on behalf of Allan."
+}
+
+
+
+### Change Lead Technician - Paper Job Card 19565
+PUT https://localhost:7205/api/JobCard/14/lead-technician/8
+Authorization: Bearer YOUR_ADMIN_TOKEN
+
+
+  
+### Test: Admin changes Lead Technician from Victor to Allan
+
+PUT {{baseUrl}}/api/JobCard/14/lead-technician/8
+Authorization: Bearer {{token}}
+
+
+### Test: Admin changes Lead Technician from Victor to Allan
+
+PUT {{baseUrl}}/api/JobCard/14/lead-technician/8
+Authorization: Bearer {{token}}
+
+  ### Test adding an Admin to a completed Paper Job Card
+POST {{baseUrl}}/api/JobCard/15/technicians
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": 11,
+  "isLeadTechnician": false
+}
+
+
+### Test removing a Secondary Technician from Paper Job Card 99999
+DELETE {{baseUrl}}/api/JobCard/15/technicians/11
+Authorization: Bearer {{token}}
+
+
+### Test Admin updating overall time on a Completed Paper Job Card
+PUT {{baseUrl}}/api/JobCard/15/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-16T08:00:00+02:00",
+  "timeOut": "2026-10-16T10:30:00+02:00",
+  "isTravel": false,
+  "isOnSite": true
+}
+
+  ### Test Lead Technician cannot update completed Paper Job Card time
+PUT {{baseUrl}}/api/JobCard/15/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-16T09:00:00+02:00",
+  "timeOut": "2026-10-16T11:00:00+02:00",
+  "isTravel": true,
+  "isOnSite": false
+}
+
+### Test Secondary Technician cannot update Open Paper Job Card time
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-16T08:00:00+02:00",
+  "timeOut": "2026-10-16T10:00:00+02:00",
+  "isTravel": false,
+  "isOnSite": true
+}
+
+### Test Lead Technician updating an Open Paper Job Card
+PUT {{baseUrl}}/api/JobCard/14/paper-time
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeIn": "2026-10-16T08:00:00+02:00",
+  "timeOut": "2026-10-16T11:00:00+02:00",
+  "isTravel": false,
+  "isOnSite": true
+}

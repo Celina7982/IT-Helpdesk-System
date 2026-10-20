@@ -29,5 +29,13 @@ namespace IThelpdesk.Models
         public string WorkPerformed { get; set; } = string.Empty;
 
         public DateTime DateWorked { get; set; } = DateTime.UtcNow;
+
+        // User who captured this work entry
+        // May be different from the responsible technician
+        public int? CapturedByUserId { get; set; }
+        // Identifies a descriptive work entry for a Paper Job Card
+        // Digital Job Cards continue using labour hours
+        public bool IsPaperWorkEntry { get; set; } = false;
+
     }
 }

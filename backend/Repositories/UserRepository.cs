@@ -1,8 +1,10 @@
 ﻿using IThelpdesk.Data;
+using IThelpdesk.DTOs.Common;
 using IThelpdesk.DTOs.User;
 using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace IThelpdesk.Repositories
 {
@@ -15,12 +17,46 @@ namespace IThelpdesk.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<UserListDto>> GetAllUsersAsync()
+        public async Task<PagedResultDto<UserListDto>> GetAllUsersAsync(
+     int pageNumber,
+     int pageSize,
+     string? search)
         {
-            return await _context.Users
+            var query = _context.Users
+                .AsNoTracking()
+                .AsQueryable();
 
+            //--------------------------------------------------
+            // Search
+            //--------------------------------------------------
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(u =>
+                    u.FirstName.Contains(search) ||
+                    u.LastName.Contains(search) ||
+                    u.Email.Contains(search) ||
+                    u.Role.Contains(search));
+            }
+
+            //--------------------------------------------------
+            // Total Count
+            //--------------------------------------------------
+
+            var totalCount = await query.CountAsync();
+
+            //--------------------------------------------------
+            // Pagination
+            //--------------------------------------------------
+
+            var items = await query
                 .OrderBy(u => u.FirstName)
-
+                .ThenBy(u => u.LastName)
+                .ThenBy(u => u.UserId)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(u => new UserListDto
                 {
                     UserId = u.UserId,
@@ -31,10 +67,20 @@ namespace IThelpdesk.Repositories
                     IsActive = u.IsActive,
                     CreatedDate = u.CreatedDate
                 })
-
                 .ToListAsync();
-        }
 
+            //--------------------------------------------------
+            // Return Paged Result
+            //--------------------------------------------------
+
+            return new PagedResultDto<UserListDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+        }
         public async Task<UserDetailsDto?> GetUserByIdAsync(int id)
         {
             return await _context.Users
@@ -56,7 +102,7 @@ namespace IThelpdesk.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        
+
         public async Task<User?> GetUserEntityByIdAsync(int id)
         {
             return await _context.Users.FindAsync(id);
@@ -97,6 +143,17 @@ namespace IThelpdesk.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<User>> GetAssignableUsersAsync()
+        {
+            return await _context.Users
+                .Where(u =>
+                    u.IsActive &&
+                    (u.Role == "Technician" || u.Role == "Admin"))
+                .OrderBy(u => u.Role)
+                .ThenBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
+                .ToListAsync();
+        }
         public async Task<IEnumerable<User>> GetAdminsAsync()
         {
             return await _context.Users

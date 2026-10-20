@@ -93,5 +93,36 @@ namespace IThelpdesk.Interfaces.Repositories
         Task UpdatePartAsync(JobCardPart part);
         Task DeletePartAsync(JobCardPart part);
 
+        //--------------------------------------------------
+        // Paper Job Card - Technician Assignments
+        //--------------------------------------------------
+
+        // Get all technicians assigned to a Job Card
+        Task<List<JobCardTechnician>> GetAssignedTechniciansAsync(
+            int jobCardId);
+
+        // Check whether a technician is assigned
+        Task<bool> IsTechnicianAssignedAsync(
+            int jobCardId,
+            int technicianId);
+
+
+        // Get a tracked technician assignment for removal
+        Task<JobCardTechnician?> GetTechnicianAssignmentAsync(
+            int jobCardId,
+            int technicianId);
+
+        Task<List<JobCardTechnician>> GetTrackedTechnicianAssignmentsAsync(
+    int jobCardId);
+
+
+        // Add a technician assignment
+        Task AddTechnicianAssignmentAsync(
+            JobCardTechnician assignment);
+
+        // Remove a technician assignment
+        Task RemoveTechnicianAssignmentAsync(
+            JobCardTechnician assignment);
+
     }
 }

@@ -50,12 +50,60 @@ const createFromTicket = async (ticketId) => {
   return response.data;
 };
 
+
+
+ //----------------------------------------------------
+ // Create Paper Job Card
+ //----------------------------------------------------
+ const createPaperJobCard = async (paperJobCardData) => {
+   const response = await api.post(
+     "/JobCard/create-paper",
+     paperJobCardData
+   );
+
+   return response.data;
+ };
+
+
 //----------------------------------------------------
 // Update Job Card
 //----------------------------------------------------
 const update = async (id, jobCard) => {
   await api.put(`/JobCard/${id}`, jobCard);
 };
+
+
+
+ //----------------------------------------------------
+ // Update Paper Job Card Time
+ //----------------------------------------------------
+ const updatePaperJobTime = async (jobCardId, timeData) => {
+
+   const response = await api.put(
+     `/JobCard/${jobCardId}/paper-time`,
+     timeData
+   );
+
+   return response.data;
+
+ };
+
+ 
+ //----------------------------------------------------
+ // Add Paper Job Card Work Completed
+ //----------------------------------------------------
+ const addPaperWorkEntry = async (jobCardId, workData) => {
+
+   const response = await api.post(
+     `/JobCard/${jobCardId}/paper-work`,
+     workData
+   );
+
+   return response.data;
+
+ };
+
+
 
 //----------------------------------------------------
 // Complete Job Card
@@ -103,6 +151,38 @@ const addPart = async (jobCardId, part) => {
   return response.data;
 };
 
+
+const addPaperPart = async (jobCardId, part) => {
+
+    const response = await api.post(
+        `/JobCard/${jobCardId}/paper-parts`,
+        part
+    );
+
+    return response.data;
+
+};
+
+
+
+const assignPaperTechnician = async (
+    jobCardId,
+    technicianId,
+    isLeadTechnician = false
+) => {
+    const response = await api.post(
+        `/JobCard/${jobCardId}/technicians`,
+        {
+            technicianId: Number(technicianId),
+            isLeadTechnician
+        }
+    );
+
+    return response.data;
+};
+
+
+
 //----------------------------------------------------
 // Update Part
 //----------------------------------------------------
@@ -145,14 +225,21 @@ const jobCardService = {
   getDetails,
   getByTicketId,
   createFromTicket,
+  createPaperJobCard,
   update,
-  completeJobCard,
+  createPaperJobCard,
+  update,
+  updatePaperJobTime,
+  addPaperWorkEntry,
+ completeJobCard,
   getLabourEntries,    // Exported
   addLabourEntry,      // Exported
   updateLabourEntry,   // Exported
   deleteLabourEntry,   // Exported
   getParts,
   addPart,
+  addPaperPart,
+  assignPaperTechnician,
   updatePart,
   deletePart,
   getAuditHistory,

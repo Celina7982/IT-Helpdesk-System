@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import TicketDetailsModal from "./TicketDetailsModal";
 import StatusBadge from "../StatusBadge";
@@ -11,7 +10,11 @@ function AdminTicketsTable({
     loading,
     refreshTickets,
     onArchive,
-    onDelete
+    onDelete,
+    pageNumber,
+    setPageNumber,
+    pageSize,
+    setPageSize
 }) {
     const [selectedTicketId, setSelectedTicketId] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
@@ -143,6 +146,29 @@ function AdminTicketsTable({
                             )}
                         </tbody>
                     </table>
+
+                    {/* Pagination Controls */}
+                    <div className="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span>Page <strong>{pageNumber}</strong></span>
+                        </div>
+                        <div className="btn-group">
+                            <button
+                                className="btn btn-outline-primary btn-sm"
+                                disabled={pageNumber === 1}
+                                onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
+                            >
+                                Previous
+                            </button>
+                            <button
+                                className="btn btn-outline-primary btn-sm"
+                                disabled={tickets.length < pageSize}
+                                onClick={() => setPageNumber((prev) => prev + 1)}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -6,11 +6,13 @@ const userService = {
     // Get All Users
     //----------------------------------------------------
 
-    getUsers: async () => {
+    getUsers: async (pageNumber = 1, pageSize = 10, search = "") => {
 
         const response = await api.get("/User", {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+            params: {
+                pageNumber,
+                pageSize,
+                search
             }
         });
 
@@ -32,6 +34,23 @@ const userService = {
         return response.data;
     },
 
+
+    //----------------------------------------------------
+    // Get Assignable Users (Active Admins + Technicians)
+    //----------------------------------------------------
+
+    getAssignableUsers: async () => {
+
+        const response = await api.get("/User/assignable", {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        return response.data;
+    },
+
+    
     //----------------------------------------------------
     // Create User
     //----------------------------------------------------
@@ -48,37 +67,33 @@ const userService = {
     },
 
     //----------------------------------------------------
-// Update User
-//----------------------------------------------------
+    // Update User
+    //----------------------------------------------------
 
-updateUser: async (id, user) => {
+    updateUser: async (id, user) => {
 
-    await api.put(`/User/${id}`, user, {
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-    });
+        await api.put(`/User/${id}`, user, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`
+            }
+        });
 
-},
+    },
 
-//----------------------------------------------------
-// Reset Password
-//----------------------------------------------------
+    //----------------------------------------------------
+    // Reset Password
+    //----------------------------------------------------
 
-resetPassword: async (id, newPassword) => {
+    resetPassword: async (id, newPassword) => {
 
-    await api.put(
+        await api.put(
+            `/User/reset-password/${id}`,
+            {
+                newPassword
+            }
+        );
 
-        `/User/reset-password/${id}`,
-
-        {
-            newPassword
-        }
-
-    );
-
-},
-
+    },
 
     //----------------------------------------------------
     // Delete User
@@ -94,28 +109,27 @@ resetPassword: async (id, newPassword) => {
 
     },
 
-
-
     //-------------------------------------------------------
-// Edit Comment
-// Matches PUT: api/tickets/{ticketId}/comments/{commentId}
-//-------------------------------------------------------
+    // Edit Comment
+    // Matches PUT: api/tickets/{ticketId}/comments/{commentId}
+    //-------------------------------------------------------
 
-updateComment: async (ticketId, commentId, message) => {
-    const response = await api.put(
-        `/tickets/${ticketId}/comments/${commentId}`,
-        {
-            message: message
-        },
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+    updateComment: async (ticketId, commentId, message) => {
+
+        const response = await api.put(
+            `/tickets/${ticketId}/comments/${commentId}`,
+            {
+                message: message
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
             }
-        }
-    );
+        );
 
-    return response.data;
-},
+        return response.data;
+    },
 };
 
 export default userService;

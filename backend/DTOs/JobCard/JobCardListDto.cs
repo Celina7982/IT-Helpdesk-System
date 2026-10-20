@@ -1,13 +1,13 @@
-﻿namespace IThelpdesk.DTOs.JobCard
+﻿
+using IThelpdesk.Enums;
+
+
+
+namespace IThelpdesk.DTOs.JobCard
 {
-    /// <summary>
+  
     /// Lightweight DTO used when displaying a list of Job Cards.
-    ///
-    /// This DTO intentionally excludes detailed information such as
-    /// work performed, labour entries, parts used and customer
-    /// signatures to reduce the amount of data transferred between
-    /// the API and the frontend.
-    /// </summary>
+    
     public class JobCardListDto
     {
         //--------------------------------------------------
@@ -22,7 +22,26 @@
         // Ticket Information
         //--------------------------------------------------
 
-        public int TicketId { get; set; }
+
+
+        public int? TicketId { get; set; }
+
+
+        //--------------------------------------------------
+        // Job Card Type
+        //--------------------------------------------------
+
+        public JobCardType JobCardType { get; set; }
+
+        //--------------------------------------------------
+        // Paper Job Card Information
+        //--------------------------------------------------
+
+        public string? PaperJobCardNumber { get; set; }
+
+        public DateTime? PaperJobCardDate { get; set; }
+
+
 
         public string CustomerName { get; set; } = string.Empty;
 

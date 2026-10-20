@@ -32,12 +32,65 @@ namespace IThelpdesk.Interfaces.Services
 
         Task<JobCard> CreateFromTicketAsync(int ticketId, int performedByUserId);
 
+
+        //--------------------------------------------------
+        // Create Paper Job Card
+        // Ticket is optional
+        //--------------------------------------------------
+
+        Task<JobCard> CreatePaperJobCardAsync(
+            CreatePaperJobCardDto dto,
+            int performedByUserId);
+
+        //--------------------------------------------------
+        // Paper Job Card - Technician Assignment
+        //--------------------------------------------------
+
+        Task AssignPaperJobCardTechnicianAsync(
+            int jobCardId,
+            int technicianId,
+            bool isLeadTechnician,
+            int performedByUserId);
+
+
+
+
+        // Admin-only: Remove a technician from a Paper Job Card
+        Task RemovePaperJobCardTechnicianAsync(
+            int jobCardId,
+            int technicianId,
+            int performedByUserId);
+
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Change Lead Technician
+        // Admin Only
+        //--------------------------------------------------
+
+        Task ChangePaperLeadTechnicianAsync(
+            int jobCardId,
+            int newLeadTechnicianId,
+            int performedByUserId);
+
+
         Task UpdateAsync(JobCard jobCard);
 
         Task UpdateJobCardAsync(
     int id,
     UpdateJobCardDto dto,
     int performedByUserId);
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Overall Time Tracking
+        //--------------------------------------------------
+
+        Task UpdatePaperJobTimeAsync(
+            int jobCardId,
+            UpdatePaperJobTimeDto dto,
+            int performedByUserId);
+
 
         Task CompleteJobCardAsync(int id, int performedByUserId);
 
@@ -55,11 +108,32 @@ namespace IThelpdesk.Interfaces.Services
 
         Task DeleteLabourEntryAsync(int labourId, int performedByUserId, string role);
 
+
+        //--------------------------------------------------
+        // Paper Job Card - Work Completed
+        //--------------------------------------------------
+
+        Task AddPaperWorkEntryAsync(
+            int jobCardId,
+            AddPaperWorkEntryDto dto,
+            int performedByUserId);
+
         //--------------------------------------------------
         // Parts
         //--------------------------------------------------
 
         Task AddPartAsync(int jobCardId, AddPartDto dto, int performedByUserId, string role);
+
+
+        //--------------------------------------------------
+        // Paper Job Card - Parts Used
+        //--------------------------------------------------
+
+        Task AddPaperPartAsync(
+            int jobCardId,
+            AddPaperPartDto dto,
+            int performedByUserId);
+
 
         Task<List<JobCardPartDto>> GetPartsAsync(int jobCardId);
 

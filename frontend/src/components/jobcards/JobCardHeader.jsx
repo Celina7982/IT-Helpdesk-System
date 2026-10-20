@@ -1,4 +1,8 @@
+
 function JobCardHeader({ jobCard }) {
+
+    // Identify Paper Job Cards
+    const isPaperJobCard = jobCard.jobCardType === 1;
 
     return (
 
@@ -9,15 +13,13 @@ function JobCardHeader({ jobCard }) {
                 <div>
 
                     <h2 className="mb-0">
-
                         IT Helpdesk System
-
                     </h2>
 
                     <small>
-
-                        Professional Service Job Card
-
+                        {isPaperJobCard
+                            ? "Paper Service Job Card"
+                            : "Professional Service Job Card"}
                     </small>
 
                 </div>
@@ -26,13 +28,17 @@ function JobCardHeader({ jobCard }) {
 
                     <h4 className="mb-0 text-warning">
 
-                        {jobCard.jobNumber}
+                        {isPaperJobCard
+                            ? jobCard.paperJobCardNumber || jobCard.jobNumber
+                            : jobCard.jobNumber}
 
                     </h4>
 
                     <small>
 
-                        Ticket #{jobCard.ticketId}
+                        {isPaperJobCard
+                            ? "Paper Job Card Number"
+                            : `Ticket #${jobCard.ticketId}`}
 
                     </small>
 

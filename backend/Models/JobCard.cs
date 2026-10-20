@@ -62,6 +62,19 @@ namespace IThelpdesk.Models
 
         public DateTime? PaperJobCardDate { get; set; }
 
+        //--------------------------------------------------
+        // Paper Job Card Registration Idempotency
+        //--------------------------------------------------
+
+        public Guid? RegistrationId { get; set; }
+        //--------------------------------------------------
+        // Original Paper Job Card Registration Fingerprint
+        //--------------------------------------------------
+
+        [MaxLength(64)]
+        public string? RegistrationPayloadHash { get; set; }
+
+
         public int? CapturedByUserId { get; set; }
 
         [ForeignKey(nameof(CapturedByUserId))]

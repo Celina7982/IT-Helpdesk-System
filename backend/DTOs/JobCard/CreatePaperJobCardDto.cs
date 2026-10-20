@@ -61,6 +61,13 @@ namespace IThelpdesk.DTOs.JobCard
         public string WorkPerformed { get; set; } = string.Empty;
 
         public string CompletionNotes { get; set; } = string.Empty;
+
+
+        //--------------------------------------------------
+        // Unique identifier for a Paper Job Card registration
+        //--------------------------------------------------
+
+        public Guid? RegistrationId { get; set; }
     }
 }
 

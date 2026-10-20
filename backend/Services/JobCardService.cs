@@ -6,6 +6,11 @@ using IThelpdesk.Interfaces.Repositories;
 using IThelpdesk.Interfaces.Services;
 using IThelpdesk.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Text;
+using System.Text.Json;
 using System.Linq;
 
 namespace IThelpdesk.Services
@@ -285,12 +290,80 @@ namespace IThelpdesk.Services
             CreatePaperJobCardDto dto,
             int performedByUserId)
         {
+
+            //--------------------------------------------------
+            // EF Core execution strategy for atomic registration
+            //--------------------------------------------------
+
+            var strategy = _context.Database.CreateExecutionStrategy();
             //--------------------------------------------------
             // Validate Paper Job Card Information
             //--------------------------------------------------
 
             if (dto == null)
                 throw new ArgumentException("Job card information is required.");
+
+            //--------------------------------------------------
+            // Validate Paper Job Card RegistrationId
+            //--------------------------------------------------
+
+            if (!dto.RegistrationId.HasValue ||
+                dto.RegistrationId.Value == Guid.Empty)
+            {
+                throw new ArgumentException(
+                    "A valid RegistrationId is required for Paper Job Card registration.");
+            }
+
+            //--------------------------------------------------
+            // Calculate original registration fingerprint
+            //--------------------------------------------------
+
+            string registrationPayloadHash =
+                ComputePaperRegistrationHash(dto);
+            //--------------------------------------------------
+            // Check whether this registration already exists
+            //--------------------------------------------------
+
+            var existingRegistration = await _context.JobCards
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j =>
+                    j.RegistrationId == dto.RegistrationId.Value &&
+                    j.JobCardType == JobCardType.Paper);
+
+
+            if (existingRegistration != null)
+            {
+                //--------------------------------------------------
+                // Verify registration ownership
+                //--------------------------------------------------
+
+                if (existingRegistration.CapturedByUserId != performedByUserId)
+                {
+                    throw new UnauthorizedAccessException(
+                        "This registration identifier belongs to another user.");
+                }
+
+                //--------------------------------------------------
+                // Compare original registration fingerprints
+                //--------------------------------------------------
+
+                if (string.IsNullOrWhiteSpace(
+                        existingRegistration.RegistrationPayloadHash) ||
+                    !string.Equals(
+                        existingRegistration.RegistrationPayloadHash,
+                        registrationPayloadHash,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "This RegistrationId was already used with different Job Card details.");
+                }
+
+                //--------------------------------------------------
+                // Return previously registered Paper Job Card
+                //--------------------------------------------------
+
+                return existingRegistration;
+            }
 
             if (string.IsNullOrWhiteSpace(dto.PaperJobCardNumber))
                 throw new ArgumentException("Paper job card number is required.");
@@ -370,73 +443,13 @@ namespace IThelpdesk.Services
                     "The Lead Technician must have the Admin or Technician role.");
             }
 
-            //--------------------------------------------------
-            // Generate Internal Job Number
-            //--------------------------------------------------
-
-            var latest = await _jobCardRepository
-                .GetLatestJobCardAsync();
-
-            int nextNumber = 1;
-
-            if (latest != null &&
-                !string.IsNullOrWhiteSpace(latest.JobNumber))
-            {
-                var parts = latest.JobNumber.Split('-');
-
-                if (parts.Length == 3 &&
-                    int.TryParse(parts[2], out int lastNumber))
-                {
-                    nextNumber = lastNumber + 1;
-                }
-            }
-
-            string jobNumber =
-                $"JC-{DateTime.UtcNow.Year}-{nextNumber:D6}";
+           
 
             //--------------------------------------------------
             // Create Paper Job Card
             //--------------------------------------------------
 
-            var jobCard = new JobCard
-            {
-                JobCardType = JobCardType.Paper,
-
-                JobNumber = jobNumber,
-
-                PaperJobCardNumber =
-                    dto.PaperJobCardNumber.Trim(),
-
-                PaperJobCardDate =
-                    dto.PaperJobCardDate.Value,
-
-                TicketId = dto.TicketId,
-
-                AssignedTechnicianId =
-                    dto.AssignedTechnicianId,
-
-                CapturedByUserId = performedByUserId,
-
-                DateCaptured = DateTime.UtcNow,
-
-                DateCreated = DateTime.UtcNow,
-
-                Status = "Open",
-
-                CustomerName = dto.CustomerName.Trim(),
-
-                FaultReported = dto.FaultReported.Trim(),
-
-                FaultFound = dto.FaultFound ?? "",
-
-                WorkPerformed = dto.WorkPerformed ?? "",
-
-                CompletionNotes = dto.CompletionNotes ?? "",
-
-                CustomerSignature = "",
-
-                SignedDate = null
-            };
+           
 
 
 
@@ -478,76 +491,384 @@ namespace IThelpdesk.Services
             }
 
             //--------------------------------------------------
-            // Create Paper Job Card
+            // Begin atomic Paper Job Card registration
+            //--------------------------------------------------
+            //--------------------------------------------------
+            // Each retry must create fresh EF Core entities.
+            // RegistrationId and RegistrationPayloadHash remain
+            // the same for the original registration request.
+            //--------------------------------------------------
+            //--------------------------------------------------
+            // Track whether this request created a new Job Card
             //--------------------------------------------------
 
-            await _jobCardRepository.AddAsync(jobCard);
+            bool isNewRegistration = false;
 
-            //--------------------------------------------------
-            // Create all technician assignments
-            //--------------------------------------------------
+            JobCard registeredJobCard;
 
-            foreach (var technicianId in technicianIds)
+            try
             {
-                var assignment = new JobCardTechnician
+                registeredJobCard = await strategy.ExecuteAsync(async () =>
                 {
-                    JobCard = jobCard,
+                    _context.ChangeTracker.Clear();
 
-                    TechnicianId = technicianId,
+                    //--------------------------------------------------
+                    // Reset notification state for each retry attempt
+                    //--------------------------------------------------
 
-                    IsLeadTechnician =
-                        technicianId == dto.AssignedTechnicianId.Value,
+                    isNewRegistration = false;
 
-                    AssignedByUserId = performedByUserId,
+                    await using var transaction =
+                        await _context.Database.BeginTransactionAsync();
 
-                    DateAssigned = DateTime.UtcNow
+
+                    //--------------------------------------------------
+                    // Check for a registration committed by an earlier
+                    // attempt before creating another Paper Job Card
+                    //--------------------------------------------------
+
+                    var committedRegistration = await _context.JobCards
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(j =>
+                        j.RegistrationId == dto.RegistrationId.Value);
+
+                if (committedRegistration != null)
+                {
+                    if (committedRegistration.JobCardType != JobCardType.Paper ||
+                        committedRegistration.CapturedByUserId != performedByUserId)
+                    {
+                        throw new UnauthorizedAccessException(
+                            "This RegistrationId belongs to another registration.");
+                    }
+
+                    if (!string.Equals(
+                            committedRegistration.RegistrationPayloadHash,
+                            registrationPayloadHash,
+                            StringComparison.Ordinal))
+                    {
+                        throw new InvalidOperationException(
+                            "This RegistrationId was already used with different Job Card details.");
+                    }
+
+                    return committedRegistration;
+                }
+
+                //--------------------------------------------------
+                // Generate Internal Job Number
+                //--------------------------------------------------
+
+                var latest = await _jobCardRepository
+                    .GetLatestJobCardAsync();
+
+                int nextNumber = 1;
+
+                if (latest != null &&
+                    !string.IsNullOrWhiteSpace(latest.JobNumber))
+                {
+                    var parts = latest.JobNumber.Split('-');
+
+                    if (parts.Length == 3 &&
+                        int.TryParse(parts[2], out int lastNumber))
+                    {
+                        nextNumber = lastNumber + 1;
+                    }
+                }
+
+                string jobNumber =
+                    $"JC-{DateTime.UtcNow.Year}-{nextNumber:D6}";
+
+                var jobCard = new JobCard
+                {
+                    JobCardType = JobCardType.Paper,
+
+                    //--------------------------------------------------
+                    // Unique Paper Job Card Registration Identifier
+                    //--------------------------------------------------
+
+                    RegistrationId = dto.RegistrationId.Value,
+
+                    //--------------------------------------------------
+                    // Original Registration Fingerprint
+                    //--------------------------------------------------
+
+                    RegistrationPayloadHash = registrationPayloadHash,
+
+                    JobNumber = jobNumber,
+
+                    PaperJobCardNumber =
+                   dto.PaperJobCardNumber.Trim(),
+
+                    PaperJobCardDate =
+                   dto.PaperJobCardDate.Value,
+
+                    TicketId = dto.TicketId,
+
+                    AssignedTechnicianId =
+                   dto.AssignedTechnicianId,
+
+                    CapturedByUserId = performedByUserId,
+
+                    DateCaptured = DateTime.UtcNow,
+
+                    DateCreated = DateTime.UtcNow,
+
+                    Status = "Open",
+
+                    CustomerName = dto.CustomerName.Trim(),
+
+                    FaultReported = dto.FaultReported.Trim(),
+
+                    FaultFound = dto.FaultFound ?? "",
+
+                    WorkPerformed = dto.WorkPerformed ?? "",
+
+                    CompletionNotes = dto.CompletionNotes ?? "",
+
+                    CustomerSignature = "",
+
+                    SignedDate = null
                 };
 
-                await _jobCardRepository
-                    .AddTechnicianAssignmentAsync(assignment);
+                //--------------------------------------------------
+                // Create Paper Job Card
+                //--------------------------------------------------
+
+                await _jobCardRepository.AddAsync(jobCard);
+
+                //--------------------------------------------------
+                // Create all technician assignments
+                //--------------------------------------------------
+
+                foreach (var technicianId in technicianIds)
+                {
+                    var assignment = new JobCardTechnician
+                    {
+                        JobCard = jobCard,
+
+                        TechnicianId = technicianId,
+
+                        IsLeadTechnician =
+                            technicianId == dto.AssignedTechnicianId.Value,
+
+                        AssignedByUserId = performedByUserId,
+
+                        DateAssigned = DateTime.UtcNow
+                    };
+
+                    await _jobCardRepository
+                        .AddTechnicianAssignmentAsync(assignment);
+                }
+
+                //--------------------------------------------------
+                // Save Job Card and assignments together
+                //--------------------------------------------------
+
+                await _jobCardRepository.SaveChangesAsync();
+
+
+
+
+
+
+
+                //--------------------------------------------------
+                // Record Existing Job Card Audit History
+                //--------------------------------------------------
+
+                await _auditService.LogAsync(
+                    jobCard.JobCardId,
+                    performedByUserId,
+                    JobCardAuditAction.JobCardCreated,
+                    $"Paper Job Card {jobCard.PaperJobCardNumber} " +
+                    $"registered as {jobCard.JobNumber}."
+                );
+
+                //--------------------------------------------------
+                // Commit only after Job Card, assignments
+                // and initial audit have all been saved
+                //--------------------------------------------------
+
+                await transaction.CommitAsync();
+
+
+                isNewRegistration = true;
+                    //--------------------------------------------------
+                    // Return the registered Job Card
+                    //--------------------------------------------------
+
+                    return jobCard;
+
+            });
+            }
+            catch (Exception ex) when (IsSqlDuplicateKeyError(ex))
+            {
+                //--------------------------------------------------
+                // Check whether another request registered
+                // the same RegistrationId successfully
+                //--------------------------------------------------
+
+                _context.ChangeTracker.Clear();
+
+                var existing = await _context.JobCards
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(j =>
+                        j.RegistrationId == dto.RegistrationId.Value);
+
+                if (existing == null)
+                {
+                    // The conflict was caused by another unique
+                    // field, not this RegistrationId.
+                    throw;
+                }
+
+                if (existing.JobCardType != JobCardType.Paper ||
+                    existing.CapturedByUserId != performedByUserId)
+                {
+                    throw new UnauthorizedAccessException(
+                        "This RegistrationId belongs to another registration.");
+                }
+
+                if (!string.Equals(
+                        existing.RegistrationPayloadHash,
+                        registrationPayloadHash,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "This RegistrationId was already used with different Job Card details.");
+                }
+
+                registeredJobCard = existing;
             }
 
-            //--------------------------------------------------
-            // Save Job Card and assignments together
-            //--------------------------------------------------
-
-            await _jobCardRepository.SaveChangesAsync();
-
-
-
-
-            
-
 
             //--------------------------------------------------
-            // Record Existing Job Card Audit History
+            // Notify Lead Technician after successful commit
             //--------------------------------------------------
 
-            await _auditService.LogAsync(
-                jobCard.JobCardId,
-                performedByUserId,
-                JobCardAuditAction.JobCardCreated,
-                $"Paper Job Card {jobCard.PaperJobCardNumber} " +
-                $"registered as {jobCard.JobNumber}."
-            );
-
-            //--------------------------------------------------
-            // Notify Assigned Technician
-            //--------------------------------------------------
-
-            if (jobCard.AssignedTechnicianId.HasValue)
+            try
             {
-                await _notificationService.CreateAsync(
-                    jobCard.AssignedTechnicianId.Value,
-                    "Paper Job Card Assigned",
-                    $"Paper Job Card {jobCard.JobNumber} " +
-                    "has been assigned to you."
+                if (isNewRegistration &&
+    registeredJobCard.AssignedTechnicianId.HasValue)
+                {
+                    await _notificationService.CreateAsync(
+                        registeredJobCard.AssignedTechnicianId.Value,
+                        "Paper Job Card Assigned",
+                        $"Paper Job Card {registeredJobCard.JobNumber} " +
+                        "has been assigned to you."
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                // Registration has already committed.
+                // A notification failure must not make it appear
+                // that Paper Job Card registration failed.
+               
+                System.Diagnostics.Debug.WriteLine(
+                    $"Paper Job Card {registeredJobCard.JobCardId} " +
+                    $"notification failed: {ex.Message}"
                 );
             }
 
-            return jobCard;
+            return registeredJobCard;
+
         }
 
+        //--------------------------------------------------
+        // Generate Paper Job Card registration fingerprint
+        //--------------------------------------------------
+
+        private static string ComputePaperRegistrationHash(
+            CreatePaperJobCardDto dto)
+        {
+            var technicianIds = (dto.AssignedTechnicianIds ?? new List<int>())
+                .Concat(dto.AssignedTechnicianId.HasValue
+                    ? new[] { dto.AssignedTechnicianId.Value }
+                    : Array.Empty<int>())
+                .Distinct()
+                .OrderBy(id => id)
+                .ToArray();
+
+            var payload = new
+            {
+                PaperJobCardNumber = dto.PaperJobCardNumber?.Trim(),
+                PaperJobCardDate = dto.PaperJobCardDate,
+                CustomerName = dto.CustomerName?.Trim(),
+                TicketId = dto.TicketId,
+                AssignedTechnicianId = dto.AssignedTechnicianId,
+                AssignedTechnicianIds = technicianIds,
+                FaultReported = dto.FaultReported,
+                FaultFound = dto.FaultFound,
+                WorkPerformed = dto.WorkPerformed,
+                CompletionNotes = dto.CompletionNotes
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+
+            byte[] hash = SHA256.HashData(
+                Encoding.UTF8.GetBytes(json));
+
+            return Convert.ToHexString(hash);
+        }
+
+
+
+        //--------------------------------------------------
+        // Identify RegistrationId unique-index violations
+        //--------------------------------------------------
+
+        private static bool IsSqlDuplicateKeyError(Exception exception)
+        {
+            if (exception is SqlException sqlException)
+            {
+                bool isDuplicateKey =
+                    sqlException.Number == 2601 ||
+                    sqlException.Number == 2627;
+
+                bool isRegistrationIndex =
+                    sqlException.Message.Contains(
+                        "IX_JobCards_RegistrationId",
+                        StringComparison.OrdinalIgnoreCase);
+
+                return isDuplicateKey && isRegistrationIndex;
+            }
+
+            if (exception.InnerException != null)
+            {
+                return IsSqlDuplicateKeyError(
+                    exception.InnerException);
+            }
+
+            return false;
+        }
+
+
+        //--------------------------------------------------
+        // Verify whether a Paper Job Card was committed
+        //--------------------------------------------------
+
+        private async Task<bool> PaperRegistrationExistsAsync(
+     Guid registrationId,
+     string registrationPayloadHash,
+     int performedByUserId)
+        {
+
+            //--------------------------------------------------
+            // Verify persisted registration without tracking
+            //--------------------------------------------------
+            var existing = await _context.JobCards
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j =>
+                    j.RegistrationId == registrationId);
+
+            return existing != null &&
+                   existing.JobCardType == JobCardType.Paper &&
+                   existing.CapturedByUserId == performedByUserId &&
+                   string.Equals(
+                       existing.RegistrationPayloadHash,
+                       registrationPayloadHash,
+                       StringComparison.Ordinal);
+        }
 
         //---------------------------------------------------
         // Paper Job Card - Assign Technician

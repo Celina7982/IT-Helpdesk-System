@@ -428,6 +428,23 @@ namespace IThelpdesk.Data
             // Job Card Technician Assignments
             //--------------------------------------------------
 
+            //--------------------------------------------------
+            // Paper Job Card Registration Idempotency
+            //--------------------------------------------------
+
+            // Prevent duplicate registrations using the same
+            // RegistrationId.
+            //
+            // NULL values are allowed for existing Job Cards
+            // and Digital Job Cards.
+
+            modelBuilder.Entity<JobCard>()
+                .HasIndex(j => j.RegistrationId)
+                .IsUnique()
+                .HasFilter("[RegistrationId] IS NOT NULL");
+
+
+
             modelBuilder.Entity<JobCardTechnician>(entity =>
             {
                 // Primary key

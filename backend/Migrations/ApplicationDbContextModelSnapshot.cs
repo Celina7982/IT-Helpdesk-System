@@ -123,6 +123,13 @@ namespace IThelpdesk.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid?>("RegistrationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RegistrationPayloadHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<int?>("ServiceType")
                         .HasColumnType("int");
 
@@ -154,6 +161,10 @@ namespace IThelpdesk.Migrations
                         .HasDatabaseName("IX_JobCards_AssignedTechnicianId");
 
                     b.HasIndex("CapturedByUserId");
+
+                    b.HasIndex("RegistrationId")
+                        .IsUnique()
+                        .HasFilter("[RegistrationId] IS NOT NULL");
 
                     b.HasIndex("TicketId")
                         .HasDatabaseName("IX_JobCards_TicketId");
